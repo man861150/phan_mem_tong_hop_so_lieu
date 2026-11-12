@@ -144,7 +144,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
 
 ### M1 — Accounts, roles, department scoping
 
-- [ ] **M1-T01 — Add `PhongBan`**
+- [x] **M1-T01 — Add `PhongBan`**
   - **Why:** users, indicators, and phiếu all hang off a department. The model lives in `catalog` as the tech stack assigns departments there.
   - **Files:** `apps/catalog/models.py`, `apps/catalog/admin.py`, `apps/catalog/migrations/`.
   - **Depends on:** M0-T01.
@@ -156,7 +156,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** migrate, open `/admin/`, create `GDCN`, `TTTK`, `HTKN`, and `BGĐ`.
   - **Estimate:** S
 
-- [ ] **M1-T02 — Replace the built-in user with `accounts.User`**
+- [x] **M1-T02 — Replace the built-in user with `accounts.User`**
   - **Why:** the tech stack requires one `role` and `phong_id` on the account. The local database already migrated Django's `auth_user`, so this task recreates `solieu`.
   - **Files:** `apps/accounts/models.py`, `apps/accounts/migrations/`, `config/settings.py`.
   - **Depends on:** M1-T01.
@@ -170,7 +170,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** recreate the database, migrate, `createsuperuser`, and in the shell confirm the user has `role` and `phong_id`. Log in at `/admin/` with that account.
   - **Estimate:** M
 
-- [ ] **M1-T03 — Encode the permission matrix**
+- [x] **M1-T03 — Encode the permission matrix**
   - **Why:** every later view asks one module whether the role may perform the action.
   - **Files:** `apps/accounts/roles.py`, `apps/accounts/permissions.py`.
   - **Depends on:** M1-T02.
@@ -184,7 +184,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** from `manage.py shell`, print `can(...)` for all four roles against `edit_entry`, `approve_entry`, `export_center_report`, and `manage_users`. Compare the printout with Bảng 4.
   - **Estimate:** M
 
-- [ ] **M1-T04 — Add the single department queryset helper**
+- [x] **M1-T04 — Add the single department queryset helper**
   - **Why:** the tech stack forbids scattering department filters across views.
   - **Files:** `apps/accounts/scoping.py`.
   - **Depends on:** M1-T03.
@@ -197,7 +197,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** in the shell, create two `PhongBan` rows, build a queryset of departments, and show that an HTKN officer receives only HTKN while the center head receives both.
   - **Estimate:** S
 
-- [ ] **M1-T05 — Vietnamese login and logout**
+- [x] **M1-T05 — Vietnamese login and logout**
   - **Why:** entry officers never use `/admin/` to sign in.
   - **Files:** `apps/accounts/views.py`, `apps/accounts/urls.py`, `apps/accounts/forms.py`, `config/urls.py`, `templates/accounts/login.html`, `templates/base.html`.
   - **Depends on:** M1-T02.
@@ -210,7 +210,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** open `/dang-nhap/`, submit a wrong password, submit the superuser password, log out. After five failures the lockout message appears in Vietnamese.
   - **Estimate:** M
 
-- [ ] **M1-T06 — User administration for the system admin**
+- [x] **M1-T06 — User administration for the system admin**
   - **Why:** UC01 is an admin task, not a template screen.
   - **Files:** `apps/accounts/admin.py`, `apps/accounts/forms.py`.
   - **Depends on:** M1-T02, M1-T03.
@@ -222,7 +222,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** as system admin, create one user of each role. Try to save an HTKN officer with an empty department and confirm the error.
   - **Estimate:** M
 
-- [ ] **M1-T07 — Seed the localhost departments and four role users**
+- [x] **M1-T07 — Seed the localhost departments and four role users**
   - **Why:** every later manual test needs the same accounts after the database reset.
   - **Files:** `apps/accounts/management/commands/seed_localhost.py`.
   - **Depends on:** M1-T06.
@@ -235,7 +235,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** run the command twice, then log in as each of the four users at `/dang-nhap/`.
   - **Estimate:** S
 
-- [ ] **M1-T08 — Require login on the home page and show the signed-in role**
+- [x] **M1-T08 — Require login on the home page and show the signed-in role**
   - **Why:** the current home is public. Later dashboard cards replace this shell in M8.
   - **Files:** `config/views.py`, `templates/home.html`, `templates/base.html`.
   - **Depends on:** M1-T05, M1-T07.

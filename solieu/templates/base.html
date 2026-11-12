@@ -18,8 +18,19 @@
         <h1 class="navbar-brand navbar-brand-autodark pe-0 pe-md-3 mb-0">
           <a href="{% url 'home' %}">Tổng hợp số liệu</a>
         </h1>
-        <div class="navbar-nav flex-row order-md-last">
-          <a class="nav-link" href="{% url 'admin:index' %}">Quản trị</a>
+        <div class="navbar-nav flex-row order-md-last align-items-center">
+          {% if user.is_authenticated %}
+            <span class="nav-link">{{ user.ho_ten }} — {{ user.get_role_display }}</span>
+            {% if user.is_staff %}
+              <a class="nav-link" href="{% url 'admin:index' %}">Quản trị</a>
+            {% endif %}
+            <form method="post" action="{% url 'accounts:logout' %}">
+              {% csrf_token %}
+              <button class="nav-link btn btn-link" type="submit">Đăng xuất</button>
+            </form>
+          {% else %}
+            <a class="nav-link" href="{% url 'accounts:login' %}">Đăng nhập</a>
+          {% endif %}
         </div>
       </div>
     </header>

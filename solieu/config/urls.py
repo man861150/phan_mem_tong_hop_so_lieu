@@ -10,9 +10,9 @@ admin.site.index_title = "Danh mục hệ thống"
 urlpatterns = [
     path("", home, name="home"),
     path("admin/", admin.site.urls),
-    path("accounts/", include("apps.accounts.urls")),
-    path("catalog/", include("apps.catalog.urls")),
-    path("activities/", include("apps.activities.urls")),
-    path("entry/", include("apps.entry.urls")),
-    path("reporting/", include("apps.reporting.urls")),
+    path("", include("apps.accounts.urls")),
+    path("", include("apps.catalog.urls")),
+    path("", include("apps.activities.urls")),
+    path("", include("apps.entry.urls")),
+    path("", include("apps.reporting.urls")),
 ]

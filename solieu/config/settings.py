@@ -47,6 +47,8 @@ MIDDLEWARE = [
     "axes.middleware.AxesMiddleware",
 ]
 
+AUTH_USER_MODEL = "accounts.User"
+
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
@@ -106,11 +108,18 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "home"
+LOGOUT_REDIRECT_URL = "accounts:login"
+
 # Localhost: lock username and IP together, then cool off, so a few mistyped
 # admin passwords do not permanently block 127.0.0.1.
 AXES_FAILURE_LIMIT = 10
 AXES_COOLOFF_TIME = timedelta(minutes=15)
 AXES_RESET_ON_SUCCESS = True
+# False makes AxesMiddleware return AXES_COOLOFF_MESSAGE. The default True
+# swallows the lockout and leaves a normal "wrong password" error.
+AXES_RESET_COOL_OFF_ON_FAILURE_DURING_LOCKOUT = False
 AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
 AXES_COOLOFF_MESSAGE = (
     "Tài khoản tạm khóa vì đăng nhập sai quá nhiều lần. Vui lòng thử lại sau."
