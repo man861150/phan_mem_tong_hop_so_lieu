@@ -479,7 +479,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
 
 Execute these three tasks before M6. Execute M4-T04 and later after M6.
 
-- [ ] **M4-T01 — Add `PhieuNhapLieu`**
+- [x] **M4-T01 — Add `PhieuNhapLieu`**
   - **Why:** the phiếu is the unit of approval for an activity, a month, or a project.
   - **Files:** `apps/entry/models.py`, `apps/entry/admin.py`, `apps/entry/migrations/`.
   - **Depends on:** M3-T01, M3-T05, M2-T08.
@@ -491,7 +491,7 @@ Execute these three tasks before M6. Execute M4-T04 and later after M6.
   - **Verify:** migrate. In the shell, save one activity phiếu and one monthly phiếu. Saving a row with both `hoat_dong` and `ky` set raises `IntegrityError`.
   - **Estimate:** M
 
-- [ ] **M4-T02 — Add `SoLieu` rows**
+- [x] **M4-T02 — Add `SoLieu` rows**
   - **Why:** every entered number is a row: indicator, value, optional object or field, and source.
   - **Files:** `apps/entry/models.py`, `apps/entry/admin.py`, `apps/entry/migrations/`.
   - **Depends on:** M4-T01, M2-T02, M2-T03.
@@ -503,7 +503,7 @@ Execute these three tasks before M6. Execute M4-T04 and later after M6.
   - **Verify:** in the shell, insert a total row and an object-split row for the same indicator. Inserting a row with both classifications raises `IntegrityError`.
   - **Estimate:** M
 
-- [ ] **M4-T03 — Add `HoTroDuAn`**
+- [x] **M4-T03 — Add `HoTroDuAn`**
   - **Why:** project support is a dated line on a project phiếu so rollup can count distinct projects and sum experts.
   - **Files:** `apps/entry/models.py`, `apps/entry/admin.py`, `apps/entry/migrations/`.
   - **Depends on:** M4-T01, M3-T05.
