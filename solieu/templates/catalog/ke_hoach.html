@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Kế hoạch năm {{ nam }} — Tổng hợp số liệu{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Kế hoạch năm {{ nam }}</h2>
+      </div>
+      <div class="col-auto">
+        <a class="btn btn-outline-secondary" href="{% url 'catalog:ke_hoach' nam_truoc %}">Năm {{ nam_truoc }}</a>
+        <a class="btn btn-outline-secondary" href="{% url 'catalog:ke_hoach' nam_sau %}">Năm {{ nam_sau }}</a>
+      </div>
+    </div>
+  </div>
+
+  {% if show_filter %}
+    <form class="mb-3" method="get">
+      <label class="form-label" for="phong">Phòng ban</label>
+      <select class="form-select" id="phong" name="phong">
+        <option value="">Tất cả phòng</option>
+        {% for phong in phong_options %}
+          <option value="{{ phong.ma_phong }}"{% if phong.ma_phong == selected %} selected{% endif %}>{{ phong }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-secondary mt-2" type="submit">Xem</button>
+    </form>
+  {% endif %}
+
+  {% if read_only_admin %}
+    <p>
+      Số kế hoạch được sửa tại trang quản trị.
+      <a href="{% url 'admin:catalog_chitieukehoach_changelist' %}">Mở chỉ tiêu kế hoạch</a>
+    </p>
+  {% endif %}
+
+  {% if not groups %}
+    <div class="card">
+      <div class="card-body">Phòng này chưa có chỉ tiêu.</div>
+    </div>
+  {% endif %}
+
+  {% for group in groups %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">{{ group.phong.ma_phong }} — {{ group.ten_mang }}</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr>
+              <th>Mảng</th>
+              <th>Chỉ tiêu</th>
+              <th>Năm trước</th>
+              <th>Năm nay</th>
+              <th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for line in group.lines %}
+              <tr>
+                <td>{{ group.ten_mang }}</td>
+                <td style="padding-left: calc(0.75rem + {{ line.depth }}rem)">
+                  {{ line.label }}
+                  <div class="text-secondary">{{ line.ma }}</div>
+                </td>
+                <td>{{ line.nam_truoc }}</td>
+                <td>{{ line.nam_nay }}</td>
+                <td>{{ line.trang_thai }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5">Phòng này chưa có chỉ tiêu.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endfor %}
+
+  {% if can_confirm %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.y_kien.id_for_label }}">Ý kiến</label>
+        {{ form.y_kien }}
+        {% if form.y_kien.errors %}
+          <div class="text-danger">{{ form.y_kien.errors }}</div>
+        {% endif %}
+      </div>
+      <button class="btn btn-outline-secondary" type="submit" name="hanh_dong" value="tra_lai">Trả lại</button>
+      <button class="btn btn-primary" type="submit" name="hanh_dong" value="xac_nhan">Xác nhận</button>
+    </form>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Danh mục chỉ tiêu — Tổng hợp số liệu{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Danh mục chỉ tiêu</h2>
+      </div>
+    </div>
+  </div>
+
+  {% if not groups %}
+    <div class="card">
+      <div class="card-body">Phòng này chưa có chỉ tiêu.</div>
+    </div>
+  {% endif %}
+
+  {% for group in groups %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">{{ group.phong.ma_phong }} — {{ group.ten_mang }}</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr>
+              <th>Mã</th>
+              <th>Chỉ tiêu</th>
+              <th>Đơn vị tính</th>
+              <th>Kiểu ghi nhận</th>
+              <th>Cách tổng hợp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for indicator, depth in group.nodes %}
+              <tr>
+                <td>{{ indicator.ma_chi_tieu }}</td>
+                <td style="padding-left: calc(0.75rem + {{ depth }}rem)">{{ indicator.ten_chi_tieu }}</td>
+                <td>{{ indicator.don_vi_tinh }}</td>
+                <td>{{ indicator.get_kieu_ghi_nhan_display }}</td>
+                <td>{{ indicator.get_cach_tong_hop_display }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5">Phòng này chưa có chỉ tiêu.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endfor %}
+{% endblock %}

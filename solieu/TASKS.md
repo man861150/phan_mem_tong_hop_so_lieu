@@ -249,7 +249,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
 
 ### M2 — Catalog
 
-- [ ] **M2-T01 — Add `NhomChiTieu` and its admin**
+- [x] **M2-T01 — Add `NhomChiTieu` and its admin**
   - **Why:** indicators are grouped phòng → mảng → chỉ tiêu.
   - **Files:** `apps/catalog/models.py`, `apps/catalog/admin.py`, `apps/catalog/migrations/`.
   - **Depends on:** M1-T01.
@@ -261,7 +261,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** in `/admin/`, add mảng "Lớp huấn luyện" under HTKN and confirm it appears under that department only.
   - **Estimate:** S
 
-- [ ] **M2-T02 — Add `ChiTieu` and its admin**
+- [x] **M2-T02 — Add `ChiTieu` and its admin**
   - **Why:** an indicator is a row of configuration, never a database column.
   - **Files:** `apps/catalog/models.py`, `apps/catalog/admin.py`, `apps/catalog/migrations/`.
   - **Depends on:** M2-T01.
@@ -273,7 +273,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** in admin, save a parent "Lớp huấn luyện" (`count`) and a child "Số học viên tham gia" (`sum`). Try to save a `ratio` indicator with an empty denominator and confirm the Vietnamese error.
   - **Estimate:** L
 
-- [ ] **M2-T03 — Add shared lookup tables**
+- [x] **M2-T03 — Add shared lookup tables**
   - **Why:** object, field, and source are chosen while typing a phiếu, from catalogs the admin maintains.
   - **Files:** `apps/catalog/models.py`, `apps/catalog/admin.py`, `apps/catalog/migrations/`.
   - **Depends on:** M1-T01.
@@ -287,7 +287,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** in admin, create "Doanh nghiệp", a parent/child pair under `qd36`, and source "Tại sự kiện". Attach the source to one indicator.
   - **Estimate:** M
 
-- [ ] **M2-T04 — Add `LoaiHoatDong` and `BieuMauChiTieu`**
+- [x] **M2-T04 — Add `LoaiHoatDong` and `BieuMauChiTieu`**
   - **Why:** the activity form renders exactly the rows of this table.
   - **Files:** `apps/catalog/models.py`, `apps/catalog/admin.py`, `apps/catalog/migrations/`.
   - **Depends on:** M2-T02.
@@ -300,7 +300,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** create activity type "Lớp huấn luyện" for HTKN with four inline indicators. Reload the admin page and confirm the order matches `thu_tu`.
   - **Estimate:** M
 
-- [ ] **M2-T05 — Add `DonViPhoiHop` and a merge action**
+- [x] **M2-T05 — Add `DonViPhoiHop` and a merge action**
   - **Why:** F03 keeps partner units as a shared catalog. The model lives in `activities` because that app owns the relation to events.
   - **Files:** `apps/activities/models.py`, `apps/activities/admin.py`, `apps/activities/migrations/`.
   - **Depends on:** M2-T03.
@@ -312,7 +312,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** create "Đại học A" and "Đại học A ". Run the merge action and confirm one row remains.
   - **Estimate:** M
 
-- [ ] **M2-T06 — Add `ChiTieuKeHoach`**
+- [x] **M2-T06 — Add `ChiTieuKeHoach`**
   - **Why:** percent of plan and "đã tổ chức/tổng số" need a confirmed annual number. An empty value means "chỉ theo dõi".
   - **Files:** `apps/catalog/models.py`, `apps/catalog/admin.py`, `apps/catalog/migrations/`.
   - **Depends on:** M2-T02, M2-T03.
@@ -324,7 +324,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** enter HTKN "số lớp" = 6 for the current year as draft. Change it after marking it confirmed without a reason and confirm the save is rejected. Change it with a reason and open the history page in admin to see the old value.
   - **Estimate:** M
 
-- [ ] **M2-T07 — Let the department head confirm the annual plan**
+- [x] **M2-T07 — Let the department head confirm the annual plan**
   - **Why:** UC04 gives confirmation to the department head, who does not administer the catalog.
   - **Files:** `apps/catalog/views.py`, `apps/catalog/urls.py`, `apps/catalog/forms.py`, `templates/catalog/ke_hoach.html`.
   - **Depends on:** M2-T06, M1-T03, M1-T04.
@@ -336,7 +336,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** as `admin`, save a draft for HTKN. As `ld.htkn`, open `/ke-hoach/<nam>/`, return it with a comment, then confirm it. As `cb.htkn`, the same URL responds 403.
   - **Estimate:** M
 
-- [ ] **M2-T08 — Add monthly `KyBaoCao` open and close**
+- [x] **M2-T08 — Add monthly `KyBaoCao` open and close**
   - **Why:** monthly entry is allowed only while the month is open.
   - **Files:** `apps/catalog/models.py`, `apps/catalog/admin.py`, `apps/catalog/migrations/`.
   - **Depends on:** M1-T03.
@@ -348,7 +348,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** as `admin`, open the current month and close the previous month. Confirm both states in the changelist.
   - **Estimate:** S
 
-- [ ] **M2-T09 — Seed the HTKN catalog**
+- [x] **M2-T09 — Seed the HTKN catalog**
   - **Why:** Phòng HTKN is the pilot and its form templates must exist before M4.
   - **Files:** `apps/catalog/seed_data.py`, `apps/catalog/management/commands/seed_catalog.py`.
   - **Depends on:** M2-T04, M2-T05, M2-T06, M1-T07.
@@ -361,7 +361,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** run the command twice. In admin, open "Lớp huấn luyện" and confirm the inline indicators match Bảng 7 (học viên, chứng nhận, chuyên gia, khảo sát).
   - **Estimate:** L
 
-- [ ] **M2-T10 — Seed GDCN and TTTK catalogs**
+- [x] **M2-T10 — Seed GDCN and TTTK catalogs**
   - **Why:** a center report has one section per department, and the three "yêu cầu công nghệ" figures must not be one indicator.
   - **Files:** `apps/catalog/seed_data.py`, `apps/catalog/management/commands/seed_catalog.py`.
   - **Depends on:** M2-T09.
@@ -374,7 +374,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** run `seed_catalog`. In admin, search "yêu cầu công nghệ" and confirm three codes. Open the ratio indicator and confirm numerator and denominator.
   - **Estimate:** L
 
-- [ ] **M2-T11 — Read-only catalog for the department head**
+- [x] **M2-T11 — Read-only catalog for the department head**
   - **Why:** Bảng 4 gives the department head "Xem (P)" on the catalog and does not give them admin edit rights.
   - **Files:** `apps/catalog/views.py`, `apps/catalog/urls.py`, `templates/catalog/danh_muc.html`.
   - **Depends on:** M2-T02, M1-T04.
@@ -386,7 +386,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** as `ld.htkn`, open `/danh-muc/` and confirm GDCN indicators are absent. As `cb.htkn`, confirm 403.
   - **Estimate:** S
 
-- [ ] **M2-T12 — Load the field-code tree when a CSV is present**
+- [x] **M2-T12 — Load the field-code tree when a CSV is present**
   - **Why:** QĐ 36 and TT 24 are required catalogs, and the legal code lists are not in the repository.
   - **Files:** `apps/catalog/management/commands/load_linh_vuc.py`, `fixtures/linh_vuc.csv` (optional, not invented).
   - **Depends on:** M2-T03.
