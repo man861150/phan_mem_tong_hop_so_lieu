@@ -1,0 +1,153 @@
+{% if can_edit %}
+  {% if row.has_object %}
+    <div class="mt-3" x-data="splitGrid({{ row.chi_tieu.pk }})" @input="update()">
+      <h4 class="mb-2">Phân loại đối tượng</h4>
+      <div x-ref="rows">
+        {% for object_row in row.object_rows %}
+          <div class="row g-2 align-items-end mb-2" data-split-row>
+            <div class="col-md-8">
+              <label class="form-label">{{ object_row.doi_tuong.ten_doi_tuong }}</label>
+              {{ object_row.field }}
+              {% if object_row.field.errors %}<div class="text-danger">{{ object_row.field.errors }}</div>{% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="form-hint">
+        Tổng đang nhập: <strong x-text="sum"></strong> {{ row.chi_tieu.don_vi_tinh }}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if row.has_linh_vuc %}
+    <div class="mt-3" x-data="splitGrid({{ row.chi_tieu.pk }})" @input="update()">
+      <h4 class="mb-2">Phân loại lĩnh vực</h4>
+      {{ row.grid_error }}
+      {% if row.grid_error.errors %}<div class="text-danger">{{ row.grid_error.errors }}</div>{% endif %}
+      <div x-ref="rows">
+        {% for item in row.linh_vuc_groups.qd36 %}
+          <div class="row g-2 align-items-end mb-2" data-split-row>
+            <div class="col-md-7">
+              <select class="form-select" name="linh_vuc_{{ row.chi_tieu.pk }}">
+                <option value="">— Chọn lĩnh vực QĐ 36 —</option>
+                {% for linh_vuc in row.linh_vuc_options.qd36 %}
+                  <option value="{{ linh_vuc.pk }}"{% if item.linh_vuc_id == linh_vuc.pk %} selected{% endif %}>{{ linh_vuc.ma }} — {{ linh_vuc.ten }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <input class="form-control" type="number" step="0.0001" min="0" name="gia_tri_lv_{{ row.chi_tieu.pk }}" value="{{ item.raw_value|default_if_none:'' }}" data-split-part="{{ row.chi_tieu.pk }}">
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-link text-danger" type="button" @click="removeRow($el)">Xóa</button>
+            </div>
+            {% if item.error %}<div class="col-12 text-danger">{{ item.error }}</div>{% endif %}
+          </div>
+        {% endfor %}
+        {% for item in row.linh_vuc_groups.tt24 %}
+          <div class="row g-2 align-items-end mb-2" data-split-row>
+            <div class="col-md-7">
+              <select class="form-select" name="linh_vuc_{{ row.chi_tieu.pk }}">
+                <option value="">— Chọn lĩnh vực TT 24 —</option>
+                {% for linh_vuc in row.linh_vuc_options.tt24 %}
+                  <option value="{{ linh_vuc.pk }}"{% if item.linh_vuc_id == linh_vuc.pk %} selected{% endif %}>{{ linh_vuc.ma }} — {{ linh_vuc.ten }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <input class="form-control" type="number" step="0.0001" min="0" name="gia_tri_lv_{{ row.chi_tieu.pk }}" value="{{ item.raw_value|default_if_none:'' }}" data-split-part="{{ row.chi_tieu.pk }}">
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-link text-danger" type="button" @click="removeRow($el)">Xóa</button>
+            </div>
+            {% if item.error %}<div class="col-12 text-danger">{{ item.error }}</div>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-2">
+        <button class="btn btn-outline-secondary btn-sm" type="button" @click="addRow('lv-row-qd36-{{ row.chi_tieu.pk }}')">Thêm dòng QĐ 36</button>
+        <button class="btn btn-outline-secondary btn-sm" type="button" @click="addRow('lv-row-tt24-{{ row.chi_tieu.pk }}')">Thêm dòng TT 24</button>
+      </div>
+      <div class="form-hint mt-2">
+        Tổng đang nhập: <strong x-text="sum"></strong> {{ row.chi_tieu.don_vi_tinh }}
+      </div>
+    </div>
+
+    <template id="lv-row-qd36-{{ row.chi_tieu.pk }}">
+      <div class="row g-2 align-items-end mb-2" data-split-row>
+        <div class="col-md-7">
+          <select class="form-select" name="linh_vuc_{{ row.chi_tieu.pk }}">
+            <option value="">— Chọn lĩnh vực QĐ 36 —</option>
+            {% for linh_vuc in row.linh_vuc_options.qd36 %}
+              <option value="{{ linh_vuc.pk }}">{{ linh_vuc.ma }} — {{ linh_vuc.ten }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <input class="form-control" type="number" step="0.0001" min="0" name="gia_tri_lv_{{ row.chi_tieu.pk }}" data-split-part="{{ row.chi_tieu.pk }}">
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-link text-danger" type="button" @click="removeRow($el)">Xóa</button>
+        </div>
+      </div>
+    </template>
+
+    <template id="lv-row-tt24-{{ row.chi_tieu.pk }}">
+      <div class="row g-2 align-items-end mb-2" data-split-row>
+        <div class="col-md-7">
+          <select class="form-select" name="linh_vuc_{{ row.chi_tieu.pk }}">
+            <option value="">— Chọn lĩnh vực TT 24 —</option>
+            {% for linh_vuc in row.linh_vuc_options.tt24 %}
+              <option value="{{ linh_vuc.pk }}">{{ linh_vuc.ma }} — {{ linh_vuc.ten }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <input class="form-control" type="number" step="0.0001" min="0" name="gia_tri_lv_{{ row.chi_tieu.pk }}" data-split-part="{{ row.chi_tieu.pk }}">
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-link text-danger" type="button" @click="removeRow($el)">Xóa</button>
+        </div>
+      </div>
+    </template>
+  {% endif %}
+{% else %}
+  {% if row.has_object %}
+    <div class="mt-3">
+      <h4 class="mb-2">Phân loại đối tượng</h4>
+      <table class="table table-sm">
+        <tbody>
+          {% for object_row in row.object_rows %}
+            <tr>
+              <td>{{ object_row.doi_tuong.ten_doi_tuong }}</td>
+              <td class="text-end">{{ object_row.field.value|default_if_none:"—" }} {{ row.chi_tieu.don_vi_tinh }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+  {% if row.has_linh_vuc %}
+    <div class="mt-3">
+      <h4 class="mb-2">Phân loại lĩnh vực</h4>
+      <table class="table table-sm">
+        <tbody>
+          {% for item in row.linh_vuc_groups.qd36 %}
+            <tr>
+              <td>QĐ 36</td>
+              <td>{{ item.linh_vuc.ma }} — {{ item.linh_vuc.ten }}</td>
+              <td class="text-end">{{ item.raw_value|default_if_none:"—" }} {{ row.chi_tieu.don_vi_tinh }}</td>
+            </tr>
+          {% endfor %}
+          {% for item in row.linh_vuc_groups.tt24 %}
+            <tr>
+              <td>TT 24</td>
+              <td>{{ item.linh_vuc.ma }} — {{ item.linh_vuc.ten }}</td>
+              <td class="text-end">{{ item.raw_value|default_if_none:"—" }} {{ row.chi_tieu.don_vi_tinh }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+{% endif %}

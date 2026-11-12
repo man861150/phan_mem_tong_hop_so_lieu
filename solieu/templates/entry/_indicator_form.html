@@ -1,0 +1,99 @@
+{% if form and form.non_field_errors %}
+  <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+{% endif %}
+
+{% if not rows %}
+  <div class="alert alert-info">Chưa có chỉ tiêu nào được cấu hình cho biểu mẫu này.</div>
+{% endif %}
+
+{% for row in rows %}
+  <div class="card mb-3">
+    <div class="card-header">
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <h3 class="card-title mb-0">{{ row.chi_tieu.ten_chi_tieu }}</h3>
+        <span class="text-secondary">({{ row.chi_tieu.don_vi_tinh }})</span>
+        {% if row.bat_buoc %}<span class="badge bg-warning-lt">Bắt buộc</span>{% endif %}
+        <span class="text-secondary small">{{ row.chi_tieu.ma_chi_tieu }}</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label" for="{{ row.total.id_for_label }}">Giá trị</label>
+          {% if can_edit %}
+            {{ row.total }}
+          {% else %}
+            <div class="form-control-plaintext">{{ row.total.value|default_if_none:"—" }} {{ row.chi_tieu.don_vi_tinh }}</div>
+          {% endif %}
+          {% if row.total.errors %}<div class="text-danger">{{ row.total.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="{{ row.nguon.id_for_label }}">Nguồn số liệu</label>
+          {% if can_edit %}
+            {{ row.nguon }}
+          {% else %}
+            <div class="form-control-plaintext">{{ row.nguon_display|default:"—" }}</div>
+          {% endif %}
+          {% if row.nguon.errors %}<div class="text-danger">{{ row.nguon.errors }}</div>{% endif %}
+        </div>
+        {% if show_month_info %}
+          <div class="col-md-2">
+            <label class="form-label">Tháng trước</label>
+            <div class="form-control-plaintext">{{ row.previous|default_if_none:"—" }}</div>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Lũy kế năm</label>
+            <div class="form-control-plaintext">{{ row.cumulative|default_if_none:"—" }}</div>
+          </div>
+        {% endif %}
+      </div>
+
+      {% if can_edit %}
+        {% include "entry/phan_loai_grid.html" with row=row can_edit=True %}
+      {% else %}
+        {% include "entry/phan_loai_grid.html" with row=row can_edit=False %}
+      {% endif %}
+    </div>
+  </div>
+{% endfor %}
+
+{% if rows %}
+  <style>[x-cloak] { display: none !important; }</style>
+  {% if has_split_grids %}
+    <script>
+      function splitGrid(chiTieuId) {
+        return {
+          sum: 0,
+          init() {
+            this.update();
+          },
+          update() {
+            let total = 0;
+            this.$el.querySelectorAll('[data-split-part="' + chiTieuId + '"]').forEach(function (input) {
+              const value = parseFloat(input.value);
+              if (!isNaN(value)) {
+                total += value;
+              }
+            });
+            this.sum = total;
+          },
+          addRow(templateId) {
+            const template = document.getElementById(templateId);
+            if (!template || !this.$refs.rows) {
+              return;
+            }
+            this.$refs.rows.appendChild(template.content.cloneNode(true));
+            this.update();
+          },
+          removeRow(element) {
+            const row = element.closest('[data-split-row]');
+            if (row) {
+              row.remove();
+            }
+            this.update();
+          }
+        };
+      }
+    </script>
+  {% endif %}
+{% endif %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Hỗ trợ dự án — {{ project.ten_du_an }}{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Hỗ trợ dự án</h2>
+        <div class="text-secondary">
+          {{ project.ten_du_an }} — {{ project.phong.ma_phong }} — {{ project.nam }}
+        </div>
+      </div>
+      <div class="col-auto">
+        <a class="btn btn-outline-secondary" href="{% url 'activities:du_an_detail' project.pk %}">Về dự án</a>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if not can_edit %}
+    <div class="alert alert-info">Bạn đang xem phiếu dự án ở chế độ chỉ đọc.</div>
+  {% endif %}
+
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3 class="card-title">Các dòng hỗ trợ đã ghi</h3>
+      {% if phieu %}<span class="text-secondary">Phiếu #{{ phieu.pk }} — {{ phieu.get_trang_thai_display }}</span>{% endif %}
+    </div>
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table">
+        <thead>
+          <tr>
+            <th>Ngày</th>
+            <th>Loại hỗ trợ</th>
+            <th>Nội dung</th>
+            <th class="text-end">Số chuyên gia</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for line in lines %}
+            <tr>
+              <td>{{ line.ngay_ho_tro|date:"d/m/Y" }}</td>
+              <td>{{ line.get_loai_ho_tro_display }}</td>
+              <td>{{ line.noi_dung|linebreaksbr }}</td>
+              <td class="text-end">{{ line.so_chuyen_gia|default_if_none:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4">Chưa có dòng hỗ trợ nào.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if can_edit %}
+    <form method="post" class="card">
+      {% csrf_token %}
+      <div class="card-header">
+        <h3 class="card-title">Thêm dòng hỗ trợ</h3>
+      </div>
+      <div class="card-body">
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.loai_ho_tro.id_for_label }}">{{ form.loai_ho_tro.label }}</label>
+            {{ form.loai_ho_tro }}
+            {% if form.loai_ho_tro.errors %}<div class="text-danger">{{ form.loai_ho_tro.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label" for="{{ form.ngay_ho_tro.id_for_label }}">{{ form.ngay_ho_tro.label }}</label>
+            {{ form.ngay_ho_tro }}
+            {% if form.ngay_ho_tro.errors %}<div class="text-danger">{{ form.ngay_ho_tro.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="{{ form.so_chuyen_gia.id_for_label }}">{{ form.so_chuyen_gia.label }}</label>
+            {{ form.so_chuyen_gia }}
+            {% if form.so_chuyen_gia.errors %}<div class="text-danger">{{ form.so_chuyen_gia.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.noi_dung.id_for_label }}">{{ form.noi_dung.label }}</label>
+            {{ form.noi_dung }}
+            {% if form.noi_dung.errors %}<div class="text-danger">{{ form.noi_dung.errors }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="card-footer d-flex justify-content-end">
+        <button class="btn btn-primary" type="submit">Thêm dòng hỗ trợ</button>
+      </div>
+    </form>
+  {% endif %}
+
+  {% if can_delete %}
+    <div class="card mt-3">
+      <div class="card-body d-flex justify-content-end">
+        <form method="post" action="{% url 'entry:phieu_xoa' phieu.pk %}"
+              onsubmit="return confirm('Xóa phiếu nháp này và toàn bộ dòng hỗ trợ đã nhập?');">
+          {% csrf_token %}
+          <button class="btn btn-outline-danger" type="submit">Xóa nháp</button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

@@ -630,7 +630,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
 
 ### M4 — Data-entry screens
 
-- [ ] **M4-T04 — Render an activity form from `BieuMauChiTieu`**
+- [x] **M4-T04 — Render an activity form from `BieuMauChiTieu`**
   - **Why:** the entry officer sees the indicators configured for that activity type.
   - **Files:** `apps/entry/forms.py`, `apps/entry/views.py`, `apps/entry/urls.py`, `templates/entry/phieu_form.html`.
   - **Depends on:** M4-T02, M2-T04, M3-T04, M6-T03, M6-T06.
@@ -644,7 +644,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** as `cb.htkn`, open the class from M3-T04. Confirm the four HTKN training fields and no GDCN field. Save học viên 20. Reload and confirm one `SoLieu` row.
   - **Estimate:** L
 
-- [ ] **M4-T05 — Validate cross-field rules in `clean()`**
+- [x] **M4-T05 — Validate cross-field rules in `clean()`**
   - **Why:** F04 rules are relations between fields, so they belong on the form, not in the template.
   - **Files:** `apps/entry/forms.py`.
   - **Depends on:** M4-T04.
@@ -658,7 +658,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** on the training-class form, set chứng nhận 30 and học viên 20. Submit and confirm the Vietnamese error. Set chứng nhận 10 and confirm the form saves.
   - **Estimate:** M
 
-- [ ] **M4-T06 — Save a draft and delete a draft**
+- [x] **M4-T06 — Save a draft and delete a draft**
   - **Why:** UC07 allows "Lưu nháp", and Bảng 34 allows delete while the phiếu is `nhap`.
   - **Files:** `apps/entry/views.py`, `templates/entry/phieu_form.html`.
   - **Depends on:** M4-T05.
@@ -670,7 +670,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** save a training class with only học viên filled, reload, see status "Nháp". Delete it and confirm it disappears from `/hoat-dong/<id>/`.
   - **Estimate:** S
 
-- [ ] **M4-T07 — Add a supplemental phiếu on the same activity**
+- [x] **M4-T07 — Add a supplemental phiếu on the same activity**
   - **Why:** survey and later contract numbers are a second phiếu, not an overwrite of the event phiếu.
   - **Files:** `apps/entry/views.py`, `apps/entry/forms.py`, `templates/entry/phieu_form.html`.
   - **Depends on:** M4-T04.
@@ -682,7 +682,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** from an organized Cafe công nghệ or training class, create a supplemental phiếu, enter one number, and confirm two phiếu rows in admin for that activity.
   - **Estimate:** M
 
-- [ ] **M4-T08 — Edit object and field splits with Alpine.js**
+- [x] **M4-T08 — Edit object and field splits with Alpine.js**
   - **Why:** the tech stack limits Alpine to these grids.
   - **Files:** `templates/entry/phan_loai_grid.html`, `apps/entry/forms.py`, `static/vendor/alpine/alpine.min.js` (already vendored).
   - **Depends on:** M4-T02, M2-T03.
@@ -695,7 +695,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** build a TTTK-style indicator flagged for both splits. Add two object rows and two QĐ 36 rows in the browser without a full reload. Save and confirm the rows in admin. Submit with parts 10+10 against total 30 and confirm the Vietnamese mismatch from M4-T05.
   - **Estimate:** L
 
-- [ ] **M4-T09 — Open the monthly phiếu for an open period**
+- [x] **M4-T09 — Open the monthly phiếu for an open period**
   - **Why:** TTTK and Techport numbers are entered once per month.
   - **Files:** `apps/entry/views.py`, `apps/entry/forms.py`, `templates/entry/phieu_thang.html`.
   - **Depends on:** M4-T08, M6-T04, M2-T08, M2-T10.
@@ -709,7 +709,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** open the current month as admin. As `cb.htkn` or a seeded TTTK officer, enter "người dùng tin" total 120 and the Bảng 33 split. Save draft. Close the month in admin and confirm the form no longer saves.
   - **Estimate:** L
 
-- [ ] **M4-T10 — Enter project support lines**
+- [x] **M4-T10 — Enter project support lines**
   - **Why:** UC11 records each support event on the project phiếu.
   - **Files:** `apps/entry/views.py`, `apps/entry/forms.py`, `templates/entry/phieu_du_an.html`.
   - **Depends on:** M4-T03, M3-T05.
@@ -722,7 +722,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** as `cb.htkn`, add a "chuyên gia" line dated today with 2 experts on "Startup A". Reload and confirm the line. `rollup_preview` count for that support type includes the project only after M5 approval; before approval it stays out of the official count.
   - **Estimate:** M
 
-- [ ] **M4-T11 — Keep ad-hoc tasks out of `SoLieu`**
+- [x] **M4-T11 — Keep ad-hoc tasks out of `SoLieu`**
   - **Why:** F07 says the report lists the text and does not turn it into a number.
   - **Files:** `apps/entry/views.py`, `templates/entry/phieu_form.html`.
   - **Depends on:** M3-T06, M4-T01.

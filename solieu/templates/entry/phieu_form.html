@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Phiếu kết quả — {{ activity.ten }}{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Phiếu kết quả hoạt động</h2>
+        <div class="text-secondary">
+          {{ activity.ten }} — {{ activity.loai_hoat_dong.ten_loai }}
+          ({{ activity.loai_hoat_dong.phong.ma_phong }})
+        </div>
+      </div>
+      <div class="col-auto d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'activities:hoat_dong_detail' activity.pk %}">Về hoạt động</a>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if not organized %}
+    <div class="alert alert-warning">
+      Hoạt động chưa được tổ chức. Chuyển hoạt động sang trạng thái Đã tổ chức trước khi nhập phiếu kết quả.
+    </div>
+  {% else %}
+    {% if not can_edit %}
+      <div class="alert alert-info">Bạn đang xem phiếu ở chế độ chỉ đọc.</div>
+    {% endif %}
+
+    <div class="card mb-3">
+      <div class="card-body d-flex flex-wrap align-items-center gap-3">
+        {% for badge in count_badges %}
+          <div>
+            <div class="text-secondary small">Đã tổ chức/tổng số — {{ badge.chi_tieu.ten_chi_tieu }}</div>
+            <div class="h2 mb-0">
+              {{ badge.official|default:"0" }}
+              <span class="text-secondary">/</span>
+              {{ badge.plan|default_if_none:"—" }}
+            </div>
+            <div class="text-secondary small">Số liệu chính thức từ rollup, kỳ {{ period_label }}</div>
+          </div>
+        {% endfor %}
+        <div class="ms-md-auto">
+          <div class="text-secondary small">Đã tổ chức/tổng số (trạng thái, kỳ {{ period_label }})</div>
+          <div class="h2 mb-0">
+            {{ status_count }}
+            <span class="text-secondary">/</span>
+            {{ status_total }}
+          </div>
+          <div class="text-secondary small">Số hoạt động đã tổ chức, bao gồm hoạt động hiện tại</div>
+        </div>
+      </div>
+    </div>
+
+    {% if phieus %}
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2">
+          <span class="text-secondary">Phiếu:</span>
+          {% for item in phieus %}
+            <a class="btn btn-sm {% if phieu and item.pk == phieu.pk %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+               href="{% url 'entry:phieu_hoat_dong' activity.pk %}?phieu={{ item.pk }}">
+              {% if item.la_phieu_bo_sung %}Bổ sung{% else %}Chính{% endif %}
+              — {{ item.get_trang_thai_display }}
+            </a>
+          {% endfor %}
+          {% if can_edit and not ad_hoc %}
+            <form class="ms-auto" method="post" action="{% url 'entry:phieu_hoat_dong_bo_sung' activity.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-outline-primary btn-sm" type="submit">Tạo phiếu bổ sung</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if ad_hoc %}
+      <form method="post" class="card">
+        {% csrf_token %}
+        <div class="card-header">
+          <h3 class="card-title">Nhiệm vụ phát sinh</h3>
+          <div class="text-secondary">Nội dung và kết quả không chuyển thành số liệu.</div>
+        </div>
+        <div class="card-body">
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.noi_dung.id_for_label }}">{{ form.noi_dung.label }}</label>
+            {% if can_edit %}
+              {{ form.noi_dung }}
+            {% else %}
+              <div class="form-control-plaintext">{{ activity.noi_dung|linebreaksbr|default:"—" }}</div>
+            {% endif %}
+            {% if form.noi_dung.errors %}<div class="text-danger">{{ form.noi_dung.errors }}</div>{% endif %}
+          </div>
+          <div>
+            <label class="form-label" for="{{ form.ket_qua.id_for_label }}">{{ form.ket_qua.label }}</label>
+            {% if can_edit %}
+              {{ form.ket_qua }}
+            {% else %}
+              <div class="form-control-plaintext">{{ activity.ket_qua|linebreaksbr|default:"—" }}</div>
+            {% endif %}
+            {% if form.ket_qua.errors %}<div class="text-danger">{{ form.ket_qua.errors }}</div>{% endif %}
+          </div>
+        </div>
+        {% if can_edit %}
+          <div class="card-footer d-flex justify-content-end">
+            <button class="btn btn-primary" type="submit">Lưu nháp</button>
+          </div>
+        {% endif %}
+      </form>
+    {% else %}
+      <form method="post">
+        {% csrf_token %}
+        {% include "entry/_indicator_form.html" with form=form rows=rows can_edit=can_edit show_month_info=False has_split_grids=has_split_grids %}
+        {% if can_edit %}
+          <div class="d-flex justify-content-end">
+            <button class="btn btn-primary" type="submit">Lưu nháp</button>
+          </div>
+        {% endif %}
+      </form>
+    {% endif %}
+
+    {% if can_delete %}
+      <div class="card mt-3">
+        <div class="card-body d-flex justify-content-end">
+          <form method="post" action="{% url 'entry:phieu_xoa' phieu.pk %}"
+                onsubmit="return confirm('Xóa phiếu nháp này và toàn bộ số liệu đã nhập?');">
+            {% csrf_token %}
+            <button class="btn btn-outline-danger" type="submit">Xóa nháp</button>
+          </form>
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Phiếu tháng {{ ky.so_ky }}/{{ ky.nam }}{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Phiếu tháng {{ ky.so_ky }}/{{ ky.nam }}</h2>
+        <div class="text-secondary">
+          {% if phong %}{{ phong.ma_phong }} — {{ phong.ten_phong }}{% else %}Chọn phòng ban{% endif %}
+        </div>
+      </div>
+      <div class="col-auto">
+        <span class="badge {% if period_open %}bg-success-lt{% else %}bg-secondary-lt{% endif %}">
+          {% if period_open %}Kỳ đang mở{% else %}Kỳ đã đóng{% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if not phong %}
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Chọn phòng ban</h3>
+      </div>
+      <div class="card-body">
+        <p class="text-secondary">Tài khoản của bạn không gắn với một phòng ban. Chọn phòng để xem phiếu tháng.</p>
+        <div class="list-group">
+          {% for item in phong_options %}
+            <a class="list-group-item list-group-item-action" href="{% url 'entry:phieu_thang' ky.pk %}?phong={{ item.pk }}">
+              {{ item.ma_phong }} — {{ item.ten_phong }}
+            </a>
+          {% empty %}
+            <div class="text-secondary">Không có phòng ban đang sử dụng.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% else %}
+    {% if not period_open %}
+      <div class="alert alert-warning">Kỳ đã đóng. Phiếu tháng chỉ được xem, không được lưu.</div>
+    {% elif not can_edit %}
+      <div class="alert alert-info">Bạn đang xem phiếu tháng ở chế độ chỉ đọc.</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      {% include "entry/_indicator_form.html" with form=form rows=rows can_edit=can_edit show_month_info=True has_split_grids=has_split_grids %}
+      {% if can_edit %}
+        <div class="d-flex justify-content-end">
+          <button class="btn btn-primary" type="submit">Lưu nháp</button>
+        </div>
+      {% endif %}
+    </form>
+
+    {% if derived_rows %}
+      <div class="card mt-3">
+        <div class="card-header">
+          <h3 class="card-title">Chỉ tiêu tự động tính</h3>
+          <div class="text-secondary">Các chỉ tiêu này không nhập tay; hệ thống tính từ rollup.</div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm card-table">
+            <thead>
+              <tr>
+                <th>Chỉ tiêu</th>
+                <th>Đơn vị</th>
+                <th class="text-end">Kỳ này</th>
+                <th class="text-end">Lũy kế năm</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in derived_rows %}
+                <tr>
+                  <td>{{ item.chi_tieu.ten_chi_tieu }}</td>
+                  <td>{{ item.chi_tieu.don_vi_tinh }}</td>
+                  <td class="text-end">{{ item.rollup.period_value|default_if_none:"—" }}</td>
+                  <td class="text-end">{{ item.rollup.cumulative|default_if_none:"—" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if can_delete %}
+      <div class="card mt-3">
+        <div class="card-body d-flex justify-content-end">
+          <form method="post" action="{% url 'entry:phieu_xoa' phieu.pk %}"
+                onsubmit="return confirm('Xóa phiếu nháp này và toàn bộ số liệu đã nhập?');">
+            {% csrf_token %}
+            <button class="btn btn-outline-danger" type="submit">Xóa nháp</button>
+          </form>
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
+{% endblock %}
