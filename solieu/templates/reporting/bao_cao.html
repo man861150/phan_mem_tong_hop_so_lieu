@@ -11,7 +11,8 @@
           {% if period_label %}{{ period_label }} — {{ scope.label }}{% else %}Chọn kỳ và phạm vi báo cáo.{% endif %}
         </div>
       </div>
-      <div class="col-auto">
+      <div class="col-auto d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'reporting:da_xuat' %}">Báo cáo đã xuất</a>
         <a class="btn btn-outline-secondary" href="{% url 'reporting:nhap_xlsx' %}">Đọc file Excel</a>
       </div>
     </div>

@@ -1018,7 +1018,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
 
 ### M9 — Audit and published reports
 
-- [ ] **M9-T01 — Show field history on a phiếu**
+- [x] **M9-T01 — Show field history on a phiếu**
   - **Why:** simple-history answers who changed which field. The workflow table does not.
   - **Files:** `apps/entry/views.py`, `templates/entry/lich_su_truong.html`.
   - **Depends on:** M4-T02, M5-T07.
@@ -1029,7 +1029,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** after the reopen-and-edit in M5-T07, open the history and see the user `cb.htkn` on the changed learner count.
   - **Estimate:** M
 
-- [ ] **M9-T02 — Show the workflow timeline to every role that may search**
+- [x] **M9-T02 — Show the workflow timeline to every role that may search**
   - **Why:** F12 includes who submitted, who approved, and the comment, for readers who cannot approve.
   - **Files:** `templates/entry/phieu_detail.html`, `apps/entry/views.py`.
   - **Depends on:** M5-T01, M1-T03.
@@ -1040,7 +1040,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** as `ld.tt`, open the training-class phiếu and read the submit, return, and reopen comments.
   - **Estimate:** S
 
-- [ ] **M9-T03 — List published files and download the original**
+- [x] **M9-T03 — List published files and download the original**
   - **Why:** UC18 says the stored report can be opened again.
   - **Files:** `apps/reporting/views.py`, `templates/reporting/da_xuat.html`.
   - **Depends on:** M7-T07, M1-T04.
@@ -1051,7 +1051,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** download the first HTKN file from the list and confirm the bytes match the file on disk.
   - **Estimate:** S
 
-- [ ] **M9-T04 — Prove a published file survives reopen**
+- [x] **M9-T04 — Prove a published file survives reopen**
   - **Why:** this is the tech-stack rule that dashboard numbers are live and downloaded files are not.
   - **Files:** `apps/reporting/views.py` (only if the download regenerates a file; then stop that).
   - **Depends on:** M9-T03, M5-T07.
@@ -1063,7 +1063,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** record the SHA-256 of the exported file, reopen, change học viên, approve again, download the old record, and compare the hash. Then compare `/tien-do/` with the new value.
   - **Estimate:** S
 
-- [ ] **M9-T05 — Search activities, phiếu, and numbers**
+- [x] **M9-T05 — Search activities, phiếu, and numbers**
   - **Why:** UC19 is the lookup screen for every role, inside that role's scope.
   - **Files:** `apps/reporting/views.py`, `templates/reporting/lich_su.html`.
   - **Depends on:** M3-T02, M4-T01, M1-T04.
@@ -1075,7 +1075,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** search the class name as `cb.htkn` and find it. Search a GDCN name as `cb.htkn` and get no rows. As `ld.tt`, the GDCN row is visible if one exists.
   - **Estimate:** M
 
-- [ ] **M9-T06 — Compare the same period across two years**
+- [x] **M9-T06 — Compare the same period across two years**
   - **Why:** F12 asks for a same-period comparison between years.
   - **Files:** `apps/reporting/views.py`, `templates/reporting/lich_su.html`.
   - **Depends on:** M6-T06, M9-T05.

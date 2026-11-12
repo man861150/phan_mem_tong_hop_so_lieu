@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Lịch sử thay đổi phiếu #{{ phieu.pk }} — Tổng hợp số liệu{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Lịch sử thay đổi số liệu</h2>
+        <div class="text-secondary">
+          Phiếu #{{ phieu.pk }} — {{ phieu.get_loai_phieu_display }} — {{ phieu.phong.ma_phong }}
+        </div>
+      </div>
+      <div class="col-auto d-flex align-items-center gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'entry:phieu_detail' phieu.pk %}">Về phiếu</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-info">
+    Đây là lịch sử thay đổi từng trường số liệu. Lịch sử gửi duyệt, trả lại và mở lại nằm ở phần
+    “Lịch sử xử lý” trên trang phiếu.
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Các thay đổi theo thời gian</h3>
+      <div class="card-actions text-secondary small">Mới nhất hiển thị trước</div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table">
+        <thead>
+          <tr>
+            <th>Thời điểm</th>
+            <th>Người sửa</th>
+            <th>Chỉ tiêu</th>
+            <th>Trường</th>
+            <th>Giá trị cũ</th>
+            <th>Giá trị mới</th>
+            <th>Loại thay đổi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td>{{ row.thoi_diem|date:"d/m/Y H:i" }}</td>
+              <td>{{ row.nguoi }}</td>
+              <td>{{ row.chi_tieu }}</td>
+              <td>{{ row.ten_truong }}</td>
+              <td>{{ row.cu }}</td>
+              <td>{{ row.moi }}</td>
+              <td>
+                <span class="badge {% if row.loai == 'Thêm' %}bg-green-lt{% elif row.loai == 'Xóa' %}bg-red-lt{% else %}bg-blue-lt{% endif %}">
+                  {{ row.loai }}
+                </span>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-secondary">Chưa có thay đổi số liệu nào.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+      <div class="card-footer d-flex align-items-center">
+        <span class="text-secondary">Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        <div class="btn-list ms-auto">
+          {% if page_obj.has_previous %}
+            <a class="btn btn-sm btn-outline-secondary" href="?trang={{ page_obj.previous_page_number }}">Trước</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a class="btn btn-sm btn-outline-secondary" href="?trang={{ page_obj.next_page_number }}">Sau</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

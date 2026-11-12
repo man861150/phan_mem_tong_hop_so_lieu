@@ -3,6 +3,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.paginator import Paginator
 from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -37,8 +38,10 @@ from apps.entry.models import (
     HoTroDuAn,
     LoaiPhieu,
     PhieuNhapLieu,
+    SoLieu,
     TrangThaiPhieu,
 )
+from apps.reporting.formatting import format_vi_number
 from apps.reporting.rollup import ReportPeriod, rollup
 
 
@@ -768,6 +771,7 @@ def _render_phieu_detail(request, phieu, **extra):
         and phieu.trang_thai == TrangThaiPhieu.CHO_DUYET,
         "can_reopen": can_approve
         and phieu.trang_thai == TrangThaiPhieu.DA_DUYET,
+        "can_view_history": can(request.user, "view_history"),
         "comment_form": WorkflowCommentForm(),
     }
     context.update(extra)
@@ -782,6 +786,130 @@ def phieu_detail(request, phieu_id):
         pk=phieu_id,
     )
     return _render_phieu_detail(request, phieu)
+
+
+HISTORY_FIELDS = ("gia_tri", "doi_tuong", "linh_vuc", "nguon", "ghi_chu")
+HISTORY_FK_FIELDS = frozenset({"doi_tuong", "linh_vuc", "nguon"})
+HISTORY_TYPE_LABELS = {
+    "+": "Thêm",
+    "~": "Sửa",
+    "-": "Xóa",
+}
+HISTORY_PAGE_SIZE = 50
+
+
+def _history_raw(record, field_name):
+    if record is None:
+        return None
+    if field_name in HISTORY_FK_FIELDS:
+        return getattr(record, f"{field_name}_id")
+    if field_name == "ghi_chu":
+        return (getattr(record, field_name) or "").strip()
+    return getattr(record, field_name)
+
+
+def _history_value(record, field_name):
+    if record is None:
+        return "—"
+    if field_name == "gia_tri":
+        return format_vi_number(record.gia_tri)
+    value = getattr(record, field_name)
+    return str(value) if value else "—"
+
+
+def _history_user(record):
+    user = getattr(record, "history_user", None)
+    if user is None:
+        return "—"
+    if user.ho_ten:
+        return f"{user.ho_ten} ({user.username})"
+    return user.username
+
+
+def _history_rows(phieu):
+    """Diff consecutive simple-history snapshots for every SoLieu row."""
+    records = SoLieu.history.filter(phieu_id=phieu.pk).select_related(
+        "chi_tieu",
+        "doi_tuong",
+        "linh_vuc",
+        "nguon",
+        "history_user",
+    )
+    previous_by_row = {}
+    rows = []
+    for record in records.order_by("history_date", "history_id"):
+        previous = previous_by_row.get(record.id)
+        if record.history_type == "-":
+            changed_fields = [
+                field_name
+                for field_name in HISTORY_FIELDS
+                if _history_raw(record, field_name) not in (None, "")
+            ]
+        elif record.history_type == "+" or previous is None:
+            changed_fields = [
+                field_name
+                for field_name in HISTORY_FIELDS
+                if _history_raw(record, field_name) not in (None, "")
+            ]
+        else:
+            changed_fields = [
+                field_name
+                for field_name in HISTORY_FIELDS
+                if _history_raw(previous, field_name)
+                != _history_raw(record, field_name)
+            ]
+
+        indicator = record.chi_tieu or (
+            previous.chi_tieu if previous is not None else None
+        )
+        for field_name in changed_fields:
+            if record.history_type == "-":
+                old_record, new_record = record, None
+            else:
+                old_record, new_record = previous, record
+            field = record._meta.get_field(field_name)
+            rows.append(
+                {
+                    "thoi_diem": record.history_date,
+                    "nguoi": _history_user(record),
+                    "chi_tieu": (
+                        indicator.ten_chi_tieu if indicator else "—"
+                    ),
+                    "ten_truong": field.verbose_name,
+                    "cu": _history_value(old_record, field_name),
+                    "moi": _history_value(new_record, field_name),
+                    "loai": HISTORY_TYPE_LABELS.get(
+                        record.history_type,
+                        record.history_type,
+                    ),
+                }
+            )
+        previous_by_row[record.id] = record
+    rows.reverse()
+    return rows
+
+
+@login_required
+@require_http_methods(["GET"])
+def phieu_lich_su(request, phieu_id):
+    if not can(request.user, "view_history"):
+        raise PermissionDenied
+    phieu = get_object_or_404(
+        _phieu_queryset(request.user),
+        pk=phieu_id,
+    )
+    page_obj = Paginator(_history_rows(phieu), HISTORY_PAGE_SIZE).get_page(
+        request.GET.get("trang")
+    )
+    return render(
+        request,
+        "entry/lich_su_truong.html",
+        {
+            "phieu": phieu,
+            "rows": page_obj.object_list,
+            "page_obj": page_obj,
+        },
+    )
 
 
 def _get_action_phieu(phieu_id):

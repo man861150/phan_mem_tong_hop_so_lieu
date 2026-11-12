@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}Tra cứu lịch sử — Tổng hợp số liệu{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Tra cứu và so sánh số liệu</h2>
+        <div class="text-secondary">
+          Tìm hoạt động, phiếu và số liệu trong phạm vi được phép xem.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <ul class="nav nav-tabs">
+        <li class="nav-item">
+          <a class="nav-link {% if mode == 'tra_cuu' %}active{% endif %}" href="?che_do=tra_cuu">Tra cứu</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if mode == 'so_sanh' %}active{% endif %}" href="?che_do=so_sanh">So sánh cùng kỳ</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  {% if errors %}
+    <div class="alert alert-warning">
+      {% for error in errors %}<div>{{ error }}</div>{% endfor %}
+    </div>
+  {% endif %}
+
+  {% if mode == 'tra_cuu' %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">Bộ lọc tra cứu</h3>
+      </div>
+      <div class="card-body">
+        <form method="get">
+          <input type="hidden" name="che_do" value="tra_cuu">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-2">
+              <label class="form-label" for="year">Năm</label>
+              <select class="form-select" id="year" name="year">
+                {% for year in year_options %}
+                  <option value="{{ year }}" {% if year == filters.year %}selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="ky">Kỳ</label>
+              <select class="form-select" id="ky" name="ky">
+                {% for value, label in period_choices %}
+                  <option value="{{ value }}" {% if value == filters.ky %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="phong">Phòng ban</label>
+              <select class="form-select" id="phong" name="phong">
+                <option value="">Tất cả phòng ban trong phạm vi</option>
+                {% for department in departments %}
+                  <option value="{{ department.pk }}" {% if department.pk|stringformat:"s" == filters.phong %}selected{% endif %}>
+                    {{ department.ma_phong }} — {{ department.ten_phong }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="loai">Loại hoạt động</label>
+              <select class="form-select" id="loai" name="loai">
+                <option value="">Tất cả loại hoạt động</option>
+                {% for loai in activity_types %}
+                  <option value="{{ loai.pk }}" {% if loai.pk|stringformat:"s" == filters.loai %}selected{% endif %}>
+                    {{ loai.phong.ma_phong }} — {{ loai.ten_loai }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="linh_vuc">Lĩnh vực</label>
+              <select class="form-select" id="linh_vuc" name="linh_vuc">
+                <option value="">Tất cả lĩnh vực</option>
+                {% for linh_vuc in linh_vucs %}
+                  <option value="{{ linh_vuc.pk }}" {% if linh_vuc.pk|stringformat:"s" == filters.linh_vuc %}selected{% endif %}>
+                    {{ linh_vuc.get_he_thong_display }} — {{ linh_vuc.ten }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="ten">Tên hoạt động, dự án hoặc chỉ tiêu</label>
+              <input class="form-control" id="ten" name="ten" value="{{ filters.ten }}" placeholder="Nhập tên cần tìm">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="don_vi">Đơn vị phối hợp</label>
+              <input class="form-control" id="don_vi" name="don_vi" value="{{ filters.don_vi }}" placeholder="Nhập tên đơn vị">
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-primary w-100" type="submit">Tìm kiếm</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">Hoạt động</h3>
+        <div class="card-actions text-secondary small">{{ activity_page.paginator.count }} kết quả</div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr>
+              <th>Thời gian</th>
+              <th>Tên hoạt động</th>
+              <th>Phòng ban</th>
+              <th>Loại hoạt động</th>
+              <th>Lĩnh vực</th>
+              <th>Đơn vị phối hợp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for activity in activity_page %}
+              <tr>
+                <td>
+                  {{ activity.tu_ngay|date:"d/m/Y" }}
+                  {% if activity.den_ngay and activity.den_ngay != activity.tu_ngay %}
+                    – {{ activity.den_ngay|date:"d/m/Y" }}
+                  {% endif %}
+                </td>
+                <td>
+                  <a href="{% url 'activities:hoat_dong_detail' activity.pk %}">{{ activity.ten }}</a>
+                  <div class="text-secondary small">{{ activity.get_trang_thai_display }}</div>
+                </td>
+                <td>{{ activity.loai_hoat_dong.phong.ma_phong }}</td>
+                <td>{{ activity.loai_hoat_dong.ten_loai }}</td>
+                <td>{% if activity.linh_vuc %}{{ activity.linh_vuc.ten }}{% else %}—{% endif %}</td>
+                <td>
+                  {% for tham_gia in activity.don_vi_tham_gia.all %}
+                    <div>{{ tham_gia.don_vi.ten_don_vi }}</div>
+                  {% empty %}—{% endfor %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-secondary">Không có hoạt động nào phù hợp.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if activity_page.paginator.num_pages > 1 %}
+        <div class="card-footer d-flex align-items-center">
+          <span class="text-secondary">Trang {{ activity_page.number }} / {{ activity_page.paginator.num_pages }}</span>
+          <div class="btn-list ms-auto">
+            {% if activity_page.has_previous %}
+              <a class="btn btn-sm btn-outline-secondary" href="?{{ search_query }}&trang_hd={{ activity_page.previous_page_number }}">Trước</a>
+            {% endif %}
+            {% if activity_page.has_next %}
+              <a class="btn btn-sm btn-outline-secondary" href="?{{ search_query }}&trang_hd={{ activity_page.next_page_number }}">Sau</a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Phiếu nhập liệu và số liệu</h3>
+        <div class="card-actions text-secondary small">{{ phieu_page.paginator.count }} kết quả</div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr>
+              <th>Phiếu</th>
+              <th>Đối tượng</th>
+              <th>Phòng ban</th>
+              <th>Trạng thái</th>
+              <th>Người nhập</th>
+              <th>Số liệu</th>
+              <th class="text-end">Liên kết</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for phieu in phieu_page %}
+              <tr>
+                <td>
+                  #{{ phieu.pk }}
+                  <div class="text-secondary small">{{ phieu.get_loai_phieu_display }}</div>
+                </td>
+                <td>
+                  {% if phieu.hoat_dong %}
+                    {{ phieu.hoat_dong.ten }}
+                  {% elif phieu.ky %}
+                    Tháng {{ phieu.ky.so_ky }}/{{ phieu.ky.nam }}
+                  {% elif phieu.du_an %}
+                    {{ phieu.du_an.ten_du_an }}
+                  {% else %}—{% endif %}
+                </td>
+                <td>{{ phieu.phong.ma_phong }}</td>
+                <td>{{ phieu.get_trang_thai_display }}</td>
+                <td>{{ phieu.nguoi_nhap.ho_ten|default:phieu.nguoi_nhap.username }}</td>
+                <td>
+                  {% for line in phieu.so_lieu_hien_thi %}
+                    <div>{{ line.ten }}: {{ line.gia_tri }} {{ line.don_vi }}</div>
+                  {% empty %}
+                    <span class="text-secondary">Chưa có số liệu</span>
+                  {% endfor %}
+                  {% if phieu.so_lieu_count > 3 %}
+                    <div class="text-secondary small">… và {{ phieu.so_lieu_count|add:"-3" }} chỉ tiêu khác</div>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <div class="btn-list justify-content-end">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'entry:phieu_detail' phieu.pk %}">Chi tiết</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'entry:phieu_lich_su' phieu.pk %}">Lịch sử xử lý</a>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="text-secondary">Không có phiếu nào phù hợp.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if phieu_page.paginator.num_pages > 1 %}
+        <div class="card-footer d-flex align-items-center">
+          <span class="text-secondary">Trang {{ phieu_page.number }} / {{ phieu_page.paginator.num_pages }}</span>
+          <div class="btn-list ms-auto">
+            {% if phieu_page.has_previous %}
+              <a class="btn btn-sm btn-outline-secondary" href="?{{ search_query }}&trang_phieu={{ phieu_page.previous_page_number }}">Trước</a>
+            {% endif %}
+            {% if phieu_page.has_next %}
+              <a class="btn btn-sm btn-outline-secondary" href="?{{ search_query }}&trang_phieu={{ phieu_page.next_page_number }}">Sau</a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">So sánh số liệu cùng kỳ giữa hai năm</h3>
+        <div class="card-actions text-secondary small">{{ comparison.scope_label }}</div>
+      </div>
+      <div class="card-body">
+        <form method="get">
+          <input type="hidden" name="che_do" value="so_sanh">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-2">
+              <label class="form-label" for="kind">Loại kỳ</label>
+              <select class="form-select" id="kind" name="kind">
+                <option value="month" {% if comparison.kind == 'month' %}selected{% endif %}>Tháng</option>
+                <option value="quarter" {% if comparison.kind == 'quarter' %}selected{% endif %}>Quý</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="month">Tháng</label>
+              <select class="form-select" id="month" name="month">
+                {% for month in month_options %}
+                  <option value="{{ month }}" {% if month == comparison.month %}selected{% endif %}>{{ month }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="quarter">Quý</label>
+              <select class="form-select" id="quarter" name="quarter">
+                {% for quarter in quarter_options %}
+                  <option value="{{ quarter }}" {% if quarter == comparison.quarter %}selected{% endif %}>{{ quarter }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="year_a">Năm A</label>
+              <input class="form-control" type="number" id="year_a" name="year_a"
+                     min="2000" max="2100" value="{{ comparison.year_a }}">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="year_b">Năm B</label>
+              <input class="form-control" type="number" id="year_b" name="year_b"
+                     min="2000" max="2100" value="{{ comparison.year_b }}">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="phong">Phạm vi</label>
+              <select class="form-select" id="phong" name="phong">
+                {% if can_choose_center %}
+                  <option value="" {% if not comparison.phong %}selected{% endif %}>Toàn trung tâm</option>
+                {% endif %}
+                {% for department in departments %}
+                  <option value="{{ department.pk }}" {% if department.pk|stringformat:"s" == comparison.phong %}selected{% endif %}>
+                    {{ department.ma_phong }} — {{ department.ten_phong }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-primary w-100" type="submit">So sánh</button>
+            </div>
+          </div>
+        </form>
+        <div class="text-secondary small mt-3">
+          {{ comparison.period_a_label }} so với {{ comparison.period_b_label }}. Chênh lệch = Năm B − Năm A.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Kết quả so sánh</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr>
+              <th>Chỉ tiêu</th>
+              <th class="text-end">Năm {{ comparison.year_a }}</th>
+              <th class="text-end">Năm {{ comparison.year_b }}</th>
+              <th class="text-end">Chênh lệch</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in comparison_rows %}
+              <tr>
+                <td>
+                  {{ row.ten_chi_tieu }}
+                  <div class="text-secondary small">{{ row.ma_phong }} — {{ row.ma_chi_tieu }} — {{ row.don_vi_tinh }}</div>
+                </td>
+                <td class="text-end">{{ row.value_a }}</td>
+                <td class="text-end">{{ row.value_b }}</td>
+                <td class="text-end">{{ row.difference }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" class="text-secondary">Chưa có số liệu trong kỳ đã chọn.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

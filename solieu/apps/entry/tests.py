@@ -1215,3 +1215,103 @@ class BulkApproveTests(EntryFixtureMixin, TestCase):
             follow_up,
             "1 phiếu đã duyệt, 1 phiếu bị chặn.",
         )
+
+
+class HistoryAndTimelineReadTests(EntryFixtureMixin, TestCase):
+    def test_history_page_diffs_learner_count_and_enforces_scope(self):
+        activity, phieu = self.submitted_activity()
+        manager = self.login(self.ld_htkn)
+        manager.post(f"/phieu/{phieu.pk}/duyet/")
+        manager.post(
+            f"/phieu/{phieu.pk}/mo-lai/",
+            {"y_kien": "Điều chỉnh số học viên"},
+        )
+
+        officer = self.login(self.cb_htkn)
+        data = self.valid_activity_data()
+        data[f"gia_tri_{self.hv.pk}"] = "25"
+        data["action"] = "gui"
+        response = officer.post(self.activity_url(activity), data)
+        self.assertEqual(response.status_code, 302)
+
+        response = officer.get(f"/phieu/{phieu.pk}/lich-su/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Lịch sử thay đổi số liệu")
+        self.assertContains(response, "Số học viên tham gia")
+        self.assertContains(response, "Cán bộ HTKN (cb.htkn)")
+        self.assertContains(response, "Sửa")
+        learner_change = next(
+            row
+            for row in response.context["rows"]
+            if row["chi_tieu"] == "Số học viên tham gia"
+            and row["cu"] == "20"
+            and row["moi"] == "25"
+        )
+        self.assertEqual(learner_change["ten_truong"], "Giá trị")
+
+        self.assertEqual(
+            self.login(self.center).get(
+                f"/phieu/{phieu.pk}/lich-su/"
+            ).status_code,
+            200,
+        )
+        self.assertEqual(
+            self.login(self.cb_gdcn).get(
+                f"/phieu/{phieu.pk}/lich-su/"
+            ).status_code,
+            404,
+        )
+
+    def test_detail_timeline_is_ordered_and_readable_by_center_and_owner(self):
+        _activity, phieu = self.submitted_activity()
+        manager = self.login(self.ld_htkn)
+        manager.post(
+            f"/phieu/{phieu.pk}/tra-lai/",
+            {"y_kien": "Sai số học viên"},
+        )
+        officer = self.login(self.cb_htkn)
+        data = self.valid_activity_data()
+        data[f"gia_tri_{self.hv.pk}"] = "25"
+        data["action"] = "gui"
+        officer.post(self.activity_url(_activity), data)
+        manager.post(f"/phieu/{phieu.pk}/duyet/")
+        manager.post(
+            f"/phieu/{phieu.pk}/mo-lai/",
+            {"y_kien": "Mở lại để bổ sung"},
+        )
+
+        actions = list(
+            phieu.lich_su_xu_ly.order_by("thoi_diem", "id").values_list(
+                "hanh_dong",
+                flat=True,
+            )
+        )
+        self.assertEqual(
+            actions,
+            [
+                HanhDongXuLy.GUI,
+                HanhDongXuLy.TRA_LAI,
+                HanhDongXuLy.GUI,
+                HanhDongXuLy.DUYET,
+                HanhDongXuLy.MO_LAI,
+            ],
+        )
+
+        detail = self.login(self.center).get(f"/phieu/{phieu.pk}/")
+        self.assertEqual(detail.status_code, 200)
+        self.assertContains(detail, "Gửi duyệt")
+        self.assertContains(detail, "Trả lại")
+        self.assertContains(detail, "Mở lại")
+        self.assertContains(detail, "Sai số học viên")
+        self.assertContains(detail, "Mở lại để bổ sung")
+
+        self.assertEqual(
+            officer.get(f"/phieu/{phieu.pk}/").status_code,
+            200,
+        )
+        self.assertEqual(
+            self.login(self.cb_gdcn).get(
+                f"/phieu/{phieu.pk}/"
+            ).status_code,
+            404,
+        )

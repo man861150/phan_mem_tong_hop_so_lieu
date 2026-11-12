@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Báo cáo đã xuất — Tổng hợp số liệu{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Báo cáo đã xuất</h2>
+        <div class="text-secondary">
+          Danh sách tệp đã lập. Mỗi tệp được giữ nguyên tại thời điểm xuất.
+        </div>
+      </div>
+      <div class="col-auto">
+        <a class="btn btn-outline-secondary" href="{% url 'reporting:bao_cao' %}">Lập báo cáo</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table">
+        <thead>
+          <tr>
+            <th>Kỳ</th>
+            <th>Phạm vi</th>
+            <th>Người lập</th>
+            <th>Thời gian</th>
+            <th>Định dạng</th>
+            <th class="text-end">Tải xuống</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in reports %}
+            <tr>
+              <td>{{ report.ky }}</td>
+              <td>
+                {% if report.phong %}
+                  {{ report.phong.ma_phong }} — {{ report.phong.ten_phong }}
+                {% else %}
+                  Toàn trung tâm
+                {% endif %}
+              </td>
+              <td>{{ report.nguoi_lap.ho_ten|default:report.nguoi_lap.username }}</td>
+              <td>{{ report.ngay_lap|date:"d/m/Y H:i" }}</td>
+              <td>{{ report.get_dinh_dang_display }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary"
+                   href="{% url 'reporting:tai_bao_cao' report.pk %}">
+                  Tải xuống
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-secondary">Chưa có báo cáo nào được xuất trong phạm vi của bạn.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+      <div class="card-footer d-flex align-items-center">
+        <span class="text-secondary">Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        <div class="btn-list ms-auto">
+          {% if page_obj.has_previous %}
+            <a class="btn btn-sm btn-outline-secondary" href="?trang={{ page_obj.previous_page_number }}">Trước</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a class="btn btn-sm btn-outline-secondary" href="?trang={{ page_obj.next_page_number }}">Sau</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

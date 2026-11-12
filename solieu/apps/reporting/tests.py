@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import tempfile
 from datetime import date
 from decimal import Decimal
 from io import BytesIO, StringIO
 from pathlib import Path
+from unittest.mock import patch
 from zipfile import ZipFile
 
 from django.conf import settings
@@ -27,9 +29,11 @@ from apps.catalog.models import (
     DanhMucDoiTuong,
     DanhMucLinhVuc,
     KyBaoCao,
+    LoaiHoatDong,
     TrangThaiKeHoach,
     TrangThaiKy,
 )
+from apps.entry import workflow
 from apps.entry.models import (
     HoTroDuAn,
     LoaiPhieu,
@@ -1020,3 +1024,365 @@ class LegacyCommandTests(ReportFixtureMixin, TestCase):
         self.assertIn("Trang tính1", text)
         self.assertIn("NHIÊM VỤ VÀ SẢN PHẨM", text)
         self.assertEqual(SoLieu.objects.count(), before)
+
+
+class PublishedReportTests(ReportFixtureMixin, MediaExportMixin, TestCase):
+    def test_list_and_download_return_the_stored_file(self):
+        exporter = self.login(self.ld_htkn)
+        response = self.export(exporter, "xlsx")
+        self.assertEqual(response.status_code, 200)
+        record = BaoCaoDaXuat.objects.get()
+        stored = Path(record.file.path).read_bytes()
+
+        listing = self.login(self.cb_htkn).get(
+            reverse("reporting:da_xuat")
+        )
+        self.assertEqual(listing.status_code, 200)
+        self.assertContains(listing, "Báo cáo đã xuất")
+        self.assertContains(listing, record.ky)
+        self.assertContains(listing, "HTKN")
+        self.assertContains(listing, "Excel")
+
+        download = self.login(self.cb_htkn).get(
+            reverse("reporting:tai_bao_cao", args=[record.pk])
+        )
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(
+            download["Content-Type"],
+            (
+                "application/vnd.openxmlformats-officedocument."
+                "spreadsheetml.sheet"
+            ),
+        )
+        self.assertIn(
+            Path(record.file.name).name,
+            download["Content-Disposition"],
+        )
+        downloaded = self.response_bytes(download)
+        self.assertEqual(downloaded, stored)
+        self.assertEqual(
+            hashlib.sha256(downloaded).hexdigest(),
+            hashlib.sha256(stored).hexdigest(),
+        )
+
+    def test_word_download_uses_word_content_type(self):
+        self.export(self.login(self.ld_htkn), "docx")
+        record = BaoCaoDaXuat.objects.get()
+        download = self.login(self.cb_htkn).get(
+            reverse("reporting:tai_bao_cao", args=[record.pk])
+        )
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(
+            download["Content-Type"],
+            (
+                "application/vnd.openxmlformats-officedocument."
+                "wordprocessingml.document"
+            ),
+        )
+
+    def test_other_department_cannot_list_or_download(self):
+        self.export(self.login(self.ld_htkn), "xlsx")
+        record = BaoCaoDaXuat.objects.get()
+        client = self.login(self.cb_tttk)
+
+        listing = client.get(reverse("reporting:da_xuat"))
+        self.assertEqual(listing.status_code, 200)
+        self.assertNotContains(listing, record.ky)
+
+        download = client.get(
+            reverse("reporting:tai_bao_cao", args=[record.pk])
+        )
+        self.assertEqual(download.status_code, 404)
+
+
+class PublishedImmutabilityTests(ReportFixtureMixin, MediaExportMixin, TestCase):
+    def test_old_file_and_snapshot_survive_reopen_and_edit(self):
+        exporter = self.login(self.ld_htkn)
+        export = self.export(exporter, "xlsx")
+        self.assertEqual(export.status_code, 200)
+        record = BaoCaoDaXuat.objects.get()
+        stored_path = Path(record.file.path)
+        original_bytes = stored_path.read_bytes()
+        original_hash = hashlib.sha256(original_bytes).hexdigest()
+        original_rows = list(
+            BaoCaoDaXuatDong.objects.filter(bao_cao=record)
+            .order_by("id")
+            .values(
+                "id",
+                "chi_tieu_id",
+                "phong_id",
+                "period_value",
+                "cumulative",
+                "plan",
+                "percent",
+                "note",
+                "danh_gia",
+                "breakdown_label",
+            )
+        )
+
+        workflow.reopen(
+            self.activity_phieu,
+            self.ld_htkn,
+            "Điều chỉnh số học viên",
+        )
+        for chi_tieu, value in (
+            (self.chi_tieu_hv, "30"),
+            (self.chi_tieu_hn, "1"),
+        ):
+            row, _created = SoLieu.objects.get_or_create(
+                phieu=self.activity_phieu,
+                chi_tieu=chi_tieu,
+                doi_tuong=None,
+                linh_vuc=None,
+                defaults={"gia_tri": Decimal(value)},
+            )
+            row.gia_tri = Decimal(value)
+            row.save()
+        for chi_tieu, value in (
+            (ChiTieu.objects.get(ma_chi_tieu="HTKN-LOP-CN"), "10"),
+            (ChiTieu.objects.get(ma_chi_tieu="HTKN-LOP-CG"), "2"),
+            (ChiTieu.objects.get(ma_chi_tieu="HTKN-LOP-KS"), "5"),
+        ):
+            SoLieu.objects.update_or_create(
+                phieu=self.activity_phieu,
+                chi_tieu=chi_tieu,
+                doi_tuong=None,
+                linh_vuc=None,
+                defaults={"gia_tri": Decimal(value)},
+            )
+        workflow.submit(self.activity_phieu, self.cb_htkn)
+        workflow.approve(self.activity_phieu, self.ld_htkn)
+
+        download = self.login(self.cb_htkn).get(
+            reverse("reporting:tai_bao_cao", args=[record.pk])
+        )
+        self.assertEqual(download.status_code, 200)
+        downloaded = self.response_bytes(download)
+        self.assertEqual(
+            hashlib.sha256(downloaded).hexdigest(),
+            original_hash,
+        )
+        self.assertEqual(stored_path.read_bytes(), original_bytes)
+        self.assertEqual(
+            list(
+                BaoCaoDaXuatDong.objects.filter(bao_cao=record)
+                .order_by("id")
+                .values(
+                    "id",
+                    "chi_tieu_id",
+                    "phong_id",
+                    "period_value",
+                    "cumulative",
+                    "plan",
+                    "percent",
+                    "note",
+                    "danh_gia",
+                    "breakdown_label",
+                )
+            ),
+            original_rows,
+        )
+
+        rows = rollup(
+            ReportPeriod.month(self.year, self.month),
+            department_id=self.htkn.pk,
+        )
+        learner = next(
+            row for row in rows if row.chi_tieu_id == self.chi_tieu_hv.pk
+        )
+        self.assertEqual(learner.period_value, Decimal("30"))
+
+        home = self.login(self.cb_htkn).get(reverse("home"))
+        self.assertIn(30.0, home.context["chart2"]["cumulative"])
+        progress = self.login(self.cb_htkn).get(
+            reverse("reporting:tien_do"),
+            {"year": self.year, "phong": self.htkn.pk},
+        )
+        self.assertEqual(progress.status_code, 200)
+        self.assertContains(progress, ">30<")
+
+
+class SearchAndComparisonTests(ReportFixtureMixin, TestCase):
+    def setUp(self):
+        self.loai_gdcn = LoaiHoatDong.objects.create(
+            phong=self.gdcn,
+            ten_loai="Loại tra cứu GDCN",
+        )
+        class_date = date(self.year, self.month, 8)
+        self.gdcn_activity = HoatDong.objects.create(
+            loai_hoat_dong=self.loai_gdcn,
+            ten="Hội thảo tra cứu GDCN",
+            tu_ngay=class_date,
+            den_ngay=class_date,
+            trang_thai=TrangThaiHoatDong.DA_TO_CHUC,
+        )
+
+    def search(self, user, **params):
+        values = {"year": self.year, "che_do": "tra_cuu"}
+        values.update(params)
+        return self.login(user).get(
+            reverse("reporting:lich_su"),
+            values,
+        )
+
+    def test_search_finds_own_department_activity_and_phiếu(self):
+        response = self.search(self.cb_htkn, ten="Lớp khởi nghiệp")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Lớp khởi nghiệp tháng này")
+        self.assertContains(
+            response,
+            reverse("entry:phieu_lich_su", args=[self.activity_phieu.pk]),
+        )
+        self.assertContains(response, "Số học viên tham gia: 25 người")
+        self.assertGreater(response.context["activity_page"].paginator.count, 0)
+
+    def test_search_by_indicator_name_finds_phiếu(self):
+        response = self.search(self.cb_htkn, ten="Số học viên tham gia")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f"#{self.activity_phieu.pk}")
+
+    def test_foreign_department_is_invisible_to_scoped_user(self):
+        hidden = self.search(self.cb_htkn, ten="Hội thảo tra cứu GDCN")
+        self.assertEqual(hidden.status_code, 200)
+        self.assertEqual(hidden.context["activity_page"].paginator.count, 0)
+
+        visible = self.search(self.ld_tt, ten="Hội thảo tra cứu GDCN")
+        self.assertEqual(visible.status_code, 200)
+        self.assertContains(visible, "Hội thảo tra cứu GDCN")
+        self.assertGreater(visible.context["activity_page"].paginator.count, 0)
+
+    def test_filter_outside_scope_returns_nothing_without_leaking_name(self):
+        response = self.search(
+            self.cb_htkn,
+            phong=self.gdcn.pk,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Phạm vi lọc nằm ngoài quyền xem",
+        )
+        self.assertNotContains(response, "Phòng Giao dịch công nghệ")
+        self.assertEqual(response.context["activity_page"].paginator.count, 0)
+        self.assertEqual(response.context["phieu_page"].paginator.count, 0)
+
+    def test_search_results_are_paginated(self):
+        response = self.search(self.cb_htkn)
+        self.assertEqual(
+            response.context["activity_page"].paginator.per_page,
+            25,
+        )
+        self.assertEqual(
+            response.context["phieu_page"].paginator.per_page,
+            25,
+        )
+
+    def test_cross_year_comparison_uses_rollup_for_both_years(self):
+        previous_activity = HoatDong.objects.create(
+            loai_hoat_dong=self.loai_lop,
+            ten="Lớp khởi nghiệp năm trước",
+            tu_ngay=date(self.year - 1, self.month, 5),
+            den_ngay=date(self.year - 1, self.month, 5),
+            trang_thai=TrangThaiHoatDong.DA_TO_CHUC,
+        )
+        previous_phieu = PhieuNhapLieu.objects.create(
+            phong=self.htkn,
+            loai_phieu=LoaiPhieu.HOAT_DONG,
+            hoat_dong=previous_activity,
+            nguoi_nhap=self.cb_htkn,
+            trang_thai=TrangThaiPhieu.DA_DUYET,
+        )
+        SoLieu.objects.create(
+            phieu=previous_phieu,
+            chi_tieu=self.chi_tieu_hv,
+            gia_tri=Decimal("12"),
+        )
+
+        response = self.login(self.cb_htkn).get(
+            reverse("reporting:lich_su"),
+            {
+                "che_do": "so_sanh",
+                "kind": "month",
+                "month": self.month,
+                "year_a": self.year - 1,
+                "year_b": self.year,
+                "phong": self.htkn.pk,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "So sánh số liệu cùng kỳ giữa hai năm")
+        self.assertContains(response, f"Năm {self.year - 1}")
+        self.assertContains(response, f"Năm {self.year}")
+
+        rows_a = rollup(
+            ReportPeriod.month(self.year - 1, self.month),
+            department_id=self.htkn.pk,
+        )
+        rows_b = rollup(
+            ReportPeriod.month(self.year, self.month),
+            department_id=self.htkn.pk,
+        )
+        row_a = next(
+            row for row in rows_a if row.chi_tieu_id == self.chi_tieu_hv.pk
+        )
+        row_b = next(
+            row for row in rows_b if row.chi_tieu_id == self.chi_tieu_hv.pk
+        )
+        comparison = next(
+            row
+            for row in response.context["comparison_rows"]
+            if row["chi_tieu_id"] == self.chi_tieu_hv.pk
+        )
+        self.assertEqual(
+            comparison["value_a"],
+            format_vi_number(row_a.period_value),
+        )
+        self.assertEqual(
+            comparison["value_b"],
+            format_vi_number(row_b.period_value),
+        )
+        self.assertEqual(
+            comparison["difference"],
+            format_vi_number(
+                row_b.period_value - row_a.period_value
+            ),
+        )
+
+    def test_comparison_calls_rollup_once_per_year(self):
+        with patch(
+            "apps.reporting.views.rollup",
+            wraps=rollup,
+        ) as mocked_rollup:
+            response = self.login(self.cb_htkn).get(
+                reverse("reporting:lich_su"),
+                {
+                    "che_do": "so_sanh",
+                    "kind": "month",
+                    "month": self.month,
+                    "year_a": self.year - 1,
+                    "year_b": self.year,
+                    "phong": self.htkn.pk,
+                },
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(mocked_rollup.call_count, 2)
+
+    def test_comparison_outside_scope_returns_empty_table(self):
+        response = self.login(self.cb_htkn).get(
+            reverse("reporting:lich_su"),
+            {
+                "che_do": "so_sanh",
+                "kind": "month",
+                "month": self.month,
+                "year_a": self.year - 1,
+                "year_b": self.year,
+                "phong": self.gdcn.pk,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Phạm vi không được phép")
+        self.assertContains(
+            response,
+            "Phạm vi lọc nằm ngoài quyền xem",
+        )
+        self.assertEqual(response.context["comparison_rows"], [])
