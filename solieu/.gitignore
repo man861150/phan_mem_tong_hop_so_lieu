@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+.ruff_cache/
+
+# Local environment. Copy .env.example to .env.
+.env
+
+# Django
+staticfiles/
+db.sqlite3
+*.sqlite3
+
+# OS
+.DS_Store

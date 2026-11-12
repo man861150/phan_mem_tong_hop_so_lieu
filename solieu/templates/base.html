@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}Tổng hợp số liệu{% endblock %}</title>
+  {# Tabler 1.7.4, HTMX 2.0.11, Alpine.js 3.17.5 (CDN build), ECharts 5.6.0 #}
+  <link rel="stylesheet" href="{% static 'vendor/tabler/tabler.min.css' %}">
+  <script src="{% static 'vendor/htmx/htmx.min.js' %}" defer></script>
+  <script src="{% static 'vendor/alpine/alpine.min.js' %}" defer></script>
+  <script src="{% static 'vendor/echarts/echarts.min.js' %}" defer></script>
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  <div class="page">
+    <header class="navbar navbar-expand-md d-print-none">
+      <div class="container-xl">
+        <h1 class="navbar-brand navbar-brand-autodark pe-0 pe-md-3 mb-0">
+          <a href="{% url 'home' %}">Tổng hợp số liệu</a>
+        </h1>
+        <div class="navbar-nav flex-row order-md-last">
+          <a class="nav-link" href="{% url 'admin:index' %}">Quản trị</a>
+        </div>
+      </div>
+    </header>
+    <div class="page-wrapper">
+      <div class="page-body">
+        <div class="container-xl">
+          {% block content %}{% endblock %}
+        </div>
+      </div>
+      <footer class="footer footer-transparent d-print-none">
+        <div class="container-xl">
+          <div class="text-secondary">
+            Trung tâm Khởi nghiệp sáng tạo Thành phố Hồ Chí Minh
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+  <script src="{% static 'vendor/tabler/tabler.min.js' %}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

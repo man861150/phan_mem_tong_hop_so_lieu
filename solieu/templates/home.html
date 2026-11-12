@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Trang chủ — Tổng hợp số liệu{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Trang chủ</h2>
+        <div class="text-secondary">
+          Trung tâm Khởi nghiệp sáng tạo Thành phố Hồ Chí Minh
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <h3 class="card-title">Nhập liệu, tổng hợp số liệu và báo cáo hoạt động</h3>
+      <p class="text-secondary">
+        Danh mục phòng ban, chỉ tiêu và biểu mẫu được quản trị tại trang quản trị.
+      </p>
+      <a class="btn btn-primary" href="{% url 'admin:index' %}">Mở trang quản trị</a>
+    </div>
+  </div>
+{% endblock %}
