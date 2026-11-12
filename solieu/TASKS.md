@@ -118,7 +118,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
 
 ### M0 — Baseline verification
 
-- [ ] **M0-T01 — Re-run the scaffold checks**
+- [x] **M0-T01 — Re-run the scaffold checks**
   - **Why:** later milestones need a known-good database and a clean lint baseline.
   - **Files:** none.
   - **Depends on:** none.
@@ -130,7 +130,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** from `solieu/`, run the three commands above.
   - **Estimate:** S
 
-- [ ] **M0-T02 — Confirm the shell serves Vietnamese pages and vendor assets**
+- [x] **M0-T02 — Confirm the shell serves Vietnamese pages and vendor assets**
   - **Why:** M8 and M4 reuse `base.html`. A broken vendor path should be fixed before feature screens exist.
   - **Files:** `templates/base.html`, `templates/home.html`, `static/vendor/`.
   - **Depends on:** M0-T01.
