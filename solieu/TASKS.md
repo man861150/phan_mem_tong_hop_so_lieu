@@ -519,7 +519,7 @@ Execute these three tasks before M6. Execute M4-T04 and later after M6.
 
 Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this function only.
 
-- [ ] **M6-T01 — Define the rollup inputs, period windows, and result rows**
+- [x] **M6-T01 — Define the rollup inputs, period windows, and result rows**
   - **Why:** callers share one signature. The stub `rollup(period, *, department_id=None)` grows keyword arguments without a second aggregation API.
   - **Files:** `apps/reporting/rollup.py`.
   - **Depends on:** M4-T02, M4-T03, M2-T06, M3-T01.
@@ -532,7 +532,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** call `rollup` from the shell for the current month and HTKN. It returns a list and does not write a table.
   - **Estimate:** M
 
-- [ ] **M6-T02 — Compute `sum` in SQL**
+- [x] **M6-T02 — Compute `sum` in SQL**
   - **Why:** period totals must come from approved `SoLieu` rows.
   - **Files:** `apps/reporting/rollup.py`.
   - **Depends on:** M6-T01.
@@ -544,7 +544,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** approve-ready shell data: two approved class sizes 10 and 15 in the month, plus a draft of 99. `rollup` for that indicator returns 25. The draft changes nothing.
   - **Estimate:** M
 
-- [ ] **M6-T03 — Compute `count` in SQL**
+- [x] **M6-T03 — Compute `count` in SQL**
   - **Why:** "số lớp" and "số dự án được hỗ trợ chuyên gia" are counts, not sums of entered numbers.
   - **Files:** `apps/reporting/rollup.py`.
   - **Depends on:** M6-T01.
@@ -556,7 +556,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** two organized classes, one with an approved phiếu and one still draft. The count indicator returns 1.
   - **Estimate:** M
 
-- [ ] **M6-T04 — Compute `cumulative` in SQL**
+- [x] **M6-T04 — Compute `cumulative` in SQL**
   - **Why:** "tính đến thời điểm báo cáo" is the year-to-date sum through the period end.
   - **Files:** `apps/reporting/rollup.py`.
   - **Depends on:** M6-T02.
@@ -567,7 +567,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** monthly values 10, 20, and 30 for January–March, all approved. A March rollup shows period 30 and cumulative 60.
   - **Estimate:** M
 
-- [ ] **M6-T05 — Compute `latest` in SQL**
+- [x] **M6-T05 — Compute `latest` in SQL**
   - **Why:** R&D extraction figures must not be added across updates.
   - **Files:** `apps/reporting/rollup.py`.
   - **Depends on:** M6-T01.
@@ -579,7 +579,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** two approved extraction rows, 100 then 120. Rollup returns 120.
   - **Estimate:** S
 
-- [ ] **M6-T06 — Compute ratio, average, percent of plan, remainder, and the late flag in Python**
+- [x] **M6-T06 — Compute ratio, average, percent of plan, remainder, and the late flag in Python**
   - **Why:** the tech stack keeps these derived figures out of SQL.
   - **Files:** `apps/reporting/rollup.py`, `config/settings.py`.
   - **Depends on:** M6-T02, M6-T03, M6-T04, M2-T06.
@@ -594,7 +594,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** numerator 2, denominator 4 → ratio 0.5. Scores 4 and 5 → average 4.5. Plan 10 and cumulative 6 in a year that is three-quarters elapsed → percent 60, remainder 4, behind true. An empty plan → percent null and behind false.
   - **Estimate:** L
 
-- [ ] **M6-T07 — Break results down by object, field, and source**
+- [x] **M6-T07 — Break results down by object, field, and source**
   - **Why:** TTTK reports each split separately, and the splits are not crossed.
   - **Files:** `apps/reporting/rollup.py`.
   - **Depends on:** M6-T02.
@@ -606,7 +606,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** seed the Bảng 33 shape (total 120 and four object parts). Rollup returns the total and four object lines. The object lines are absent from the field list.
   - **Estimate:** M
 
-- [ ] **M6-T08 — Keep pending figures beside official figures**
+- [x] **M6-T08 — Keep pending figures beside official figures**
   - **Why:** UC16 lets the user look at "gồm số chờ duyệt" without mixing those numbers into the official column.
   - **Files:** `apps/reporting/rollup.py`.
   - **Depends on:** M6-T02.
@@ -617,7 +617,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** approved 10 and pending 5. The official period value is 10 and the pending field is 5.
   - **Estimate:** S
 
-- [ ] **M6-T09 — Preview rollup from the command line**
+- [x] **M6-T09 — Preview rollup from the command line**
   - **Why:** the function must be checkable before the progress screen exists.
   - **Files:** `apps/reporting/management/commands/rollup_preview.py`.
   - **Depends on:** M6-T06, M6-T07.
