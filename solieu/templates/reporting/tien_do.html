@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Tiến độ thực hiện — Tổng hợp số liệu{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Tiến độ thực hiện chỉ tiêu</h2>
+        <div class="text-secondary">
+          Năm {{ year }}{% if selected_department %} — {{ selected_department.ma_phong }} — {{ selected_department.ten_phong }}{% else %} — Toàn trung tâm{% endif %}
+        </div>
+      </div>
+      <div class="col-auto">
+        <a class="btn btn-outline-secondary" href="{% url 'home' %}">Trang chủ</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="get">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-2">
+            <label class="form-label" for="year">Năm</label>
+            <input class="form-control" type="number" id="year" name="year"
+                   min="2000" max="2100" value="{{ year }}">
+          </div>
+          {% if show_department_filter %}
+            <div class="col-md-4">
+              <label class="form-label" for="phong">Phòng ban</label>
+              <select class="form-select" id="phong" name="phong">
+                <option value="">Tất cả phòng ban</option>
+                {% for department in departments %}
+                  <option value="{{ department.pk }}"
+                          {% if selected_department and department.pk == selected_department.pk %}selected{% endif %}>
+                    {{ department.ma_phong }} — {{ department.ten_phong }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+          {% else %}
+            <div class="col-md-4">
+              <div class="text-secondary small">Phạm vi</div>
+              <div class="form-control-plaintext">
+                {% if selected_department %}{{ selected_department.ma_phong }} — {{ selected_department.ten_phong }}{% else %}Chưa có phòng ban{% endif %}
+              </div>
+            </div>
+          {% endif %}
+          <div class="col-md-3">
+            <label class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" name="gom_cho_duyet"
+                     value="1" {% if include_pending %}checked{% endif %}>
+              <span class="form-check-label">Gồm số chờ duyệt</span>
+            </label>
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-primary w-100" type="submit">Xem</button>
+          </div>
+        </div>
+        {% if year_error %}
+          <div class="alert alert-warning mt-3 mb-0">{{ year_error }}</div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  {% if include_pending %}
+    <div class="alert alert-info">
+      Cột “Chờ duyệt” chỉ hiển thị số liệu đang chờ duyệt. Cột “Lũy kế” chính thức không thay đổi.
+    </div>
+  {% endif %}
+
+  {% for block in department_blocks %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">PHÒNG {{ block.ma_phong }} — {{ block.ten_phong }}</h3>
+      </div>
+      {% if block.groups %}
+        {% for group in block.groups %}
+          <div class="card-body pb-0">
+            <h4 class="mb-2">{{ group.ten_mang }}</h4>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+              <thead>
+                <tr>
+                  <th>Chỉ tiêu</th>
+                  <th>Đơn vị tính</th>
+                  <th class="text-end">Kế hoạch</th>
+                  <th class="text-end">Lũy kế</th>
+                  {% if include_pending %}
+                    <th class="text-end">Chờ duyệt</th>
+                  {% endif %}
+                  <th class="text-end">% hoàn thành</th>
+                  <th class="text-end">Còn lại</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in group.rows %}
+                  <tr {% if row.behind %}class="table-warning"{% endif %}>
+                    <td>
+                      <a href="{% url 'reporting:tien_do_chi_tiet' row.chi_tieu_id %}?year={{ year }}">
+                        {{ row.ten_chi_tieu }}
+                      </a>
+                      <div class="text-secondary small">{{ row.ma_chi_tieu }}</div>
+                      {% if row.only_track %}
+                        <span class="badge bg-secondary-lt">Chỉ theo dõi</span>
+                      {% endif %}
+                      {% if row.behind %}
+                        <span class="badge bg-warning-lt">Chậm tiến độ</span>
+                      {% endif %}
+                    </td>
+                    <td>{{ row.don_vi_tinh }}</td>
+                    <td class="text-end">{{ row.plan }}</td>
+                    <td class="text-end">{{ row.cumulative }}</td>
+                    {% if include_pending %}
+                      <td class="text-end">{{ row.pending }}</td>
+                    {% endif %}
+                    <td class="text-end">
+                      {{ row.percent }}{% if not row.percent_missing %}%{% endif %}
+                    </td>
+                    <td class="text-end">{{ row.remainder }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="card-body text-secondary">Chưa có số liệu.</div>
+      {% endif %}
+    </div>
+  {% empty %}
+    <div class="card">
+      <div class="card-body text-secondary">Chưa có số liệu.</div>
+    </div>
+  {% endfor %}
+{% endblock %}

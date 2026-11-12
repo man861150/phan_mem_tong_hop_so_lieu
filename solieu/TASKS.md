@@ -955,7 +955,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
 
 ### M8 — Dashboard and charts
 
-- [ ] **M8-T01 — Replace the home page with the post-login summary**
+- [x] **M8-T01 — Replace the home page with the post-login summary**
   - **Why:** the tech stack names this as the first screen: drafts, returns, the approval queue, and percent complete by department.
   - **Files:** `config/views.py`, `templates/home.html`, `apps/reporting/rollup.py`.
   - **Depends on:** M5-T04, M6-T06, M1-T08.
@@ -968,7 +968,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** leave one draft and one approved class. Log in as `cb.htkn`, `ld.htkn`, and `ld.tt`. Confirm each home page matches the bullets above.
   - **Estimate:** M
 
-- [ ] **M8-T02 — Add two ECharts and no third chart**
+- [x] **M8-T02 — Add two ECharts and no third chart**
   - **Why:** the tech stack caps charts at two. The progress screen stays a table.
   - **Files:** `templates/home.html`, `templates/base.html`.
   - **Depends on:** M8-T01.
@@ -981,7 +981,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** view source on `/` and count `echarts.init`. Open `/` as `ld.tt` and confirm two charts. Open `/tien-do/` and confirm it has no chart.
   - **Estimate:** M
 
-- [ ] **M8-T03 — Build the progress table**
+- [x] **M8-T03 — Build the progress table**
   - **Why:** F10 is a table of plan, cumulative, percent, and remainder.
   - **Files:** `apps/reporting/views.py`, `templates/reporting/tien_do.html`.
   - **Depends on:** M6-T06, M1-T03.
@@ -994,7 +994,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** as `ld.tt`, open `/tien-do/`, select the current year, and find the HTKN class count. Compare it with `rollup_preview`.
   - **Estimate:** M
 
-- [ ] **M8-T04 — Toggle pending numbers on the progress table**
+- [x] **M8-T04 — Toggle pending numbers on the progress table**
   - **Why:** UC16 keeps unaudited numbers visible and separate.
   - **Files:** `templates/reporting/tien_do.html`, `apps/reporting/views.py`.
   - **Depends on:** M8-T03, M6-T08.
@@ -1005,7 +1005,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** with one pending phiếu of 5 and approved 10, toggle the switch and confirm the official column stays 10.
   - **Estimate:** S
 
-- [ ] **M8-T05 — Drill from an indicator to the phiếu that produced it**
+- [x] **M8-T05 — Drill from an indicator to the phiếu that produced it**
   - **Why:** UC16 bước 5 asks for the activities behind a number.
   - **Files:** `apps/reporting/views.py`, `templates/reporting/tien_do_chi_tiet.html`.
   - **Depends on:** M8-T03.

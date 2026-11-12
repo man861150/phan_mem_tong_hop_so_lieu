@@ -6,19 +6,21 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import urlencode
 from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.accounts.permissions import can
 from apps.accounts.roles import SCOPED_ROLES
+from apps.catalog.models import ChiTieu
 from apps.reporting.docx_export import build_docx
 from apps.reporting.exports import (
     content_stream,
     create_export_record,
     export_filename,
 )
+from apps.reporting.formatting import format_vi_number
 from apps.reporting.forms import BaoCaoPeriodForm, XlsxUploadForm
 from apps.reporting.periods import (
     KIND_MONTH,
@@ -27,6 +29,7 @@ from apps.reporting.periods import (
     resolve_period,
     today,
 )
+from apps.reporting.progress import build_drill_rows, build_progress_groups
 from apps.reporting.report_data import (
     allowed_departments,
     build_department_reports,
@@ -40,6 +43,7 @@ from apps.reporting.report_data import (
     save_notes,
     scope_departments,
 )
+from apps.reporting.rollup import ReportPeriod, rollup
 from apps.reporting.xlsx_export import build_workbook
 from apps.reporting.xlsx_import import WorkbookFormatError, parse_workbook
 
@@ -397,5 +401,134 @@ def nhap_xlsx(request):
             "preview_rows": preview_rows,
             "column_count": column_count,
             "parsed_name": parsed_name,
+        },
+    )
+
+
+def _progress_year(request) -> tuple[int, str]:
+    raw = (request.GET.get("year") or "").strip()
+    if not raw:
+        return today().year, ""
+    try:
+        year = int(raw)
+    except (TypeError, ValueError):
+        return today().year, "Năm không hợp lệ. Đang hiển thị năm hiện tại."
+    if not 2000 <= year <= 2100:
+        return today().year, "Năm phải từ 2000 đến 2100."
+    return year, ""
+
+
+def _progress_department(request, departments):
+    """Resolve the progress filter without ever leaking another department."""
+    raw = (request.GET.get("phong") or "").strip()
+    if raw:
+        try:
+            phong_id = int(raw)
+        except (TypeError, ValueError) as exc:
+            raise PermissionDenied("Phòng ban không hợp lệ.") from exc
+        for department in departments:
+            if department.pk == phong_id:
+                return department
+        raise PermissionDenied("Bạn không có quyền xem phòng ban này.")
+    if _is_scoped(request.user):
+        return departments[0] if departments else None
+    return None
+
+
+def _toggle_pending(request) -> bool:
+    return request.GET.get("gom_cho_duyet", "").lower() in (
+        "1",
+        "true",
+        "on",
+        "yes",
+    )
+
+
+@login_required
+@require_http_methods(["GET"])
+def tien_do(request):
+    if not can(request.user, "view_progress"):
+        raise PermissionDenied
+
+    departments = allowed_departments(request.user)
+    selected_department = _progress_department(request, departments)
+    year, year_error = _progress_year(request)
+    include_pending = _toggle_pending(request)
+
+    rows = rollup(
+        ReportPeriod.annual(year),
+        department_id=(
+            selected_department.pk if selected_department else None
+        ),
+        include_pending=include_pending,
+    )
+    allowed_ids = {department.pk for department in departments}
+    rows = [row for row in rows if row.phong_id in allowed_ids]
+    visible_departments = (
+        [selected_department] if selected_department else departments
+    )
+    department_blocks = build_progress_groups(
+        rows,
+        visible_departments,
+        include_pending=include_pending,
+    )
+    return render(
+        request,
+        "reporting/tien_do.html",
+        {
+            "year": year,
+            "year_error": year_error,
+            "departments": departments,
+            "selected_department": selected_department,
+            "show_department_filter": not _is_scoped(request.user),
+            "include_pending": include_pending,
+            "department_blocks": department_blocks,
+        },
+    )
+
+
+@login_required
+@require_http_methods(["GET"])
+def tien_do_chi_tiet(request, chi_tieu_id):
+    if not can(request.user, "view_progress"):
+        raise PermissionDenied
+
+    year, year_error = _progress_year(request)
+    indicator = get_object_or_404(
+        ChiTieu.objects.select_related("nhom__phong"),
+        pk=chi_tieu_id,
+    )
+    allowed_ids = {
+        department.pk
+        for department in allowed_departments(request.user)
+    }
+    if indicator.nhom.phong_id not in allowed_ids:
+        raise PermissionDenied("Bạn không có quyền xem chỉ tiêu này.")
+
+    rows = rollup(
+        ReportPeriod.annual(year),
+        department_id=indicator.nhom.phong_id,
+    )
+    summary = next(
+        (row for row in rows if row.chi_tieu_id == indicator.pk),
+        None,
+    )
+    summary_view = None
+    if summary is not None:
+        summary_view = {
+            "plan": format_vi_number(summary.plan),
+            "cumulative": format_vi_number(summary.cumulative),
+            "percent": format_vi_number(summary.percent),
+            "remainder": format_vi_number(summary.remainder),
+        }
+    return render(
+        request,
+        "reporting/tien_do_chi_tiet.html",
+        {
+            "year": year,
+            "year_error": year_error,
+            "indicator": indicator,
+            "summary": summary_view,
+            "contributions": build_drill_rows(indicator, year),
         },
     )

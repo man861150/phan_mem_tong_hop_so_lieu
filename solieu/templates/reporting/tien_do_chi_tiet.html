@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Chi tiết chỉ tiêu — Tổng hợp số liệu{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <div class="text-secondary">
+          <a href="{% url 'reporting:tien_do' %}?year={{ year }}">Tiến độ thực hiện</a>
+          / {{ indicator.ma_chi_tieu }}
+        </div>
+        <h2 class="page-title">{{ indicator.ten_chi_tieu }}</h2>
+        <div class="text-secondary">
+          {{ indicator.nhom.phong.ma_phong }} — {{ indicator.nhom.phong.ten_phong }} — năm {{ year }}
+        </div>
+      </div>
+      <div class="col-auto">
+        <a class="btn btn-outline-secondary"
+           href="{% url 'reporting:tien_do' %}?year={{ year }}&amp;phong={{ indicator.nhom.phong_id }}">
+          Quay lại bảng tiến độ
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% if year_error %}
+    <div class="alert alert-warning">{{ year_error }}</div>
+  {% endif %}
+
+  <div class="card mb-3">
+    <div class="card-body">
+      {% if summary %}
+        <div class="row g-3">
+          <div class="col-md-3">
+            <div class="text-secondary small">Kế hoạch năm</div>
+            <div class="h3 mb-0">{{ summary.plan }} {{ indicator.don_vi_tinh }}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="text-secondary small">Lũy kế đã duyệt</div>
+            <div class="h3 mb-0">{{ summary.cumulative }} {{ indicator.don_vi_tinh }}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="text-secondary small">% hoàn thành</div>
+            <div class="h3 mb-0">
+              {{ summary.percent }}{% if summary.percent != "—" %}%{% endif %}
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="text-secondary small">Còn lại</div>
+            <div class="h3 mb-0">{{ summary.remainder }} {{ indicator.don_vi_tinh }}</div>
+          </div>
+        </div>
+      {% else %}
+        <div class="text-secondary">Chưa có số liệu.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Nguồn số liệu đã được duyệt</h3>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table">
+        <thead>
+          <tr>
+            <th>Loại nguồn</th>
+            <th>Nội dung</th>
+            <th>Chỉ tiêu ghi nhận</th>
+            <th>Ngày ghi nhận</th>
+            <th class="text-end">Giá trị</th>
+            <th>Phiếu</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in contributions %}
+            <tr>
+              <td>{{ item.loai }}</td>
+              <td>{{ item.noi_dung }}</td>
+              <td>{{ item.chi_tieu }}</td>
+              <td>{{ item.ngay|date:"d/m/Y"|default:"—" }}</td>
+              <td class="text-end">{% if item.gia_tri %}{{ item.gia_tri }}{% else %}—{% endif %}</td>
+              <td>
+                <a href="{% url 'entry:phieu_detail' item.phieu.pk %}">
+                  Xem phiếu #{{ item.phieu.pk }}
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6">Chưa có số liệu.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

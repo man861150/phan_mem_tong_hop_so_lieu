@@ -20,7 +20,7 @@ from openpyxl import load_workbook
 
 from apps.accounts.models import User
 from apps.accounts.roles import Role
-from apps.activities.models import HoatDong, TrangThaiHoatDong
+from apps.activities.models import DuAn, HoatDong, TrangThaiHoatDong
 from apps.catalog.models import (
     ChiTieu,
     ChiTieuKeHoach,
@@ -30,7 +30,13 @@ from apps.catalog.models import (
     TrangThaiKeHoach,
     TrangThaiKy,
 )
-from apps.entry.models import LoaiPhieu, PhieuNhapLieu, SoLieu, TrangThaiPhieu
+from apps.entry.models import (
+    HoTroDuAn,
+    LoaiPhieu,
+    PhieuNhapLieu,
+    SoLieu,
+    TrangThaiPhieu,
+)
 from apps.reporting.formatting import format_vi_number
 from apps.reporting.models import BaoCaoDaXuat, BaoCaoDaXuatDong
 from apps.reporting.periods import (
@@ -111,6 +117,7 @@ class ReportFixtureMixin:
         )
 
         cls.chi_tieu_hv = ChiTieu.objects.get(ma_chi_tieu="HTKN-LOP-HV")
+        cls.chi_tieu_lop = ChiTieu.objects.get(ma_chi_tieu="HTKN-LOP")
         cls.chi_tieu_hs = ChiTieu.objects.get(ma_chi_tieu="GDCN-HS")
         cls.chi_tieu_ndt = ChiTieu.objects.get(ma_chi_tieu="TTTK-NDT")
         cls.chi_tieu_hn = ChiTieu.objects.get(ma_chi_tieu="HTKN-HN")
@@ -393,6 +400,347 @@ class PreviewTests(ReportFixtureMixin, TestCase):
         row = next(item for item in rows if item.ma_chi_tieu == "HTKN-LOP-HV")
         self.assertEqual(row.period_value, Decimal("25"))
         self.assertEqual(row.plan, Decimal("100"))
+
+
+class DashboardTests(ReportFixtureMixin, TestCase):
+    def test_home_requires_login(self):
+        response = Client(HTTP_HOST="localhost").get(reverse("home"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("accounts:login"), response["Location"])
+
+    def test_entry_home_lists_only_own_drafts_and_returns(self):
+        draft = PhieuNhapLieu.objects.create(
+            phong=self.htkn,
+            loai_phieu=LoaiPhieu.THANG,
+            ky=self.ky,
+            nguoi_nhap=self.cb_htkn,
+            trang_thai=TrangThaiPhieu.NHAP,
+        )
+        returned = PhieuNhapLieu.objects.create(
+            phong=self.htkn,
+            loai_phieu=LoaiPhieu.THANG,
+            ky=self.ky,
+            nguoi_nhap=self.cb_htkn,
+            trang_thai=TrangThaiPhieu.TRA_LAI,
+        )
+        other_draft = PhieuNhapLieu.objects.create(
+            phong=self.htkn,
+            loai_phieu=LoaiPhieu.THANG,
+            ky=self.ky,
+            nguoi_nhap=self.ld_htkn,
+            trang_thai=TrangThaiPhieu.NHAP,
+        )
+        response = self.login(self.cb_htkn).get(reverse("home"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn(
+            reverse("entry:phieu_detail", args=[draft.pk]),
+            content,
+        )
+        self.assertIn(
+            reverse("entry:phieu_detail", args=[returned.pk]),
+            content,
+        )
+        self.assertNotIn(
+            reverse("entry:phieu_detail", args=[other_draft.pk]),
+            content,
+        )
+        self.assertIn("Phiếu nháp của tôi", content)
+        self.assertIn("Phiếu bị trả lại", content)
+        self.assertNotIn("Phiếu chờ duyệt", content)
+        self.assertNotIn("/duyet/", content)
+
+    def test_department_head_sees_pending_count_and_queue_link(self):
+        response = self.login(self.ld_htkn).get(reverse("home"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn("Phiếu chờ duyệt", content)
+        self.assertIn(">1<", content)
+        self.assertIn(reverse("entry:duyet_list"), content)
+
+    def test_center_home_is_read_only_and_has_department_cards(self):
+        response = self.login(self.ld_tt).get(reverse("home"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertNotIn("Phiếu nháp của tôi", content)
+        self.assertNotIn("/phieu/", content)
+        self.assertNotIn("/duyet/", content)
+        self.assertIn("GDCN", content)
+        self.assertIn("TTTK", content)
+        self.assertIn("HTKN", content)
+        self.assertEqual(
+            response.context["selected_department"].ma_phong,
+            "HTKN",
+        )
+
+    def test_system_admin_sees_same_read_only_dashboard(self):
+        response = self.login(self.admin).get(reverse("home"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertNotIn("Phiếu nháp của tôi", content)
+        self.assertNotIn("/phieu/", content)
+        self.assertNotIn("/duyet/", content)
+
+    def test_home_initializes_exactly_two_charts(self):
+        response = self.login(self.ld_tt).get(reverse("home"))
+        content = response.content.decode()
+        self.assertEqual(content.count("echarts.init"), 2)
+        self.assertIn('id="chart1-data"', content)
+        self.assertIn('id="chart2-data"', content)
+
+    def test_percent_chart_uses_average_and_omits_only_track(self):
+        response = self.login(self.ld_tt).get(reverse("home"))
+        chart = response.context["chart1"]
+        htkn_index = chart["labels"].index("HTKN")
+        self.assertEqual(chart["values"][htkn_index], 25.0)
+
+        scoped = self.login(self.cb_htkn).get(reverse("home"))
+        chart = scoped.context["chart1"]
+        self.assertEqual(chart["labels"], ["Chương trình huấn luyện"])
+        self.assertEqual(chart["values"], [25.0])
+        cards = scoped.context["completion_cards"]
+        self.assertEqual([card["ma_phong"] for card in cards], ["HTKN"])
+
+    def test_chart2_endpoint_switches_department_and_respects_scope(self):
+        center = self.login(self.ld_tt)
+        response = center.get(
+            reverse("home"),
+            {"chart": "2", "phong": self.tttk.pk},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json")
+        payload = response.json()
+        self.assertIn("Số người dùng tin đang phục vụ", payload["labels"])
+        self.assertNotIn("Số học viên tham gia", payload["labels"])
+
+        forbidden = self.login(self.cb_htkn).get(
+            reverse("home"),
+            {"chart": "2", "phong": self.tttk.pk},
+        )
+        self.assertEqual(forbidden.status_code, 403)
+
+
+class ProgressTableTests(ReportFixtureMixin, TestCase):
+    def progress_row(self, response, ma_chi_tieu):
+        for block in response.context["department_blocks"]:
+            for group in block["groups"]:
+                for row in group["rows"]:
+                    if row["ma_chi_tieu"] == ma_chi_tieu:
+                        return row
+        return None
+
+    def test_entry_officer_sees_only_own_department(self):
+        response = self.login(self.cb_htkn).get(
+            reverse("reporting:tien_do"),
+            {"year": self.year},
+        )
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn("PHÒNG HTKN", content)
+        self.assertNotIn("PHÒNG GDCN", content)
+        self.assertNotIn("PHÒNG TTTK", content)
+        self.assertIn("25%", content)
+        self.assertIn("Chậm tiến độ", content)
+
+    def test_center_sees_all_reporting_departments(self):
+        response = self.login(self.ld_tt).get(
+            reverse("reporting:tien_do"),
+            {"year": self.year},
+        )
+        content = response.content.decode()
+        self.assertIn("PHÒNG GDCN", content)
+        self.assertIn("PHÒNG TTTK", content)
+        self.assertIn("PHÒNG HTKN", content)
+        self.assertLess(content.index("PHÒNG GDCN"), content.index("PHÒNG HTKN"))
+
+    def test_only_track_row_shows_cumulative_and_dash_percent(self):
+        response = self.login(self.ld_tt).get(
+            reverse("reporting:tien_do"),
+            {"year": self.year, "phong": self.htkn.pk},
+        )
+        row = self.progress_row(response, "HTKN-LOP")
+        self.assertIsNotNone(row)
+        self.assertTrue(row["only_track"])
+        self.assertTrue(row["percent_missing"])
+        self.assertEqual(row["cumulative"], "1")
+        self.assertEqual(row["percent"], "—")
+        self.assertIn("Chỉ theo dõi", response.content.decode())
+
+    def test_cross_department_filter_is_forbidden(self):
+        response = self.login(self.cb_htkn).get(
+            reverse("reporting:tien_do"),
+            {"year": self.year, "phong": self.tttk.pk},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_invalid_year_falls_back_to_current_year(self):
+        response = self.login(self.cb_htkn).get(
+            reverse("reporting:tien_do"),
+            {"year": "not-a-year"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["year"], today().year)
+        self.assertIn("Năm không hợp lệ", response.content.decode())
+
+    def test_progress_page_has_no_chart_initialization(self):
+        response = self.login(self.ld_tt).get(
+            reverse("reporting:tien_do"),
+            {"year": self.year},
+        )
+        content = response.content.decode()
+        self.assertEqual(content.count("echarts.init"), 0)
+        self.assertNotIn('id="chart1"', content)
+        self.assertNotIn('id="chart2"', content)
+
+    def test_pending_toggle_keeps_official_cumulative(self):
+        pending = PhieuNhapLieu.objects.create(
+            phong=self.htkn,
+            loai_phieu=LoaiPhieu.THANG,
+            ky=self.ky,
+            nguoi_nhap=self.cb_htkn,
+            trang_thai=TrangThaiPhieu.CHO_DUYET,
+        )
+        SoLieu.objects.create(
+            phieu=pending,
+            chi_tieu=self.chi_tieu_hv,
+            gia_tri=Decimal("5"),
+        )
+
+        official = self.login(self.cb_htkn).get(
+            reverse("reporting:tien_do"),
+            {"year": self.year},
+        )
+        row = self.progress_row(official, "HTKN-LOP-HV")
+        self.assertEqual(row["cumulative"], "25")
+        self.assertNotIn("pending", row)
+        self.assertNotIn("Chờ duyệt</th>", official.content.decode())
+
+        toggled = self.login(self.cb_htkn).get(
+            reverse("reporting:tien_do"),
+            {"year": self.year, "gom_cho_duyet": "1"},
+        )
+        row = self.progress_row(toggled, "HTKN-LOP-HV")
+        self.assertEqual(row["cumulative"], "25")
+        self.assertEqual(row["pending"], "5")
+        self.assertIn("Chờ duyệt</th>", toggled.content.decode())
+
+
+class DrillDownTests(ReportFixtureMixin, TestCase):
+    def test_count_drill_lists_approved_and_hides_draft_and_pending(self):
+        draft_activity = HoatDong.objects.create(
+            loai_hoat_dong=self.loai_lop,
+            ten="Lớp nháp chưa duyệt",
+            tu_ngay=date(self.year, self.month, 7),
+            den_ngay=date(self.year, self.month, 7),
+            trang_thai=TrangThaiHoatDong.DA_TO_CHUC,
+        )
+        PhieuNhapLieu.objects.create(
+            phong=self.htkn,
+            loai_phieu=LoaiPhieu.HOAT_DONG,
+            hoat_dong=draft_activity,
+            nguoi_nhap=self.cb_htkn,
+            trang_thai=TrangThaiPhieu.NHAP,
+        )
+        pending_activity = HoatDong.objects.create(
+            loai_hoat_dong=self.loai_lop,
+            ten="Lớp đang chờ duyệt",
+            tu_ngay=date(self.year, self.month, 8),
+            den_ngay=date(self.year, self.month, 8),
+            trang_thai=TrangThaiHoatDong.DA_TO_CHUC,
+        )
+        PhieuNhapLieu.objects.create(
+            phong=self.htkn,
+            loai_phieu=LoaiPhieu.HOAT_DONG,
+            hoat_dong=pending_activity,
+            nguoi_nhap=self.cb_htkn,
+            trang_thai=TrangThaiPhieu.CHO_DUYET,
+        )
+        response = self.login(self.ld_tt).get(
+            reverse("reporting:tien_do_chi_tiet", args=[self.chi_tieu_lop.pk]),
+            {"year": self.year},
+        )
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn(self.activity.ten, content)
+        self.assertNotIn(draft_activity.ten, content)
+        self.assertNotIn(pending_activity.ten, content)
+        self.assertIn("1 lớp", content)
+
+    def test_sum_drill_lists_approved_phieu(self):
+        response = self.login(self.cb_htkn).get(
+            reverse("reporting:tien_do_chi_tiet", args=[self.chi_tieu_hv.pk]),
+            {"year": self.year},
+        )
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn(self.activity.ten, content)
+        self.assertIn("25", content)
+        self.assertIn(
+            reverse("entry:phieu_detail", args=[self.activity_phieu.pk]),
+            content,
+        )
+
+    def test_project_count_drill_lists_only_approved_support_lines(self):
+        project = DuAn.objects.create(
+            phong=self.htkn,
+            ten_du_an="Dự án hỗ trợ M8",
+            chuong_trinh="nq20",
+            hinh_thuc="uom_tao",
+            nam=self.year,
+        )
+        approved = PhieuNhapLieu.objects.create(
+            phong=self.htkn,
+            loai_phieu=LoaiPhieu.DU_AN,
+            du_an=project,
+            nguoi_nhap=self.cb_htkn,
+            trang_thai=TrangThaiPhieu.DA_DUYET,
+        )
+        HoTroDuAn.objects.create(
+            du_an=project,
+            phieu=approved,
+            loai_ho_tro="chuyen_gia",
+            noi_dung="Tư vấn chuyên gia đã duyệt",
+            so_chuyen_gia=Decimal("2"),
+            ngay_ho_tro=date(self.year, self.month, 10),
+        )
+        draft = PhieuNhapLieu.objects.create(
+            phong=self.htkn,
+            loai_phieu=LoaiPhieu.DU_AN,
+            du_an=project,
+            nguoi_nhap=self.cb_htkn,
+            trang_thai=TrangThaiPhieu.NHAP,
+        )
+        HoTroDuAn.objects.create(
+            du_an=project,
+            phieu=draft,
+            loai_ho_tro="chuyen_gia",
+            noi_dung="Tư vấn chuyên gia còn nháp",
+            so_chuyen_gia=Decimal("1"),
+            ngay_ho_tro=date(self.year, self.month, 11),
+        )
+        indicator = ChiTieu.objects.get(ma_chi_tieu="HTKN-DA-CG")
+        response = self.login(self.cb_htkn).get(
+            reverse("reporting:tien_do_chi_tiet", args=[indicator.pk]),
+            {"year": self.year},
+        )
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn("Tư vấn chuyên gia đã duyệt", content)
+        self.assertNotIn("Tư vấn chuyên gia còn nháp", content)
+
+    def test_drill_is_scoped_to_own_department(self):
+        response = self.login(self.cb_tttk).get(
+            reverse("reporting:tien_do_chi_tiet", args=[self.chi_tieu_lop.pk]),
+            {"year": self.year},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_drill_has_no_chart_initialization(self):
+        response = self.login(self.cb_htkn).get(
+            reverse("reporting:tien_do_chi_tiet", args=[self.chi_tieu_hv.pk]),
+            {"year": self.year},
+        )
+        self.assertEqual(response.content.decode().count("echarts.init"), 0)
 
 
 class MediaExportMixin:
