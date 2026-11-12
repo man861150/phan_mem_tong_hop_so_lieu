@@ -1,3 +1,4 @@
+{% load vi_numbers %}
 {% if form and form.non_field_errors %}
   <div class="alert alert-danger">{{ form.non_field_errors }}</div>
 {% endif %}
@@ -23,7 +24,7 @@
           {% if can_edit %}
             {{ row.total }}
           {% else %}
-            <div class="form-control-plaintext">{{ row.total.value|default_if_none:"—" }} {{ row.chi_tieu.don_vi_tinh }}</div>
+            <div class="form-control-plaintext">{{ row.total.value|vi_number }} {{ row.chi_tieu.don_vi_tinh }}</div>
           {% endif %}
           {% if row.total.errors %}<div class="text-danger">{{ row.total.errors }}</div>{% endif %}
         </div>
@@ -39,11 +40,11 @@
         {% if show_month_info %}
           <div class="col-md-2">
             <label class="form-label">Tháng trước</label>
-            <div class="form-control-plaintext">{{ row.previous|default_if_none:"—" }}</div>
+            <div class="form-control-plaintext">{{ row.previous|vi_number }}</div>
           </div>
           <div class="col-md-2">
             <label class="form-label">Lũy kế năm</label>
-            <div class="form-control-plaintext">{{ row.cumulative|default_if_none:"—" }}</div>
+            <div class="form-control-plaintext">{{ row.cumulative|vi_number }}</div>
           </div>
         {% endif %}
       </div>

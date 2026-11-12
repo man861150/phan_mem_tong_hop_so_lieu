@@ -1,3 +1,4 @@
+{% load vi_numbers %}
 {% if can_edit %}
   {% if row.has_object %}
     <div class="mt-3" x-data="splitGrid({{ row.chi_tieu.pk }})" @input="update()">
@@ -120,7 +121,7 @@
           {% for object_row in row.object_rows %}
             <tr>
               <td>{{ object_row.doi_tuong.ten_doi_tuong }}</td>
-              <td class="text-end">{{ object_row.field.value|default_if_none:"—" }} {{ row.chi_tieu.don_vi_tinh }}</td>
+              <td class="text-end">{{ object_row.field.value|vi_number }} {{ row.chi_tieu.don_vi_tinh }}</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -136,14 +137,14 @@
             <tr>
               <td>QĐ 36</td>
               <td>{{ item.linh_vuc.ma }} — {{ item.linh_vuc.ten }}</td>
-              <td class="text-end">{{ item.raw_value|default_if_none:"—" }} {{ row.chi_tieu.don_vi_tinh }}</td>
+              <td class="text-end">{{ item.raw_value|vi_number }} {{ row.chi_tieu.don_vi_tinh }}</td>
             </tr>
           {% endfor %}
           {% for item in row.linh_vuc_groups.tt24 %}
             <tr>
               <td>TT 24</td>
               <td>{{ item.linh_vuc.ma }} — {{ item.linh_vuc.ten }}</td>
-              <td class="text-end">{{ item.raw_value|default_if_none:"—" }} {{ row.chi_tieu.don_vi_tinh }}</td>
+              <td class="text-end">{{ item.raw_value|vi_number }} {{ row.chi_tieu.don_vi_tinh }}</td>
             </tr>
           {% endfor %}
         </tbody>

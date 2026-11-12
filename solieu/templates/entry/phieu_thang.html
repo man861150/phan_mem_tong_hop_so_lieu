@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load vi_numbers %}
 
 {% block title %}Phiếu tháng {{ ky.so_ky }}/{{ ky.nam }}{% endblock %}
 
@@ -101,8 +102,8 @@
                 <tr>
                   <td>{{ item.chi_tieu.ten_chi_tieu }}</td>
                   <td>{{ item.chi_tieu.don_vi_tinh }}</td>
-                  <td class="text-end">{{ item.rollup.period_value|default_if_none:"—" }}</td>
-                  <td class="text-end">{{ item.rollup.cumulative|default_if_none:"—" }}</td>
+                  <td class="text-end">{{ item.rollup.period_value|vi_number }}</td>
+                  <td class="text-end">{{ item.rollup.cumulative|vi_number }}</td>
                 </tr>
               {% endfor %}
             </tbody>

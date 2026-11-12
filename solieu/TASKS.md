@@ -1,6 +1,6 @@
 # solieu — implementation plan
 
-Status: draft for approval. Do not start feature work until this plan is accepted.
+Status: complete — 2026-11-12.
 
 Checkbox convention: mark a task `[x]` only after its **Verify** steps have been done on localhost.
 
@@ -334,6 +334,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
     - Department head can confirm or return the draft with a comment. Return sets the lines back to `du_thao`.
     - Entry officer is refused. Center head can open the page read-only for any department via a department filter. System admin edits numbers in `/admin/`, not on this page.
   - **Verify:** as `admin`, save a draft for HTKN. As `ld.htkn`, open `/ke-hoach/<nam>/`, return it with a comment, then confirm it. As `cb.htkn`, the same URL responds 403.
+  - **M10 note:** the local plan formatter now calls `reporting.formatting.format_vi_number`; re-verified after M10-T03.
   - **Estimate:** M
 
 - [x] **M2-T08 — Add monthly `KyBaoCao` open and close**
@@ -626,6 +627,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
     - Arguments: year, month or quarter, optional department code.
     - Output prints indicator code, period value, cumulative, plan, percent, and behind flag in Vietnamese labels.
   - **Verify:** `uv run python manage.py rollup_preview --year <năm> --month <tháng> --phong HTKN` prints the shell cases from M6-T02 through M6-T06.
+  - **M10 note:** the command now calls `reporting.formatting.format_vi_number`; re-verified after M10-T03.
   - **Estimate:** S
 
 ### M4 — Data-entry screens
@@ -1088,9 +1090,9 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
 
 ### M10 — End-to-end verification and polish
 
-- [ ] **M10-T01 — Build the navbar from the permission matrix**
+- [x] **M10-T01 — Build the navbar from the permission matrix**
   - **Why:** a role should see only the screens Bảng 4 allows.
-  - **Files:** `templates/base.html`, `apps/accounts/permissions.py`.
+  - **Files:** `templates/base.html`, `apps/accounts/context_processors.py`, `config/settings.py`.
   - **Depends on:** M8-T01, M7-T01, M5-T04, M3-T02.
   - **Requirement:** Bảng 4.
   - **Acceptance criteria:**
@@ -1100,7 +1102,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** log in as each of the four seeded users and compare the visible links with Bảng 4.
   - **Estimate:** S
 
-- [ ] **M10-T02 — Walk every URL as every role**
+- [x] **M10-T02 — Walk every URL as every role**
   - **Why:** a hidden link is not enough; POST endpoints must enforce the same matrix.
   - **Files:** the view modules already created.
   - **Depends on:** M10-T01.
@@ -1111,7 +1113,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** record a 4-by-N grid in the session notes while clicking. Any 500 or cross-department leak is fixed before this task is checked.
   - **Estimate:** M
 
-- [ ] **M10-T03 — Check Vietnamese number formatting on screen and in both exports**
+- [x] **M10-T03 — Check Vietnamese number formatting on screen and in both exports**
   - **Why:** stored values stay numeric, and the reader sees `1.234`.
   - **Files:** `apps/reporting/formatting.py`, `apps/reporting/templatetags/vi_numbers.py`, templates that print decimals, `apps/reporting/xlsx_export.py`, `apps/reporting/docx_export.py`.
   - **Depends on:** M7-T06, M8-T03.
@@ -1123,7 +1125,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** enter 1200 learners or a Techport figure of 200000, approve it, and compare the progress page, the `.docx`, and the `.xlsx`.
   - **Estimate:** M
 
-- [ ] **M10-T04 — Remove English UI copy**
+- [x] **M10-T04 — Remove English UI copy**
   - **Why:** the tech stack requires a Vietnamese interface.
   - **Files:** `templates/`, `apps/*/admin.py`.
   - **Depends on:** M10-T01.
@@ -1135,7 +1137,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** click the HTKN path from login through export and note any English string. Check `/admin/` changelist titles for the new models.
   - **Estimate:** M
 
-- [ ] **M10-T05 — Leave ruff and Django system checks clean**
+- [x] **M10-T05 — Leave ruff and Django system checks clean**
   - **Why:** the scaffold's quality bar still applies after the features land.
   - **Files:** the Python modules touched above.
   - **Depends on:** M10-T04.
@@ -1147,7 +1149,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** run both commands. `uv tree --depth 1` still lists only the approved direct packages.
   - **Estimate:** S
 
-- [ ] **M10-T06 — Run the full localhost scenario**
+- [x] **M10-T06 — Run the full localhost scenario**
   - **Why:** this is the project-level definition of done.
   - **Files:** none.
   - **Depends on:** M10-T02, M10-T03, M10-T05, M9-T04.
@@ -1156,6 +1158,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
     - Every step in section 5 has been performed on a fresh database.
     - Failures are fixed in the owning task and this task is re-run.
   - **Verify:** follow section 5 from step 1 through step 8.
+  - **Result 2026-11-12:** passed on a fresh ICU `vi-VN` database. First export hashes: `.xlsx` `f6a1452b…f7b9248`, `.docx` `7977ecec…62516dd`; both remained byte-identical after reopen, edit, and re-approval.
   - **Estimate:** L
 
 ## 4.4 Coverage checklist

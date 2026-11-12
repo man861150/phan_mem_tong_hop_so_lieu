@@ -16,6 +16,7 @@ from apps.catalog.models import (
     PhongBan,
     TrangThaiKeHoach,
 )
+from apps.reporting.formatting import format_vi_number
 
 _UNSCOPED = frozenset({Role.CENTER_HEAD, Role.SYSTEM_ADMIN})
 
@@ -23,10 +24,7 @@ _UNSCOPED = frozenset({Role.CENTER_HEAD, Role.SYSTEM_ADMIN})
 def _format_plan(value):
     if value is None:
         return "chỉ theo dõi"
-    text = format(value, "f")
-    if "." in text:
-        text = text.rstrip("0").rstrip(".")
-    return text
+    return format_vi_number(value)
 
 
 def _departments_for(request):

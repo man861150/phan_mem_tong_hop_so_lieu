@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load vi_numbers %}
 
 {% block title %}Phiếu nhập liệu #{{ phieu.pk }}{% endblock %}
 
@@ -140,10 +141,10 @@
                   {% elif item.row.linh_vuc %}{{ item.row.linh_vuc.get_he_thong_display }} — {{ item.row.linh_vuc.ten }}
                   {% else %}Tổng{% endif %}
                 </td>
-                <td class="text-end">{{ item.row.gia_tri|default_if_none:"—" }} {{ item.row.chi_tieu.don_vi_tinh }}</td>
+                <td class="text-end">{{ item.row.gia_tri|vi_number }} {{ item.row.chi_tieu.don_vi_tinh }}</td>
                 <td>{{ item.row.nguon.ten_nguon|default:"—" }}</td>
-                <td class="text-end">{{ item.previous|default_if_none:"—" }}</td>
-                <td class="text-end">{{ item.official|default_if_none:"—" }}</td>
+                <td class="text-end">{{ item.previous|vi_number }}</td>
+                <td class="text-end">{{ item.official|vi_number }}</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -191,7 +192,7 @@
                 <td>{{ line.ngay_ho_tro|date:"d/m/Y" }}</td>
                 <td>{{ line.get_loai_ho_tro_display }}</td>
                 <td>{{ line.noi_dung|linebreaksbr }}</td>
-                <td class="text-end">{{ line.so_chuyen_gia|default_if_none:"—" }}</td>
+                <td class="text-end">{{ line.so_chuyen_gia|vi_number }}</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -220,8 +221,8 @@
             {% for change in changes %}
               <tr>
                 <td>{{ change.label }}</td>
-                <td class="text-end">{{ change.old|default_if_none:"—" }}</td>
-                <td class="text-end">{{ change.new|default_if_none:"—" }}</td>
+                <td class="text-end">{{ change.old|vi_number }}</td>
+                <td class="text-end">{{ change.new|vi_number }}</td>
                 <td>{{ change.nguoi.ho_ten|default:"—" }}</td>
                 <td>{{ change.thoi_diem|date:"d/m/Y H:i" }}</td>
               </tr>

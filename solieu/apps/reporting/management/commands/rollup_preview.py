@@ -1,27 +1,10 @@
 """Print the rollup for one period so M6 can be checked before screens exist."""
 
-from decimal import ROUND_HALF_UP, Decimal
-
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.catalog.models import PhongBan
+from apps.reporting.formatting import format_vi_number
 from apps.reporting.rollup import ReportPeriod, rollup
-
-
-def _format_number(value):
-    if value is None:
-        return "—"
-    text = format(value, "f")
-    if "." in text:
-        text = text.rstrip("0").rstrip(".")
-    return text
-
-
-def _format_percent(value):
-    if value is None:
-        return "—"
-    rounded = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    return _format_number(rounded)
 
 
 class Command(BaseCommand):
@@ -73,14 +56,14 @@ class Command(BaseCommand):
             self.stdout.write(f"  Phòng: {row.ma_phong}")
             self.stdout.write(f"  Đơn vị tính: {row.don_vi_tinh}")
             self.stdout.write(
-                f"  Giá trị trong kỳ: {_format_number(row.period_value)}"
+                f"  Giá trị trong kỳ: {format_vi_number(row.period_value)}"
             )
             self.stdout.write(
-                f"  Lũy kế: {_format_number(row.cumulative)}"
+                f"  Lũy kế: {format_vi_number(row.cumulative)}"
             )
-            self.stdout.write(f"  Kế hoạch: {_format_number(row.plan)}")
+            self.stdout.write(f"  Kế hoạch: {format_vi_number(row.plan)}")
             self.stdout.write(
-                f"  % hoàn thành: {_format_percent(row.percent)}"
+                f"  % hoàn thành: {format_vi_number(row.percent)}"
             )
             self.stdout.write(
                 f"  Chậm tiến độ: {'Có' if row.behind else 'Không'}"
