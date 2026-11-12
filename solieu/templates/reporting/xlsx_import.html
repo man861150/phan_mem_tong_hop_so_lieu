@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Đọc file Excel báo cáo — Tổng hợp số liệu{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Đọc file Excel báo cáo</h2>
+        <div class="text-secondary">
+          Chỉ xem trước nội dung. Thao tác này không ghi số liệu và không duyệt phiếu.
+        </div>
+      </div>
+      <div class="col-auto">
+        <a class="btn btn-outline-secondary" href="{% url 'reporting:bao_cao' %}">Quay lại báo cáo</a>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3 class="card-title">Chọn tệp đã xuất từ hệ thống</h3>
+    </div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3 align-items-end">
+          <div class="col-md-8">
+            <label class="form-label" for="{{ form.file.id_for_label }}">{{ form.file.label }}</label>
+            {{ form.file }}
+            {% if form.file.errors %}<div class="text-danger small">{{ form.file.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <button class="btn btn-primary" type="submit">Xem trước</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if preview_rows %}
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Xem trước {{ parsed_name }}</h3>
+        <div class="text-secondary small">Không có dữ liệu nào được lưu.</div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr>
+              <th>Chỉ tiêu</th>
+              <th>Đơn vị tính</th>
+              <th class="text-end">Kế hoạch năm</th>
+              <th class="text-end">Thực hiện trong kỳ</th>
+              <th class="text-end">Lũy kế</th>
+              <th class="text-end">% hoàn thành</th>
+              <th>Ghi chú</th>
+              {% if column_count == 8 %}<th>Đánh giá hiệu quả</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in preview_rows %}
+              {% ifchanged item.section %}
+                {% if item.section %}
+                  <tr class="table-light">
+                    <td colspan="{{ column_count }}"><strong>{{ item.section }}</strong></td>
+                  </tr>
+                {% endif %}
+              {% endifchanged %}
+              <tr>
+                <td>{{ item.chi_tieu }}</td>
+                <td>{{ item.don_vi_tinh }}</td>
+                <td class="text-end">{{ item.ke_hoach }}</td>
+                <td class="text-end">{{ item.thuc_hien }}</td>
+                <td class="text-end">{{ item.luy_ke }}</td>
+                <td class="text-end">{{ item.phan_tram }}{% if item.phan_tram != "—" %}%{% endif %}</td>
+                <td>{% if item.ghi_chu %}<span class="text-warning">{{ item.ghi_chu }}</span>{% endif %}</td>
+                {% if column_count == 8 %}<td>{{ item.danh_gia }}</td>{% endif %}
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="{{ column_count }}">Tệp không có dòng dữ liệu.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% elif parsed_name %}
+    <div class="alert alert-info">Tệp {{ parsed_name }} không có dòng dữ liệu.</div>
+  {% endif %}
+{% endblock %}

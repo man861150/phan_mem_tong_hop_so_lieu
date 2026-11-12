@@ -844,7 +844,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
 
 ### M7 — Excel and Word export
 
-- [ ] **M7-T01 — Preview a period report from `rollup`**
+- [x] **M7-T01 — Preview a period report from `rollup`**
   - **Why:** the user checks the figures before downloading a file.
   - **Files:** `apps/reporting/views.py`, `apps/reporting/forms.py`, `apps/reporting/urls.py`, `templates/reporting/bao_cao.html`.
   - **Depends on:** M6-T09, M1-T03.
@@ -857,7 +857,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** as `ld.htkn`, open the current month and see the approved training-class figures. As `cb.htkn`, the department picker is absent.
   - **Estimate:** L
 
-- [ ] **M7-T02 — Show missing inputs before export**
+- [x] **M7-T02 — Show missing inputs before export**
   - **Why:** mục 6.4 lets the user wait or export with an explicit gap note.
   - **Files:** `apps/reporting/views.py`, `templates/reporting/bao_cao.html`.
   - **Depends on:** M7-T01, M2-T08, M3-T04.
@@ -869,7 +869,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** leave one organized HTKN activity without a phiếu. Open the quarter preview and see it listed. Choose to continue and see the gap note.
   - **Estimate:** M
 
-- [ ] **M7-T03 — Add the department-specific sections and the effectiveness note**
+- [x] **M7-T03 — Add the department-specific sections and the effectiveness note**
   - **Why:** UC18 asks for TTTK splits and HTKN lists, and TTTK keeps a free-text effectiveness column.
   - **Files:** `templates/reporting/bao_cao.html`, `apps/reporting/views.py`.
   - **Depends on:** M7-T01, M6-T07.
@@ -882,7 +882,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** preview HTKN and see the class list. Preview TTTK and see the object split. Type a note and confirm it is still on the page after refresh before export (session or unsaved form is enough at this task).
   - **Estimate:** L
 
-- [ ] **M7-T04 — Export the period table to Excel**
+- [x] **M7-T04 — Export the period table to Excel**
   - **Why:** F11 requires `.xlsx` for further calculation.
   - **Files:** `apps/reporting/xlsx_export.py`, `apps/reporting/views.py`.
   - **Depends on:** M7-T01.
@@ -894,7 +894,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** export the HTKN month, open the file, confirm the training-class row matches the preview, and confirm the percent cell is numeric.
   - **Estimate:** M
 
-- [ ] **M7-T05 — Add one docxtpl template per department and one for the center**
+- [x] **M7-T05 — Add one docxtpl template per department and one for the center**
   - **Why:** Word export fills the department template. No letterhead file was supplied.
   - **Files:** `report_templates/htkn.docx`, `report_templates/gdcn.docx`, `report_templates/tttk.docx`, `report_templates/trung_tam.docx`.
   - **Depends on:** M7-T01.
@@ -906,7 +906,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** open each `.docx` and confirm the placeholders. A missing placeholder name is listed in the task notes before M7-T06 starts.
   - **Estimate:** M
 
-- [ ] **M7-T06 — Fill the Word template**
+- [x] **M7-T06 — Fill the Word template**
   - **Why:** the periodic report is delivered as `.docx`.
   - **Files:** `apps/reporting/docx_export.py`, `apps/reporting/views.py`.
   - **Depends on:** M7-T03, M7-T05.
@@ -918,7 +918,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** export HTKN to Word, open it, and confirm the class name and the formatted learner count. Export the center and confirm three department headings.
   - **Estimate:** M
 
-- [ ] **M7-T07 — Store `BaoCaoDaXuat` when a file is exported**
+- [x] **M7-T07 — Store `BaoCaoDaXuat` when a file is exported**
   - **Why:** a download must remain the file that was produced, and the snapshot is the rollup result rather than a JSON copy of the form.
   - **Files:** `apps/reporting/models.py`, `apps/reporting/admin.py`, `apps/reporting/migrations/`, `apps/reporting/views.py`.
   - **Depends on:** M7-T04, M7-T06.
@@ -930,7 +930,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** export twice. Admin shows two records and two files. The first file's modified time does not change on the second export.
   - **Estimate:** M
 
-- [ ] **M7-T08 — Read an exported workbook back**
+- [x] **M7-T08 — Read an exported workbook back**
   - **Why:** the tech stack includes reading Excel, and the only stable layout is the one M7-T04 writes.
   - **Files:** `apps/reporting/xlsx_import.py`, `apps/reporting/views.py`, `templates/reporting/xlsx_import.html`.
   - **Depends on:** M7-T04.
@@ -942,7 +942,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** upload the file from M7-T04 and compare the preview to the original screen. Upload `doc/So lieu bao cao - P. HTKN.xlsx` and confirm the mismatch error.
   - **Estimate:** M
 
-- [ ] **M7-T09 — Inspect the legacy workbooks without loading them**
+- [x] **M7-T09 — Inspect the legacy workbooks without loading them**
   - **Why:** the two workbooks in `doc/` have no header on row 1, and the requirements do not define a cell map.
   - **Files:** `apps/reporting/management/commands/inspect_legacy_workbook.py`.
   - **Depends on:** M7-T08.
