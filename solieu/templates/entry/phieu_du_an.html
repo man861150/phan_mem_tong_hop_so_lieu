@@ -11,7 +11,11 @@
           {{ project.ten_du_an }} — {{ project.phong.ma_phong }} — {{ project.nam }}
         </div>
       </div>
-      <div class="col-auto">
+      <div class="col-auto d-flex align-items-center gap-2">
+        {% if phieu %}
+          <span class="badge bg-blue-lt">{{ phieu.get_trang_thai_display }}</span>
+          <a class="btn btn-outline-secondary btn-sm" href="{% url 'entry:phieu_detail' phieu.pk %}">Xem chi tiết</a>
+        {% endif %}
         <a class="btn btn-outline-secondary" href="{% url 'activities:du_an_detail' project.pk %}">Về dự án</a>
       </div>
     </div>
@@ -24,7 +28,20 @@
   {% endif %}
 
   {% if not can_edit %}
-    <div class="alert alert-info">Bạn đang xem phiếu dự án ở chế độ chỉ đọc.</div>
+    <div class="alert alert-info">
+      {% if locked %}
+        Phiếu đang ở trạng thái “{{ phieu.get_trang_thai_display }}” nên chỉ được xem, không được sửa.
+      {% else %}
+        Bạn đang xem phiếu dự án ở chế độ chỉ đọc.
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if last_return %}
+    <div class="alert alert-warning">
+      <strong>Ý kiến trả lại:</strong> {{ last_return.y_kien|linebreaksbr }}
+      <div class="text-secondary small">{{ last_return.nguoi_xu_ly.ho_ten }} — {{ last_return.thoi_diem|date:"d/m/Y H:i" }}</div>
+    </div>
   {% endif %}
 
   <div class="card mb-3">
@@ -59,6 +76,17 @@
       </table>
     </div>
   </div>
+
+  {% if can_submit %}
+    <div class="card mb-3">
+      <div class="card-body d-flex justify-content-end">
+        <form method="post" action="{% url 'entry:phieu_gui' phieu.pk %}">
+          {% csrf_token %}
+          <button class="btn btn-primary" type="submit">Gửi duyệt</button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
 
   {% if can_edit %}
     <form method="post" class="card">

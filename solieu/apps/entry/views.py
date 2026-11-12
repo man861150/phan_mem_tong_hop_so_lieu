@@ -2,8 +2,8 @@
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
-from django.http import Http404
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import (
@@ -23,14 +23,17 @@ from apps.catalog.models import (
     PhongBan,
     TrangThaiKy,
 )
+from apps.entry import workflow
 from apps.entry.forms import (
     SOURCE_SURVEY,
     ActivityEntryForm,
     AdHocForm,
     HoTroDuAnForm,
     MonthlyEntryForm,
+    WorkflowCommentForm,
 )
 from apps.entry.models import (
+    HanhDongXuLy,
     HoTroDuAn,
     LoaiPhieu,
     PhieuNhapLieu,
@@ -55,6 +58,24 @@ def _phieu_queryset(user):
             "nguoi_nhap",
         ),
         "phong_id",
+    )
+
+
+EDITABLE_STATUSES = (TrangThaiPhieu.NHAP, TrangThaiPhieu.TRA_LAI)
+
+
+def _status_is_editable(phieu):
+    return phieu is None or phieu.trang_thai in EDITABLE_STATUSES
+
+
+def _last_return(phieu):
+    if phieu is None:
+        return None
+    return (
+        phieu.lich_su_xu_ly.filter(hanh_dong=HanhDongXuLy.TRA_LAI)
+        .select_related("nguoi_xu_ly")
+        .order_by("-thoi_diem", "-id")
+        .first()
     )
 
 
@@ -219,7 +240,12 @@ def _render_activity(
     rows=None,
     extra=None,
 ):
-    can_edit = can(request.user, "edit_entry", activity.phong.pk)
+    has_edit_permission = can(
+        request.user,
+        "edit_entry",
+        activity.phong.pk,
+    )
+    can_edit = has_edit_permission and _status_is_editable(phieu)
     organized = activity.trang_thai == TrangThaiHoatDong.DA_TO_CHUC
     phieus = list(_activity_phieus(activity)) if organized else []
     rows = rows or []
@@ -230,16 +256,18 @@ def _render_activity(
         "activity": activity,
         "organized": organized,
         "can_edit": can_edit,
+        "can_submit": can_edit and phieu is not None,
+        "locked": phieu is not None and not _status_is_editable(phieu),
         "form": form,
         "phieu": phieu,
         "phieus": phieus,
         "rows": rows,
         "has_split_grids": has_split_grids,
+        "last_return": _last_return(phieu),
         "can_delete": (
             phieu is not None
             and can_edit
-            and phieu.trang_thai
-            in (TrangThaiPhieu.NHAP, TrangThaiPhieu.TRA_LAI)
+            and phieu.trang_thai in EDITABLE_STATUSES
         ),
     }
     if organized:
@@ -258,6 +286,26 @@ def _render_activity(
     return render(request, "entry/phieu_form.html", context)
 
 
+def _submit_entry_form(form, phieu, user):
+    """Validate a bound entry form and submit it inside the workflow lock."""
+    try:
+        form.validate_required()
+    except ValidationError as exc:
+        for field, errors in exc.message_dict.items():
+            form.add_error(field, errors)
+        return False
+    try:
+        workflow.submit(
+            phieu,
+            user,
+            apply=lambda locked: form.save(locked),
+        )
+    except ValidationError as exc:
+        form.add_error(None, exc.messages)
+        return False
+    return True
+
+
 @login_required
 @require_http_methods(["GET", "POST"])
 def phieu_hoat_dong(request, hoat_dong_id):
@@ -266,7 +314,11 @@ def phieu_hoat_dong(request, hoat_dong_id):
         _activity_queryset(request.user),
         pk=hoat_dong_id,
     )
-    can_edit = can(request.user, "edit_entry", activity.phong.pk)
+    has_edit_permission = can(
+        request.user,
+        "edit_entry",
+        activity.phong.pk,
+    )
     organized = activity.trang_thai == TrangThaiHoatDong.DA_TO_CHUC
 
     if not organized:
@@ -276,17 +328,36 @@ def phieu_hoat_dong(request, hoat_dong_id):
 
     phieu_id = request.GET.get("phieu")
     phieu = _get_activity_phieu(activity, phieu_id)
-    if phieu is None and can_edit:
+    if phieu is None and has_edit_permission:
         phieu = _ensure_activity_phieu(activity, request.user)
 
+    can_edit = has_edit_permission and _status_is_editable(phieu)
     if request.method == "POST" and not can_edit:
         raise PermissionDenied
 
+    action = request.POST.get("action", "save")
     if activity.la_nhiem_vu_phat_sinh:
         form = AdHocForm(request.POST or None, instance=activity)
         if request.method == "POST" and form.is_valid():
-            form.save()
-            messages.success(request, "Đã lưu nội dung nhiệm vụ phát sinh.")
+            if action == "gui":
+                try:
+                    workflow.submit(
+                        phieu,
+                        request.user,
+                        apply=lambda locked: form.save(),
+                    )
+                except workflow.InvalidTransition as exc:
+                    return HttpResponseBadRequest(str(exc))
+                messages.success(
+                    request,
+                    "Đã gửi duyệt phiếu nhiệm vụ phát sinh.",
+                )
+            else:
+                form.save()
+                messages.success(
+                    request,
+                    "Đã lưu nội dung nhiệm vụ phát sinh.",
+                )
             return redirect(_activity_url(activity, phieu))
         return _render_activity(
             request,
@@ -307,9 +378,18 @@ def phieu_hoat_dong(request, hoat_dong_id):
         ),
     )
     if request.method == "POST" and form.is_valid():
-        form.save(phieu)
-        messages.success(request, "Đã lưu nháp phiếu kết quả.")
-        return redirect(_activity_url(activity, phieu))
+        if action == "gui":
+            try:
+                submitted = _submit_entry_form(form, phieu, request.user)
+            except workflow.InvalidTransition as exc:
+                return HttpResponseBadRequest(str(exc))
+            if submitted:
+                messages.success(request, "Đã gửi duyệt phiếu kết quả.")
+                return redirect(_activity_url(activity, phieu))
+        else:
+            form.save(phieu)
+            messages.success(request, "Đã lưu nháp phiếu kết quả.")
+            return redirect(_activity_url(activity, phieu))
     return _render_activity(
         request,
         activity,
@@ -432,18 +512,24 @@ def phieu_thang(request, ky_id):
         )
 
     period_open = ky.trang_thai == TrangThaiKy.MO
-    can_edit = period_open and can(
+    has_edit_permission = can(
         request.user,
         "edit_entry",
         phong.pk,
     )
     phieu = _month_phieu(phong, ky)
-    if phieu is None and can_edit:
+    if phieu is None and period_open and has_edit_permission:
         phieu = _ensure_month_phieu(phong, ky, request.user)
 
+    can_edit = (
+        period_open
+        and has_edit_permission
+        and _status_is_editable(phieu)
+    )
     if request.method == "POST" and not can_edit:
         raise PermissionDenied
 
+    action = request.POST.get("action", "save")
     previous_values, cumulative_values, current_by_indicator = (
         _month_rollup_values(phong, ky)
     )
@@ -456,9 +542,18 @@ def phieu_thang(request, ky_id):
         cumulative_values=cumulative_values,
     )
     if request.method == "POST" and form.is_valid():
-        form.save(phieu)
-        messages.success(request, "Đã lưu nháp phiếu tháng.")
-        return redirect("entry:phieu_thang", ky_id=ky.pk)
+        if action == "gui":
+            try:
+                submitted = _submit_entry_form(form, phieu, request.user)
+            except workflow.InvalidTransition as exc:
+                return HttpResponseBadRequest(str(exc))
+            if submitted:
+                messages.success(request, "Đã gửi duyệt phiếu tháng.")
+                return redirect("entry:phieu_thang", ky_id=ky.pk)
+        else:
+            form.save(phieu)
+            messages.success(request, "Đã lưu nháp phiếu tháng.")
+            return redirect("entry:phieu_thang", ky_id=ky.pk)
 
     derived = (
         ChiTieu.objects.filter(
@@ -491,12 +586,14 @@ def phieu_thang(request, ky_id):
             "derived_rows": derived_rows,
             "phong_options": visible_phong,
             "can_edit": can_edit,
+            "can_submit": can_edit and phieu is not None,
+            "locked": phieu is not None and not _status_is_editable(phieu),
+            "last_return": _last_return(phieu),
             "period_open": period_open,
             "can_delete": (
                 phieu is not None
                 and can_edit
-                and phieu.trang_thai
-                in (TrangThaiPhieu.NHAP, TrangThaiPhieu.TRA_LAI)
+                and phieu.trang_thai in EDITABLE_STATUSES
             ),
         },
     )
@@ -510,11 +607,16 @@ def phieu_du_an(request, du_an_id):
         _project_queryset(request.user),
         pk=du_an_id,
     )
-    can_edit = can(request.user, "edit_entry", project.phong_id)
+    has_edit_permission = can(
+        request.user,
+        "edit_entry",
+        project.phong_id,
+    )
     phieu = _project_phieu(project)
-    if phieu is None and can_edit:
+    if phieu is None and has_edit_permission:
         phieu = _ensure_project_phieu(project, request.user)
 
+    can_edit = has_edit_permission and _status_is_editable(phieu)
     if request.method == "POST" and not can_edit:
         raise PermissionDenied
 
@@ -546,11 +648,338 @@ def phieu_du_an(request, du_an_id):
             "form": form,
             "lines": lines,
             "can_edit": can_edit,
+            "can_submit": can_edit and phieu is not None,
+            "locked": phieu is not None and not _status_is_editable(phieu),
+            "last_return": _last_return(phieu),
             "can_delete": (
                 phieu is not None
                 and can_edit
-                and phieu.trang_thai
-                in (TrangThaiPhieu.NHAP, TrangThaiPhieu.TRA_LAI)
+                and phieu.trang_thai in EDITABLE_STATUSES
             ),
+        },
+    )
+
+
+def _phieu_period(phieu):
+    """Return the reporting month used by the detail rollup comparison."""
+    if phieu.loai_phieu == LoaiPhieu.HOAT_DONG and phieu.hoat_dong_id:
+        activity = phieu.hoat_dong
+        anchor = activity.den_ngay or activity.tu_ngay
+        return ReportPeriod.month(anchor.year, anchor.month)
+    if phieu.loai_phieu == LoaiPhieu.THANG and phieu.ky_id:
+        return ReportPeriod.month(phieu.ky.nam, phieu.ky.so_ky)
+    return None
+
+
+def _previous_period(period):
+    if period is None:
+        return None
+    if period.start.month == 1:
+        return ReportPeriod.month(period.year - 1, 12)
+    return ReportPeriod.month(period.year, period.start.month - 1)
+
+
+def _detail_rollup(phieu):
+    period = _phieu_period(phieu)
+    if period is None:
+        return None, {}, {}
+    previous_period = _previous_period(period)
+    current = {
+        row.chi_tieu_id: row
+        for row in rollup(period, department_id=phieu.phong_id)
+    }
+    previous = {
+        row.chi_tieu_id: row
+        for row in rollup(previous_period, department_id=phieu.phong_id)
+    }
+    return previous_period, current, previous
+
+
+def _detail_rows(phieu):
+    _period, current, previous = _detail_rollup(phieu)
+    rows = (
+        phieu.so_lieu.select_related(
+            "chi_tieu",
+            "doi_tuong",
+            "linh_vuc",
+            "nguon",
+        )
+        .order_by("chi_tieu__ma_chi_tieu", "id")
+    )
+    result = []
+    for row in rows:
+        current_row = current.get(row.chi_tieu_id)
+        previous_row = previous.get(row.chi_tieu_id)
+        result.append(
+            {
+                "row": row,
+                "official": (
+                    current_row.period_value
+                    if current_row is not None
+                    else None
+                ),
+                "previous": (
+                    previous_row.period_value
+                    if previous_row is not None
+                    else None
+                ),
+            }
+        )
+    return result
+
+
+def _render_phieu_detail(request, phieu, **extra):
+    can_edit = can(request.user, "edit_entry", phieu.phong_id)
+    can_approve = can(request.user, "approve_entry", phieu.phong_id)
+    can_approve_role = can(request.user, "approve_entry")
+    editable = phieu.trang_thai in EDITABLE_STATUSES
+    previous_period, _current, _previous = _detail_rollup(phieu)
+    activity = phieu.hoat_dong if phieu.hoat_dong_id else None
+    context = {
+        "phieu": phieu,
+        "target": phieu.hoat_dong or phieu.ky or phieu.du_an,
+        "activity": activity,
+        "ad_hoc": bool(activity and activity.la_nhiem_vu_phat_sinh),
+        "project": phieu.du_an if phieu.du_an_id else None,
+        "project_lines": (
+            phieu.ho_tro_du_an.select_related("du_an").order_by(
+                "-ngay_ho_tro",
+                "-id",
+            )
+            if phieu.loai_phieu == LoaiPhieu.DU_AN
+            else []
+        ),
+        "detail_rows": _detail_rows(phieu),
+        "previous_period": previous_period,
+        "workflow_history": (
+            phieu.lich_su_xu_ly.select_related("nguoi_xu_ly").order_by(
+                "thoi_diem",
+                "id",
+            )
+        ),
+        "last_return": _last_return(phieu),
+        "changes": workflow.changes_since_previous_submit(phieu),
+        "can_edit": can_edit and editable,
+        "can_submit": can_edit and editable,
+        "can_approve_role": can_approve_role,
+        "can_approve": can_approve
+        and phieu.trang_thai == TrangThaiPhieu.CHO_DUYET,
+        "can_return": can_approve
+        and phieu.trang_thai == TrangThaiPhieu.CHO_DUYET,
+        "can_reopen": can_approve
+        and phieu.trang_thai == TrangThaiPhieu.DA_DUYET,
+        "comment_form": WorkflowCommentForm(),
+    }
+    context.update(extra)
+    return render(request, "entry/phieu_detail.html", context)
+
+
+@login_required
+def phieu_detail(request, phieu_id):
+    _require_view(request.user)
+    phieu = get_object_or_404(
+        _phieu_queryset(request.user),
+        pk=phieu_id,
+    )
+    return _render_phieu_detail(request, phieu)
+
+
+def _get_action_phieu(phieu_id):
+    """Load a phiếu for an action; permission is checked by the caller."""
+    return get_object_or_404(
+        PhieuNhapLieu.objects.select_related(
+            "phong",
+            "hoat_dong",
+            "ky",
+            "du_an",
+            "nguoi_nhap",
+        ),
+        pk=phieu_id,
+    )
+
+
+@login_required
+@require_POST
+def phieu_gui(request, phieu_id):
+    _require_view(request.user)
+    phieu = _get_action_phieu(phieu_id)
+    if not can(request.user, "edit_entry", phieu.phong_id):
+        raise PermissionDenied
+    if phieu.trang_thai not in EDITABLE_STATUSES:
+        return HttpResponseBadRequest(
+            "Không thể gửi duyệt phiếu đang ở trạng thái "
+            f"{phieu.get_trang_thai_display()}."
+        )
+    blockers = workflow.submission_errors(phieu)
+    if blockers:
+        return _render_phieu_detail(
+            request,
+            phieu,
+            action_error="; ".join(blockers),
+        )
+    try:
+        workflow.submit(phieu, request.user)
+    except workflow.InvalidTransition as exc:
+        return HttpResponseBadRequest(str(exc))
+    messages.success(request, "Đã gửi duyệt phiếu.")
+    return redirect("entry:phieu_detail", phieu_id=phieu.pk)
+
+
+@login_required
+@require_POST
+def phieu_duyet(request, phieu_id):
+    _require_view(request.user)
+    phieu = _get_action_phieu(phieu_id)
+    if not can(request.user, "approve_entry", phieu.phong_id):
+        raise PermissionDenied
+    try:
+        workflow.approve(phieu, request.user)
+    except workflow.InvalidTransition as exc:
+        return HttpResponseBadRequest(str(exc))
+    messages.success(request, "Đã duyệt phiếu.")
+    return redirect("entry:phieu_detail", phieu_id=phieu.pk)
+
+
+@login_required
+@require_POST
+def phieu_tra_lai(request, phieu_id):
+    _require_view(request.user)
+    phieu = _get_action_phieu(phieu_id)
+    if not can(request.user, "approve_entry", phieu.phong_id):
+        raise PermissionDenied
+    if phieu.trang_thai != TrangThaiPhieu.CHO_DUYET:
+        return HttpResponseBadRequest(
+            "Không thể trả lại phiếu đang ở trạng thái "
+            f"{phieu.get_trang_thai_display()}."
+        )
+    form = WorkflowCommentForm(request.POST)
+    if not form.is_valid():
+        return _render_phieu_detail(
+            request,
+            phieu,
+            comment_form=form,
+        )
+    try:
+        workflow.return_phieu(
+            phieu,
+            request.user,
+            form.cleaned_data["y_kien"],
+        )
+    except workflow.CommentRequired as exc:
+        form.add_error(None, str(exc))
+        return _render_phieu_detail(
+            request,
+            phieu,
+            comment_form=form,
+        )
+    except workflow.InvalidTransition as exc:
+        return HttpResponseBadRequest(str(exc))
+    messages.success(request, "Đã trả lại phiếu cho cán bộ nhập liệu.")
+    return redirect("entry:phieu_detail", phieu_id=phieu.pk)
+
+
+@login_required
+@require_POST
+def phieu_mo_lai(request, phieu_id):
+    _require_view(request.user)
+    phieu = _get_action_phieu(phieu_id)
+    if not can(request.user, "approve_entry", phieu.phong_id):
+        raise PermissionDenied
+    if phieu.trang_thai != TrangThaiPhieu.DA_DUYET:
+        return HttpResponseBadRequest(
+            "Không thể mở lại phiếu đang ở trạng thái "
+            f"{phieu.get_trang_thai_display()}."
+        )
+    form = WorkflowCommentForm(request.POST)
+    if not form.is_valid():
+        return _render_phieu_detail(
+            request,
+            phieu,
+            comment_form=form,
+        )
+    try:
+        workflow.reopen(
+            phieu,
+            request.user,
+            form.cleaned_data["y_kien"],
+        )
+    except workflow.CommentRequired as exc:
+        form.add_error(None, str(exc))
+        return _render_phieu_detail(
+            request,
+            phieu,
+            comment_form=form,
+        )
+    except workflow.InvalidTransition as exc:
+        return HttpResponseBadRequest(str(exc))
+    messages.success(request, "Đã mở lại phiếu để chỉnh sửa.")
+    return redirect("entry:phieu_detail", phieu_id=phieu.pk)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def duyet_list(request):
+    if not can(request.user, "approve_entry"):
+        raise PermissionDenied
+
+    queue_queryset = scoped(
+        request.user,
+        PhieuNhapLieu.objects.filter(
+            trang_thai=TrangThaiPhieu.CHO_DUYET,
+        ).select_related(
+            "phong",
+            "hoat_dong",
+            "ky",
+            "du_an",
+            "nguoi_nhap",
+        ),
+        "phong_id",
+    ).order_by("ngay_gui", "id")
+
+    if request.method == "POST":
+        approved = 0
+        blocked = 0
+        selected_ids = {
+            int(value)
+            for value in request.POST.getlist("phieu_ids")
+            if value.isdigit()
+        }
+        phieus = {
+            phieu.pk: phieu
+            for phieu in queue_queryset.filter(pk__in=selected_ids)
+        }
+        for phieu_id in selected_ids:
+            phieu = phieus.get(phieu_id)
+            if phieu is None:
+                blocked += 1
+                continue
+            if workflow.submission_errors(phieu):
+                blocked += 1
+                continue
+            try:
+                workflow.approve(phieu, request.user)
+            except (workflow.InvalidTransition, PermissionDenied):
+                blocked += 1
+            else:
+                approved += 1
+        messages.success(
+            request,
+            f"{approved} phiếu đã duyệt, {blocked} phiếu bị chặn.",
+        )
+        return redirect("entry:duyet_list")
+
+    queue = []
+    for phieu in queue_queryset:
+        queue.append(
+            {
+                "phieu": phieu,
+                "blockers": workflow.submission_errors(phieu),
+            }
+        )
+    return render(
+        request,
+        "entry/duyet_list.html",
+        {
+            "queue": queue,
         },
     )

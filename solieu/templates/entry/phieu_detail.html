@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Phiếu nhập liệu #{{ phieu.pk }}{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Phiếu nhập liệu #{{ phieu.pk }}</h2>
+        <div class="text-secondary">
+          {{ phieu.get_loai_phieu_display }} — {{ target }}
+        </div>
+      </div>
+      <div class="col-auto d-flex align-items-center gap-2">
+        <span class="badge bg-blue-lt">{{ phieu.get_trang_thai_display }}</span>
+        {% if can_approve_role %}
+          <a class="btn btn-outline-secondary" href="{% url 'entry:duyet_list' %}">Phiếu chờ duyệt</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if action_error %}
+    <div class="alert alert-danger">{{ action_error }}</div>
+  {% endif %}
+
+  {% if last_return %}
+    <div class="alert alert-warning">
+      <strong>Ý kiến trả lại gần nhất:</strong> {{ last_return.y_kien|linebreaksbr }}
+      <div class="text-secondary small">{{ last_return.nguoi_xu_ly.ho_ten }} — {{ last_return.thoi_diem|date:"d/m/Y H:i" }}</div>
+    </div>
+  {% endif %}
+
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3 class="card-title">Thông tin phiếu</h3>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <div class="text-secondary small">Phòng ban</div>
+          <div>{{ phieu.phong.ma_phong }} — {{ phieu.phong.ten_phong }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-secondary small">Người nhập</div>
+          <div>{{ phieu.nguoi_nhap.ho_ten }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-secondary small">Ngày gửi</div>
+          <div>{{ phieu.ngay_gui|date:"d/m/Y H:i"|default:"—" }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-secondary small">Đối tượng</div>
+          <div>{{ target }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if can_submit or can_approve or can_return or can_reopen %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">Xử lý phiếu</h3>
+      </div>
+      <div class="card-body d-flex flex-wrap align-items-start gap-3">
+        {% if can_submit %}
+          <form method="post" action="{% url 'entry:phieu_gui' phieu.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-primary" type="submit">Gửi duyệt</button>
+          </form>
+        {% endif %}
+
+        {% if can_approve %}
+          <form method="post" action="{% url 'entry:phieu_duyet' phieu.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-success" type="submit">Duyệt</button>
+          </form>
+        {% endif %}
+
+        {% if can_return %}
+          <form method="post" action="{% url 'entry:phieu_tra_lai' phieu.pk %}" class="flex-grow-1">
+            {% csrf_token %}
+            <label class="form-label" for="{{ comment_form.y_kien.id_for_label }}">{{ comment_form.y_kien.label }}</label>
+            {{ comment_form.y_kien }}
+            {% if comment_form.y_kien.errors %}<div class="text-danger">{{ comment_form.y_kien.errors }}</div>{% endif %}
+            {% if comment_form.non_field_errors %}<div class="text-danger">{{ comment_form.non_field_errors }}</div>{% endif %}
+            <button class="btn btn-outline-warning mt-2" type="submit">Trả lại</button>
+          </form>
+        {% endif %}
+
+        {% if can_reopen %}
+          <form method="post" action="{% url 'entry:phieu_mo_lai' phieu.pk %}" class="flex-grow-1">
+            {% csrf_token %}
+            <label class="form-label" for="{{ comment_form.y_kien.id_for_label }}">Lý do mở lại</label>
+            {{ comment_form.y_kien }}
+            {% if comment_form.y_kien.errors %}<div class="text-danger">{{ comment_form.y_kien.errors }}</div>{% endif %}
+            {% if comment_form.non_field_errors %}<div class="text-danger">{{ comment_form.non_field_errors }}</div>{% endif %}
+            <button class="btn btn-outline-warning mt-2" type="submit">Mở lại</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if detail_rows %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">Số liệu</h3>
+        {% if previous_period %}
+          <div class="text-secondary small">So sánh với kỳ trước: tháng {{ previous_period.start.month }}/{{ previous_period.year }}</div>
+        {% endif %}
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr>
+              <th>Chỉ tiêu</th>
+              <th>Phân loại</th>
+              <th class="text-end">Giá trị</th>
+              <th>Nguồn</th>
+              <th class="text-end">Kỳ trước</th>
+              <th class="text-end">Chính thức kỳ này</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in detail_rows %}
+              <tr>
+                <td>{{ item.row.chi_tieu.ten_chi_tieu }}</td>
+                <td>
+                  {% if item.row.doi_tuong %}{{ item.row.doi_tuong.ten_doi_tuong }}
+                  {% elif item.row.linh_vuc %}{{ item.row.linh_vuc.get_he_thong_display }} — {{ item.row.linh_vuc.ten }}
+                  {% else %}Tổng{% endif %}
+                </td>
+                <td class="text-end">{{ item.row.gia_tri|default_if_none:"—" }} {{ item.row.chi_tieu.don_vi_tinh }}</td>
+                <td>{{ item.row.nguon.ten_nguon|default:"—" }}</td>
+                <td class="text-end">{{ item.previous|default_if_none:"—" }}</td>
+                <td class="text-end">{{ item.official|default_if_none:"—" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if ad_hoc %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">Nhiệm vụ phát sinh</h3>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <div class="text-secondary small">Nội dung</div>
+          <div>{{ activity.noi_dung|linebreaksbr|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="text-secondary small">Kết quả</div>
+          <div>{{ activity.ket_qua|linebreaksbr|default:"—" }}</div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if project_lines %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">Các dòng hỗ trợ dự án</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr>
+              <th>Ngày</th>
+              <th>Loại hỗ trợ</th>
+              <th>Nội dung</th>
+              <th class="text-end">Số chuyên gia</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for line in project_lines %}
+              <tr>
+                <td>{{ line.ngay_ho_tro|date:"d/m/Y" }}</td>
+                <td>{{ line.get_loai_ho_tro_display }}</td>
+                <td>{{ line.noi_dung|linebreaksbr }}</td>
+                <td class="text-end">{{ line.so_chuyen_gia|default_if_none:"—" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if changes %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">Thay đổi từ lần gửi trước</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr>
+              <th>Chỉ tiêu</th>
+              <th class="text-end">Giá trị cũ</th>
+              <th class="text-end">Giá trị mới</th>
+              <th>Người sửa</th>
+              <th>Thời điểm</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for change in changes %}
+              <tr>
+                <td>{{ change.label }}</td>
+                <td class="text-end">{{ change.old|default_if_none:"—" }}</td>
+                <td class="text-end">{{ change.new|default_if_none:"—" }}</td>
+                <td>{{ change.nguoi.ho_ten|default:"—" }}</td>
+                <td>{{ change.thoi_diem|date:"d/m/Y H:i" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Lịch sử xử lý</h3>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table">
+        <thead>
+          <tr>
+            <th>Thời điểm</th>
+            <th>Người xử lý</th>
+            <th>Hành động</th>
+            <th>Ý kiến</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for history in workflow_history %}
+            <tr>
+              <td>{{ history.thoi_diem|date:"d/m/Y H:i" }}</td>
+              <td>{{ history.nguoi_xu_ly.ho_ten }}</td>
+              <td>{{ history.get_hanh_dong_display }}</td>
+              <td>{{ history.y_kien|linebreaksbr|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4">Chưa có lần xử lý nào.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

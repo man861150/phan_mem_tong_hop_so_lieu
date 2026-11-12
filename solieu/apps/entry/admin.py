@@ -3,7 +3,7 @@
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
-from apps.entry.models import HoTroDuAn, PhieuNhapLieu, SoLieu
+from apps.entry.models import HoTroDuAn, LichSuXuLy, PhieuNhapLieu, SoLieu
 
 
 @admin.register(PhieuNhapLieu)
@@ -53,6 +53,44 @@ class PhieuNhapLieuAdmin(SimpleHistoryAdmin):
     @admin.display(description="Đối tượng")
     def doi_tuong(self, obj):
         return obj.hoat_dong or obj.ky or obj.du_an
+
+
+@admin.register(LichSuXuLy)
+class LichSuXuLyAdmin(admin.ModelAdmin):
+    list_display = (
+        "phieu",
+        "nguoi_xu_ly",
+        "hanh_dong",
+        "thoi_diem",
+    )
+    list_filter = ("hanh_dong", "phieu__phong")
+    search_fields = (
+        "phieu__hoat_dong__ten",
+        "phieu__du_an__ten_du_an",
+        "nguoi_xu_ly__username",
+        "y_kien",
+        "=phieu__id",
+    )
+    autocomplete_fields = ("phieu", "nguoi_xu_ly")
+    date_hierarchy = "thoi_diem"
+    ordering = ("-thoi_diem", "-id")
+    list_select_related = ("phieu", "nguoi_xu_ly")
+    readonly_fields = (
+        "phieu",
+        "nguoi_xu_ly",
+        "hanh_dong",
+        "y_kien",
+        "thoi_diem",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(SoLieu)

@@ -21,6 +21,13 @@ class TrangThaiPhieu(models.TextChoices):
     TRA_LAI = "tra_lai", "Trả lại"
 
 
+class HanhDongXuLy(models.TextChoices):
+    GUI = "gui", "Gửi duyệt"
+    DUYET = "duyet", "Duyệt"
+    TRA_LAI = "tra_lai", "Trả lại"
+    MO_LAI = "mo_lai", "Mở lại"
+
+
 class PhieuNhapLieu(ValidatingModel):
     """A unit of approval for an activity, a month, or a project.
 
@@ -164,6 +171,71 @@ class PhieuNhapLieu(ValidatingModel):
         if target == "du_an":
             return obj.phong_id
         return None
+
+
+class LichSuXuLy(ValidatingModel):
+    """One workflow transition for a phiếu, including its comment."""
+
+    phieu = models.ForeignKey(
+        PhieuNhapLieu,
+        verbose_name="Phiếu nhập liệu",
+        on_delete=models.CASCADE,
+        related_name="lich_su_xu_ly",
+    )
+    nguoi_xu_ly = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="Người xử lý",
+        on_delete=models.PROTECT,
+        related_name="lich_su_xu_ly",
+    )
+    hanh_dong = models.CharField(
+        "Hành động",
+        max_length=16,
+        choices=HanhDongXuLy.choices,
+    )
+    y_kien = models.TextField("Ý kiến", blank=True, default="")
+    thoi_diem = models.DateTimeField("Thời điểm", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Lịch sử xử lý"
+        verbose_name_plural = "Lịch sử xử lý"
+        ordering = ["thoi_diem", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    ~models.Q(
+                        hanh_dong__in=(
+                            HanhDongXuLy.TRA_LAI,
+                            HanhDongXuLy.MO_LAI,
+                        )
+                    )
+                    | ~models.Q(y_kien="")
+                ),
+                name="entry_lichsuxuly_comment_required_ck",
+                violation_error_message=(
+                    "Trả lại hoặc mở lại phiếu phải có ý kiến."
+                ),
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.phieu} — {self.get_hanh_dong_display()}"
+
+    def clean(self):
+        super().clean()
+        self.y_kien = (self.y_kien or "").strip()
+        if (
+            self.hanh_dong
+            in (HanhDongXuLy.TRA_LAI, HanhDongXuLy.MO_LAI)
+            and not self.y_kien
+        ):
+            raise ValidationError(
+                {
+                    "y_kien": (
+                        "Vui lòng nhập ý kiến khi trả lại hoặc mở lại phiếu."
+                    )
+                }
+            )
 
 
 class SoLieu(ValidatingModel):

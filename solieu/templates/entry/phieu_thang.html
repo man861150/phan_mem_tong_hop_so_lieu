@@ -11,7 +11,11 @@
           {% if phong %}{{ phong.ma_phong }} — {{ phong.ten_phong }}{% else %}Chọn phòng ban{% endif %}
         </div>
       </div>
-      <div class="col-auto">
+      <div class="col-auto d-flex align-items-center gap-2">
+        {% if phieu %}
+          <span class="badge bg-blue-lt">{{ phieu.get_trang_thai_display }}</span>
+          <a class="btn btn-outline-secondary btn-sm" href="{% url 'entry:phieu_detail' phieu.pk %}">Xem chi tiết</a>
+        {% endif %}
         <span class="badge {% if period_open %}bg-success-lt{% else %}bg-secondary-lt{% endif %}">
           {% if period_open %}Kỳ đang mở{% else %}Kỳ đã đóng{% endif %}
         </span>
@@ -47,15 +51,31 @@
     {% if not period_open %}
       <div class="alert alert-warning">Kỳ đã đóng. Phiếu tháng chỉ được xem, không được lưu.</div>
     {% elif not can_edit %}
-      <div class="alert alert-info">Bạn đang xem phiếu tháng ở chế độ chỉ đọc.</div>
+      <div class="alert alert-info">
+        {% if locked %}
+          Phiếu đang ở trạng thái “{{ phieu.get_trang_thai_display }}” nên chỉ được xem, không được sửa.
+        {% else %}
+          Bạn đang xem phiếu tháng ở chế độ chỉ đọc.
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if last_return %}
+      <div class="alert alert-warning">
+        <strong>Ý kiến trả lại:</strong> {{ last_return.y_kien|linebreaksbr }}
+        <div class="text-secondary small">{{ last_return.nguoi_xu_ly.ho_ten }} — {{ last_return.thoi_diem|date:"d/m/Y H:i" }}</div>
+      </div>
     {% endif %}
 
     <form method="post">
       {% csrf_token %}
       {% include "entry/_indicator_form.html" with form=form rows=rows can_edit=can_edit show_month_info=True has_split_grids=has_split_grids %}
       {% if can_edit %}
-        <div class="d-flex justify-content-end">
-          <button class="btn btn-primary" type="submit">Lưu nháp</button>
+        <div class="d-flex justify-content-end gap-2">
+          <button class="btn btn-outline-primary" type="submit" name="action" value="save">Lưu nháp</button>
+          {% if can_submit %}
+            <button class="btn btn-primary" type="submit" name="action" value="gui">Gửi duyệt</button>
+          {% endif %}
         </div>
       {% endif %}
     </form>

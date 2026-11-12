@@ -692,3 +692,24 @@ class HoTroDuAnForm(forms.ModelForm):
         if commit:
             line.save()
         return line
+
+
+class WorkflowCommentForm(forms.Form):
+    """Comment required when a department head returns or reopens a phiếu."""
+
+    y_kien = forms.CharField(
+        label="Ý kiến",
+        required=True,
+        widget=forms.Textarea(attrs={"rows": 3}),
+        error_messages={
+            "required": "Vui lòng nhập ý kiến khi trả lại hoặc mở lại phiếu."
+        },
+    )
+
+    def clean_y_kien(self):
+        value = (self.cleaned_data.get("y_kien") or "").strip()
+        if not value:
+            raise forms.ValidationError(
+                "Vui lòng nhập ý kiến khi trả lại hoặc mở lại phiếu."
+            )
+        return value

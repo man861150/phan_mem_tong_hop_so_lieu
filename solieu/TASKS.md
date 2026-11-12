@@ -735,7 +735,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
 
 ### M5 — Approval workflow
 
-- [ ] **M5-T01 — Add `LichSuXuLy`**
+- [x] **M5-T01 — Add `LichSuXuLy`**
   - **Why:** workflow comments are a separate record from field history.
   - **Files:** `apps/entry/models.py`, `apps/entry/admin.py`, `apps/entry/migrations/`.
   - **Depends on:** M4-T01.
@@ -746,7 +746,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** migrate. The model is visible in admin. Creating `tra_lai` with an empty comment fails.
   - **Estimate:** S
 
-- [ ] **M5-T02 — Submit a phiếu**
+- [x] **M5-T02 — Submit a phiếu**
   - **Why:** only a submitted phiếu reaches the department head.
   - **Files:** `apps/entry/views.py`, `templates/entry/phieu_form.html`.
   - **Depends on:** M5-T01, M4-T05.
@@ -758,7 +758,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** submit the valid training-class phiếu as `cb.htkn`. Confirm status "Chờ duyệt" and one history row. Submit an invalid chứng nhận/học viên pair and confirm the status does not change.
   - **Estimate:** M
 
-- [ ] **M5-T03 — Lock a phiếu that is waiting or approved**
+- [x] **M5-T03 — Lock a phiếu that is waiting or approved**
   - **Why:** Bảng 34 says the officer cannot edit a phiếu in `cho_duyet`, and an approved phiếu is locked.
   - **Files:** `apps/entry/views.py`, `templates/entry/phieu_form.html`.
   - **Depends on:** M5-T02.
@@ -770,7 +770,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** as `cb.htkn`, open the submitted phiếu and confirm there is no save button. POST the save URL and confirm 403.
   - **Estimate:** S
 
-- [ ] **M5-T04 — List phiếu waiting for the department head**
+- [x] **M5-T04 — List phiếu waiting for the department head**
   - **Why:** UC14 starts from "Phiếu chờ duyệt".
   - **Files:** `apps/entry/views.py`, `templates/entry/duyet_list.html`.
   - **Depends on:** M5-T02, M1-T04.
@@ -782,7 +782,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** as `ld.htkn`, open `/duyet/` and see the training-class phiếu. As `cb.htkn` and `ld.tt`, the URL returns 403.
   - **Estimate:** S
 
-- [ ] **M5-T05 — Approve a phiếu**
+- [x] **M5-T05 — Approve a phiếu**
   - **Why:** approved rows are the only rows official rollup reads.
   - **Files:** `apps/entry/views.py`, `templates/entry/phieu_detail.html`.
   - **Depends on:** M5-T04.
@@ -794,7 +794,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** as `ld.htkn`, approve the training class. `rollup_preview` for "số lớp" increases by 1. The officer can no longer save it.
   - **Estimate:** M
 
-- [ ] **M5-T06 — Return a phiếu with a comment**
+- [x] **M5-T06 — Return a phiếu with a comment**
   - **Why:** a return without a comment is invalid, and the officer must see why.
   - **Files:** `apps/entry/views.py`, `apps/entry/forms.py`, `templates/entry/phieu_detail.html`.
   - **Depends on:** M5-T04.
@@ -806,7 +806,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** return a second phiếu with an empty comment and confirm it stays `cho_duyet`. Return it with "Sai số học viên". As `cb.htkn`, open it, see the comment, change the number, and submit again.
   - **Estimate:** M
 
-- [ ] **M5-T07 — Reopen an approved phiếu**
+- [x] **M5-T07 — Reopen an approved phiếu**
   - **Why:** UC15 allows a correction and requires a trace.
   - **Files:** `apps/entry/views.py`, `templates/entry/phieu_detail.html`.
   - **Depends on:** M5-T05, M5-T01.
@@ -819,7 +819,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** reopen the approved training class with reason "Nhập thiếu chuyên gia". `rollup_preview` count drops by 1. The history row is visible on the phiếu.
   - **Estimate:** M
 
-- [ ] **M5-T08 — Approve several clean phiếu at once**
+- [x] **M5-T08 — Approve several clean phiếu at once**
   - **Why:** UC14 allows bulk approval only when a phiếu has no warning.
   - **Files:** `apps/entry/views.py`, `templates/entry/duyet_list.html`.
   - **Depends on:** M5-T05, M4-T05.
@@ -831,7 +831,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Verify:** queue one valid phiếu and one with a split mismatch. Select both. Only the valid one becomes `da_duyet`.
   - **Estimate:** M
 
-- [ ] **M5-T09 — Show what changed since the previous submit**
+- [x] **M5-T09 — Show what changed since the previous submit**
   - **Why:** F08 asks the department head to compare the resubmission with the previous send.
   - **Files:** `apps/entry/views.py`, `templates/entry/phieu_detail.html`.
   - **Depends on:** M5-T06, M4-T02.

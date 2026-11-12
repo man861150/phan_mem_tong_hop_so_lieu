@@ -25,12 +25,15 @@ from apps.catalog.models import (
 )
 from apps.entry.forms import ActivityEntryForm
 from apps.entry.models import (
+    HanhDongXuLy,
     HoTroDuAn,
+    LichSuXuLy,
     LoaiPhieu,
     PhieuNhapLieu,
     SoLieu,
     TrangThaiPhieu,
 )
+from apps.reporting.rollup import ReportPeriod, rollup
 
 
 class EntryFixtureMixin:
@@ -214,6 +217,20 @@ class EntryFixtureMixin:
             role=Role.CENTER_HEAD,
             password="test-pass-1",
         )
+        cls.ld_htkn = User.objects.create_user(
+            username="ld.htkn",
+            ho_ten="Lãnh đạo HTKN",
+            role=Role.DEPARTMENT_HEAD,
+            phong=cls.htkn,
+            password="test-pass-1",
+        )
+        cls.ld_gdcn = User.objects.create_user(
+            username="ld.gdcn",
+            ho_ten="Lãnh đạo GDCN",
+            role=Role.DEPARTMENT_HEAD,
+            phong=cls.gdcn,
+            password="test-pass-1",
+        )
         cls.admin = User.objects.create_user(
             username="admin",
             ho_ten="Quản trị hệ thống",
@@ -267,6 +284,28 @@ class EntryFixtureMixin:
 
     def project_url(self):
         return f"/phieu/du-an/{self.project.pk}/"
+
+    def valid_activity_data(self):
+        return {
+            f"gia_tri_{self.hv.pk}": "20",
+            f"gia_tri_{self.cn.pk}": "10",
+            f"gia_tri_{self.cg.pk}": "2",
+            f"gia_tri_{self.ks.pk}": "5",
+        }
+
+    def submitted_activity(self, *, data=None):
+        activity = self.make_activity()
+        client = self.login(self.cb_htkn)
+        client.get(self.activity_url(activity))
+        payload = data or self.valid_activity_data()
+        payload["action"] = "gui"
+        response = client.post(self.activity_url(activity), payload)
+        self.assertEqual(response.status_code, 302)
+        phieu = PhieuNhapLieu.objects.get(
+            hoat_dong=activity,
+            la_phieu_bo_sung=False,
+        )
+        return activity, phieu
 
 
 class ActivityEntryTests(EntryFixtureMixin, TestCase):
@@ -755,3 +794,424 @@ class AdHocEntryTests(EntryFixtureMixin, TestCase):
         self.assertEqual(activity.noi_dung, "Nội dung đã cập nhật")
         self.assertEqual(activity.ket_qua, "Kết quả đã cập nhật")
         self.assertEqual(phieu.trang_thai, TrangThaiPhieu.NHAP)
+
+
+class AuditModelTests(EntryFixtureMixin, TestCase):
+    def test_return_comment_is_required_and_admin_is_read_only(self):
+        activity = self.make_activity()
+        phieu = PhieuNhapLieu.objects.create(
+            phong=self.htkn,
+            loai_phieu=LoaiPhieu.HOAT_DONG,
+            hoat_dong=activity,
+            nguoi_nhap=self.cb_htkn,
+        )
+        with self.assertRaises(ValidationError) as caught:
+            LichSuXuLy.objects.create(
+                phieu=phieu,
+                nguoi_xu_ly=self.ld_htkn,
+                hanh_dong=HanhDongXuLy.TRA_LAI,
+                y_kien="   ",
+            )
+        self.assertIn("y_kien", caught.exception.message_dict)
+        self.assertIn("Vui lòng nhập ý kiến", str(caught.exception))
+
+        row = LichSuXuLy.objects.create(
+            phieu=phieu,
+            nguoi_xu_ly=self.ld_htkn,
+            hanh_dong=HanhDongXuLy.TRA_LAI,
+            y_kien="Sai số học viên",
+        )
+        self.assertEqual(row.y_kien, "Sai số học viên")
+
+        from django.contrib import admin
+
+        model_admin = admin.site._registry[LichSuXuLy]
+        self.assertFalse(model_admin.has_add_permission(None))
+        self.assertFalse(model_admin.has_change_permission(None))
+        self.assertFalse(model_admin.has_delete_permission(None))
+
+
+class SubmitWorkflowTests(EntryFixtureMixin, TestCase):
+    def test_submit_valid_phieu_sets_waiting_and_writes_history(self):
+        activity, phieu = self.submitted_activity()
+
+        self.assertEqual(phieu.trang_thai, TrangThaiPhieu.CHO_DUYET)
+        self.assertIsNotNone(phieu.ngay_gui)
+        history = LichSuXuLy.objects.filter(
+            phieu=phieu,
+            hanh_dong=HanhDongXuLy.GUI,
+        )
+        self.assertEqual(history.count(), 1)
+        self.assertEqual(history.get().nguoi_xu_ly, self.cb_htkn)
+        detail = self.login(self.ld_htkn).get(
+            f"/phieu/{phieu.pk}/"
+        )
+        self.assertEqual(detail.status_code, 200)
+        self.assertContains(detail, "Chờ duyệt")
+
+    def test_submit_invalid_pair_leaves_status_unchanged(self):
+        activity = self.make_activity()
+        client = self.login(self.cb_htkn)
+        client.get(self.activity_url(activity))
+        data = self.valid_activity_data()
+        data[f"gia_tri_{self.cn.pk}"] = "30"
+        data[f"gia_tri_{self.hv.pk}"] = "20"
+        data["action"] = "gui"
+        response = client.post(self.activity_url(activity), data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "vượt quá")
+        phieu = PhieuNhapLieu.objects.get(hoat_dong=activity)
+        self.assertEqual(phieu.trang_thai, TrangThaiPhieu.NHAP)
+        self.assertFalse(
+            LichSuXuLy.objects.filter(phieu=phieu).exists()
+        )
+
+    def test_submit_missing_required_row_shows_vietnamese_error(self):
+        activity = self.make_activity()
+        client = self.login(self.cb_htkn)
+        client.get(self.activity_url(activity))
+        response = client.post(
+            self.activity_url(activity),
+            {
+                f"gia_tri_{self.hv.pk}": "20",
+                "action": "gui",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "bắt buộc")
+        phieu = PhieuNhapLieu.objects.get(hoat_dong=activity)
+        self.assertEqual(phieu.trang_thai, TrangThaiPhieu.NHAP)
+        self.assertFalse(
+            LichSuXuLy.objects.filter(phieu=phieu).exists()
+        )
+
+
+class LockedPhieuTests(EntryFixtureMixin, TestCase):
+    def test_waiting_phieu_is_read_only_and_refuses_save_post(self):
+        activity, phieu = self.submitted_activity()
+        client = self.login(self.cb_htkn)
+
+        response = client.get(self.activity_url(activity))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "chỉ được xem, không được sửa")
+        self.assertNotContains(response, "Lưu nháp")
+
+        response = client.post(
+            self.activity_url(activity),
+            {f"gia_tri_{self.hv.pk}": "99"},
+        )
+        self.assertEqual(response.status_code, 403)
+        phieu.refresh_from_db()
+        self.assertEqual(phieu.trang_thai, TrangThaiPhieu.CHO_DUYET)
+
+
+class ApprovalQueueTests(EntryFixtureMixin, TestCase):
+    def test_department_head_sees_waiting_phieu_and_others_get_403(self):
+        activity, _phieu = self.submitted_activity()
+
+        response = self.login(self.ld_htkn).get("/duyet/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, activity.ten)
+
+        self.assertEqual(
+            self.login(self.cb_htkn).get("/duyet/").status_code,
+            403,
+        )
+        self.assertEqual(
+            self.login(self.center).get("/duyet/").status_code,
+            403,
+        )
+
+    def test_queue_is_scoped_to_the_department(self):
+        activity, _phieu = self.submitted_activity()
+        response = self.login(self.ld_gdcn).get("/duyet/")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, activity.ten)
+
+    def test_approve_permissions_are_enforced_on_direct_posts(self):
+        _activity, phieu = self.submitted_activity()
+        url = f"/phieu/{phieu.pk}/duyet/"
+
+        self.assertEqual(
+            self.login(self.cb_htkn).post(url).status_code,
+            403,
+        )
+        self.assertEqual(
+            self.login(self.center).post(url).status_code,
+            403,
+        )
+        self.assertEqual(
+            self.login(self.ld_gdcn).post(url).status_code,
+            403,
+        )
+        phieu.refresh_from_db()
+        self.assertEqual(phieu.trang_thai, TrangThaiPhieu.CHO_DUYET)
+
+
+class ApproveAndReopenTests(EntryFixtureMixin, TestCase):
+    def official_count(self):
+        period = ReportPeriod.month(2026, 11)
+        rows = rollup(period, department_id=self.htkn.pk)
+        row = next(
+            (item for item in rows if item.chi_tieu_id == self.count_lop.pk),
+            None,
+        )
+        return row.period_value if row is not None else Decimal("0")
+
+    def test_approve_increases_rollup_and_writes_history(self):
+        _activity, phieu = self.submitted_activity()
+        self.assertEqual(self.official_count(), Decimal("0"))
+
+        response = self.login(self.ld_htkn).post(
+            f"/phieu/{phieu.pk}/duyet/"
+        )
+        self.assertEqual(response.status_code, 302)
+        phieu.refresh_from_db()
+        self.assertEqual(phieu.trang_thai, TrangThaiPhieu.DA_DUYET)
+        self.assertEqual(self.official_count(), Decimal("1"))
+        self.assertTrue(
+            LichSuXuLy.objects.filter(
+                phieu=phieu,
+                hanh_dong=HanhDongXuLy.DUYET,
+                nguoi_xu_ly=self.ld_htkn,
+            ).exists()
+        )
+
+    def test_detail_shows_previous_period_rollup_figure(self):
+        previous_activity = self.make_activity(
+            ten="Lớp tháng trước",
+            tu_ngay=date(2026, 10, 5),
+            den_ngay=date(2026, 10, 5),
+        )
+        previous = PhieuNhapLieu.objects.create(
+            phong=self.htkn,
+            loai_phieu=LoaiPhieu.HOAT_DONG,
+            hoat_dong=previous_activity,
+            nguoi_nhap=self.cb_htkn,
+            trang_thai=TrangThaiPhieu.DA_DUYET,
+        )
+        for chi_tieu, value in (
+            (self.hv, "7"),
+            (self.cn, "5"),
+            (self.cg, "1"),
+            (self.ks, "2"),
+        ):
+            SoLieu.objects.create(
+                phieu=previous,
+                chi_tieu=chi_tieu,
+                gia_tri=Decimal(value),
+            )
+
+        _activity, current = self.submitted_activity()
+        response = self.login(self.ld_htkn).get(
+            f"/phieu/{current.pk}/"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Kỳ trước")
+        rows = {
+            item["row"].chi_tieu_id: item
+            for item in response.context["detail_rows"]
+        }
+        self.assertEqual(rows[self.hv.pk]["previous"], Decimal("7"))
+
+    def test_reopen_requires_comment_and_drops_rollup(self):
+        _activity, phieu = self.submitted_activity()
+        client = self.login(self.ld_htkn)
+        client.post(f"/phieu/{phieu.pk}/duyet/")
+        self.assertEqual(self.official_count(), Decimal("1"))
+
+        response = client.post(f"/phieu/{phieu.pk}/mo-lai/", {"y_kien": ""})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Vui lòng nhập ý kiến")
+        phieu.refresh_from_db()
+        self.assertEqual(phieu.trang_thai, TrangThaiPhieu.DA_DUYET)
+
+        response = client.post(
+            f"/phieu/{phieu.pk}/mo-lai/",
+            {"y_kien": "Nhập thiếu chuyên gia"},
+        )
+        self.assertEqual(response.status_code, 302)
+        phieu.refresh_from_db()
+        self.assertEqual(phieu.trang_thai, TrangThaiPhieu.NHAP)
+        self.assertEqual(self.official_count(), Decimal("0"))
+        history = LichSuXuLy.objects.get(
+            phieu=phieu,
+            hanh_dong=HanhDongXuLy.MO_LAI,
+        )
+        self.assertEqual(history.y_kien, "Nhập thiếu chuyên gia")
+
+    def test_invalid_transition_is_bad_request_not_server_error(self):
+        _activity, phieu = self.submitted_activity()
+
+        response = self.login(self.cb_htkn).post(
+            f"/phieu/{phieu.pk}/gui/"
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response = self.login(self.ld_htkn).post(
+            f"/phieu/{phieu.pk}/mo-lai/",
+            {"y_kien": "Chưa duyệt"},
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_center_head_cannot_use_workflow_write_endpoints(self):
+        _activity, phieu = self.submitted_activity()
+        client = self.login(self.center)
+
+        self.assertEqual(
+            client.post(f"/phieu/{phieu.pk}/gui/").status_code,
+            403,
+        )
+        self.assertEqual(
+            client.post(
+                f"/phieu/{phieu.pk}/tra-lai/",
+                {"y_kien": "Thử"},
+            ).status_code,
+            403,
+        )
+        self.assertEqual(
+            client.post(
+                f"/phieu/{phieu.pk}/mo-lai/",
+                {"y_kien": "Thử"},
+            ).status_code,
+            403,
+        )
+
+    def test_entry_officer_and_center_head_cannot_reopen(self):
+        _activity, phieu = self.submitted_activity()
+        self.login(self.ld_htkn).post(f"/phieu/{phieu.pk}/duyet/")
+        url = f"/phieu/{phieu.pk}/mo-lai/"
+
+        self.assertEqual(
+            self.login(self.cb_htkn).post(
+                url,
+                {"y_kien": "Thử mở lại"},
+            ).status_code,
+            403,
+        )
+        self.assertEqual(
+            self.login(self.center).post(
+                url,
+                {"y_kien": "Thử mở lại"},
+            ).status_code,
+            403,
+        )
+
+
+class ReturnAndResubmitTests(EntryFixtureMixin, TestCase):
+    def test_return_requires_comment_then_officer_can_resubmit(self):
+        activity, phieu = self.submitted_activity()
+        client = self.login(self.ld_htkn)
+
+        response = client.post(
+            f"/phieu/{phieu.pk}/tra-lai/",
+            {"y_kien": ""},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Vui lòng nhập ý kiến")
+        phieu.refresh_from_db()
+        self.assertEqual(phieu.trang_thai, TrangThaiPhieu.CHO_DUYET)
+
+        response = client.post(
+            f"/phieu/{phieu.pk}/tra-lai/",
+            {"y_kien": "Sai số học viên"},
+        )
+        self.assertEqual(response.status_code, 302)
+        phieu.refresh_from_db()
+        self.assertEqual(phieu.trang_thai, TrangThaiPhieu.TRA_LAI)
+
+        officer = self.login(self.cb_htkn)
+        response = officer.get(self.activity_url(activity))
+        self.assertContains(response, "Sai số học viên")
+        self.assertContains(response, "Gửi duyệt")
+
+        data = self.valid_activity_data()
+        data[f"gia_tri_{self.hv.pk}"] = "25"
+        data["action"] = "gui"
+        response = officer.post(self.activity_url(activity), data)
+        self.assertEqual(response.status_code, 302)
+        phieu.refresh_from_db()
+        self.assertEqual(phieu.trang_thai, TrangThaiPhieu.CHO_DUYET)
+        self.assertEqual(
+            LichSuXuLy.objects.filter(
+                phieu=phieu,
+                hanh_dong=HanhDongXuLy.GUI,
+            ).count(),
+            2,
+        )
+
+        detail = self.login(self.ld_htkn).get(f"/phieu/{phieu.pk}/")
+        self.assertEqual(detail.status_code, 200)
+        self.assertContains(detail, "Thay đổi từ lần gửi trước")
+        self.assertContains(detail, "Số học viên tham gia")
+
+        from apps.entry.workflow import changes_since_previous_submit
+
+        changes = changes_since_previous_submit(phieu)
+        hv_change = next(
+            item
+            for item in changes
+            if item["label"].startswith("Số học viên tham gia")
+        )
+        self.assertEqual(hv_change["old"], Decimal("20"))
+        self.assertEqual(hv_change["new"], Decimal("25"))
+        self.assertEqual(hv_change["nguoi"], self.cb_htkn)
+
+
+class BulkApproveTests(EntryFixtureMixin, TestCase):
+    def test_bulk_approve_skips_blocked_phieu(self):
+        _activity, valid = self.submitted_activity()
+
+        blocked_activity = self.make_activity(ten="Lớp lỗi")
+        blocked = PhieuNhapLieu.objects.create(
+            phong=self.htkn,
+            loai_phieu=LoaiPhieu.HOAT_DONG,
+            hoat_dong=blocked_activity,
+            nguoi_nhap=self.cb_htkn,
+        )
+        SoLieu.objects.create(
+            phieu=blocked,
+            chi_tieu=self.hv,
+            gia_tri=Decimal("20"),
+        )
+        SoLieu.objects.create(
+            phieu=blocked,
+            chi_tieu=self.cn,
+            gia_tri=Decimal("30"),
+        )
+        blocked.trang_thai = TrangThaiPhieu.CHO_DUYET
+        blocked.ngay_gui = valid.ngay_gui
+        blocked.save(update_fields=["trang_thai", "ngay_gui"])
+
+        queue = self.login(self.ld_htkn).get("/duyet/")
+        self.assertContains(queue, "Bị chặn")
+
+        client = self.login(self.ld_htkn)
+        response = client.post(
+            "/duyet/",
+            {"phieu_ids": [valid.pk, blocked.pk]},
+        )
+        self.assertEqual(response.status_code, 302)
+        valid.refresh_from_db()
+        blocked.refresh_from_db()
+        self.assertEqual(valid.trang_thai, TrangThaiPhieu.DA_DUYET)
+        self.assertEqual(blocked.trang_thai, TrangThaiPhieu.CHO_DUYET)
+        self.assertTrue(
+            LichSuXuLy.objects.filter(
+                phieu=valid,
+                hanh_dong=HanhDongXuLy.DUYET,
+            ).exists()
+        )
+        self.assertFalse(
+            LichSuXuLy.objects.filter(
+                phieu=blocked,
+                hanh_dong=HanhDongXuLy.DUYET,
+            ).exists()
+        )
+        follow_up = client.get("/duyet/")
+        self.assertContains(
+            follow_up,
+            "1 phiếu đã duyệt, 1 phiếu bị chặn.",
+        )

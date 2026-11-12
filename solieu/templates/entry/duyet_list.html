@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Phiếu chờ duyệt{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Phiếu chờ duyệt</h2>
+        <div class="text-secondary">Các phiếu đã gửi trong phòng ban của bạn.</div>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Danh sách chờ duyệt</h3>
+        <div class="card-actions">
+          <button class="btn btn-success" type="submit">Duyệt các phiếu đã chọn</button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr>
+              <th class="w-1"></th>
+              <th>Loại phiếu</th>
+              <th>Đối tượng</th>
+              <th>Người nhập</th>
+              <th>Ngày gửi</th>
+              <th>Trạng thái kiểm tra</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in queue %}
+              <tr>
+                <td>
+                  <input class="form-check-input" type="checkbox" name="phieu_ids"
+                         value="{{ item.phieu.pk }}"
+                         {% if item.blockers %}disabled{% endif %}>
+                </td>
+                <td>{{ item.phieu.get_loai_phieu_display }}</td>
+                <td>{{ item.phieu }}</td>
+                <td>{{ item.phieu.nguoi_nhap.ho_ten }}</td>
+                <td>{{ item.phieu.ngay_gui|date:"d/m/Y H:i"|default:"—" }}</td>
+                <td>
+                  {% if item.blockers %}
+                    <span class="badge bg-danger-lt">Bị chặn</span>
+                    <div class="text-danger small">{{ item.blockers|join:"; " }}</div>
+                  {% else %}
+                    <span class="badge bg-success-lt">Hợp lệ</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'entry:phieu_detail' item.phieu.pk %}">Xem</a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7">Không có phiếu nào đang chờ duyệt.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </form>
+{% endblock %}
