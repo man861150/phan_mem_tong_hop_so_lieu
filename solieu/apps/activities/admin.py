@@ -4,7 +4,12 @@ from django import forms
 from django.contrib import admin, messages
 from simple_history.admin import SimpleHistoryAdmin
 
-from apps.activities.models import DonViPhoiHop
+from apps.activities.models import (
+    DonViPhoiHop,
+    DuAn,
+    HoatDong,
+    HoatDongDonVi,
+)
 from apps.catalog.admin import CatalogPermissionMixin
 
 
@@ -91,3 +96,39 @@ class DonViPhoiHopAdmin(CatalogPermissionMixin, SimpleHistoryAdmin):
     search_fields = ("ten_don_vi",)
     ordering = ("ten_don_vi", "id")
     actions = (gop_don_vi_trung,)
+
+
+class HoatDongDonViInline(admin.TabularInline):
+    model = HoatDongDonVi
+    extra = 0
+    autocomplete_fields = ("don_vi",)
+
+
+@admin.register(HoatDong)
+class HoatDongAdmin(SimpleHistoryAdmin):
+    list_display = (
+        "ten",
+        "loai_hoat_dong",
+        "tu_ngay",
+        "den_ngay",
+        "trang_thai",
+    )
+    list_filter = (
+        "trang_thai",
+        "hinh_thuc",
+        "loai_hoat_dong__phong",
+        "loai_hoat_dong",
+    )
+    search_fields = ("ten", "dia_diem")
+    date_hierarchy = "tu_ngay"
+    filter_horizontal = ("doi_tuong_huong_toi",)
+    inlines = (HoatDongDonViInline,)
+    ordering = ("-tu_ngay", "-id")
+
+
+@admin.register(DuAn)
+class DuAnAdmin(SimpleHistoryAdmin):
+    list_display = ("ten_du_an", "phong", "chuong_trinh", "hinh_thuc", "nam")
+    list_filter = ("phong", "chuong_trinh", "hinh_thuc", "nam")
+    search_fields = ("ten_du_an",)
+    ordering = ("-nam", "ten_du_an", "id")

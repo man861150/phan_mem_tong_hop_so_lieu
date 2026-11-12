@@ -400,7 +400,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
 
 ### M3 — Activities
 
-- [ ] **M3-T01 — Add `HoatDong` and `HoatDongDonVi`**
+- [x] **M3-T01 — Add `HoatDong` and `HoatDongDonVi`**
   - **Why:** a phiếu hangs off an activity, and the result form opens only after the activity exists.
   - **Files:** `apps/activities/models.py`, `apps/activities/admin.py`, `apps/activities/migrations/`.
   - **Depends on:** M2-T04, M2-T05.
@@ -413,7 +413,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** in the shell, create an HTKN "Lớp huấn luyện" activity in status `ke_hoach` with one partner unit. Saving `den_ngay` before `tu_ngay` fails.
   - **Estimate:** M
 
-- [ ] **M3-T02 — Activity list and edit screens**
+- [x] **M3-T02 — Activity list and edit screens**
   - **Why:** UC06 is a template screen for the entry officer, not an admin screen.
   - **Files:** `apps/activities/views.py`, `apps/activities/forms.py`, `apps/activities/urls.py`, `templates/activities/hoat_dong_list.html`, `templates/activities/hoat_dong_form.html`.
   - **Depends on:** M3-T01, M1-T03, M1-T04.
@@ -427,7 +427,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** as `cb.htkn`, create "Lớp khởi nghiệp tháng 11" with dates and place. As `cb` of another department, the same URL is absent from the list. As `ld.tt`, open the detail and confirm the save button is absent.
   - **Estimate:** L
 
-- [ ] **M3-T03 — Add a partner unit from the activity form**
+- [x] **M3-T03 — Add a partner unit from the activity form**
   - **Why:** UC02 allows the entry officer to add a unit inline. They still cannot open catalog admin.
   - **Files:** `apps/activities/views.py`, `templates/activities/don_vi_form.html`, `templates/activities/hoat_dong_form.html`.
   - **Depends on:** M3-T02, M2-T05.
@@ -439,7 +439,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** on `/hoat-dong/tao/`, add "Vườn ươm ABC" without leaving the page. Reload and confirm the unit is still selected. Search admin and confirm a single row.
   - **Estimate:** M
 
-- [ ] **M3-T04 — Move an activity from Kế hoạch to Đã tổ chức**
+- [x] **M3-T04 — Move an activity from Kế hoạch to Đã tổ chức**
   - **Why:** mục 6.1 bước 2 opens data entry only after this transition.
   - **Files:** `apps/activities/views.py`, `templates/activities/hoat_dong_form.html`.
   - **Depends on:** M3-T02.
@@ -451,7 +451,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** as `cb.htkn`, mark the class from M3-T02 as "Đã tổ chức". Refresh and confirm the status label. History in admin shows the old status.
   - **Estimate:** S
 
-- [ ] **M3-T05 — Add `DuAn` screens**
+- [x] **M3-T05 — Add `DuAn` screens**
   - **Why:** incubation support is recorded per project, not per event.
   - **Files:** `apps/activities/models.py`, `apps/activities/views.py`, `apps/activities/forms.py`, `apps/activities/urls.py`, `templates/activities/du_an_list.html`, `templates/activities/du_an_form.html`, `apps/activities/migrations/`.
   - **Depends on:** M1-T04, M2-T09.
@@ -463,7 +463,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
   - **Verify:** as `cb.htkn`, create a project "Startup A" under `nq20` / `uom_tao`. As `ld.tt`, open `/du-an/` and confirm it is visible and not editable.
   - **Estimate:** M
 
-- [ ] **M3-T06 — Capture ad-hoc task text on the activity**
+- [x] **M3-T06 — Capture ad-hoc task text on the activity**
   - **Why:** F07 is a text activity, and it must not become numeric `SoLieu`.
   - **Files:** `templates/activities/hoat_dong_form.html`, `apps/activities/forms.py`.
   - **Depends on:** M3-T02, M2-T09.

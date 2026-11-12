@@ -1,0 +1,14 @@
+{% if don_vi_error %}
+  <div class="text-danger mb-2">{{ don_vi_error }}</div>
+{% endif %}
+{% if don_vi_notice %}
+  <div class="text-secondary mb-2">{{ don_vi_notice }}</div>
+{% endif %}
+{% for don_vi in don_vi_options %}
+  <label class="form-check mb-1">
+    <input class="form-check-input" type="checkbox" name="don_vi_phoi_hop" value="{{ don_vi.pk }}"{% if don_vi.pk in selected_don_vi_ids %} checked{% endif %}>
+    <span class="form-check-label">{{ don_vi.ten_don_vi }}</span>
+  </label>
+{% empty %}
+  <div class="text-secondary">Chưa có đơn vị phối hợp.</div>
+{% endfor %}

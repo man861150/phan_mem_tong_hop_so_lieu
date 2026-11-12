@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Hoạt động — Tổng hợp số liệu{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Hoạt động</h2>
+      </div>
+      {% if can_create %}
+        <div class="col-auto">
+          <a class="btn btn-primary" href="{% url 'activities:hoat_dong_create' %}">Thêm hoạt động</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <form class="card mb-3" method="get">
+    <div class="card-body">
+      <div class="row g-2">
+        {% if show_filter %}
+          <div class="col-md-3">
+            <label class="form-label" for="phong">Phòng ban</label>
+            <select class="form-select" id="phong" name="phong">
+              <option value="">Tất cả phòng</option>
+              {% for phong in phong_options %}
+                <option value="{{ phong.ma_phong }}"{% if phong.ma_phong == selected_phong %} selected{% endif %}>{{ phong }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+        <div class="col-md-2">
+          <label class="form-label" for="nam">Năm</label>
+          <select class="form-select" id="nam" name="nam">
+            <option value="">Tất cả</option>
+            {% for nam in year_options %}
+              <option value="{{ nam }}"{% if nam|stringformat:"s" == selected_nam %} selected{% endif %}>{{ nam }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="loai">Loại hoạt động</label>
+          <select class="form-select" id="loai" name="loai">
+            <option value="">Tất cả loại</option>
+            {% for loai in activity_types %}
+              <option value="{{ loai.pk }}"{% if loai.pk|stringformat:"s" == selected_loai %} selected{% endif %}>{{ loai.ten_loai }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label" for="trang_thai">Trạng thái</label>
+          <select class="form-select" id="trang_thai" name="trang_thai">
+            <option value="">Tất cả</option>
+            {% for value, label in statuses %}
+              <option value="{{ value }}"{% if value == selected_trang_thai %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label" for="ten">Tên</label>
+          <input class="form-control" id="ten" name="ten" type="search" value="{{ selected_ten }}">
+        </div>
+      </div>
+      <div class="mt-3">
+        <button class="btn btn-secondary" type="submit">Lọc</button>
+        <a class="btn btn-link" href="{% url 'activities:hoat_dong_list' %}">Xóa lọc</a>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table">
+        <thead>
+          <tr>
+            <th>Tên hoạt động</th>
+            <th>Loại</th>
+            <th>Phòng</th>
+            <th>Thời gian</th>
+            <th>Địa điểm</th>
+            <th>Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for activity in activities %}
+            <tr>
+              <td>
+                <a href="{% url 'activities:hoat_dong_detail' activity.pk %}">{{ activity.ten }}</a>
+              </td>
+              <td>{{ activity.loai_hoat_dong.ten_loai }}</td>
+              <td>{{ activity.loai_hoat_dong.phong.ma_phong }}</td>
+              <td>
+                {{ activity.tu_ngay|date:"d/m/Y" }}
+                {% if activity.den_ngay and activity.den_ngay != activity.tu_ngay %}
+                  – {{ activity.den_ngay|date:"d/m/Y" }}
+                {% endif %}
+              </td>
+              <td>{{ activity.dia_diem|default:"—" }}</td>
+              <td>
+                {% if activity.trang_thai == "da_to_chuc" %}
+                  <span class="badge bg-success-lt">Đã tổ chức</span>
+                {% else %}
+                  <span class="badge bg-warning-lt">Kế hoạch</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6">Không có hoạt động phù hợp.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

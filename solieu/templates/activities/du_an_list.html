@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Dự án — Tổng hợp số liệu{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Dự án/startup</h2>
+      </div>
+      {% if can_create %}
+        <div class="col-auto">
+          <a class="btn btn-primary" href="{% url 'activities:du_an_create' %}">Thêm dự án</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table">
+        <thead>
+          <tr>
+            <th>Tên dự án</th>
+            <th>Phòng</th>
+            <th>Chương trình</th>
+            <th>Hình thức</th>
+            <th>Năm</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for project in projects %}
+            <tr>
+              <td><a href="{% url 'activities:du_an_detail' project.pk %}">{{ project.ten_du_an }}</a></td>
+              <td>{{ project.phong.ma_phong }}</td>
+              <td>{{ project.get_chuong_trinh_display }}</td>
+              <td>{{ project.get_hinh_thuc_display }}</td>
+              <td>{{ project.nam }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5">Chưa có dự án.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
