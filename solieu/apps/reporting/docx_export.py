@@ -16,6 +16,7 @@ from apps.reporting.report_data import (
     DepartmentReport,
     gap_summary,
 )
+from apps.reporting.xlsx_export import check_export_size
 
 TEMPLATE_DIR = Path(settings.BASE_DIR) / "report_templates"
 
@@ -120,6 +121,7 @@ def build_docx(
     is_center: bool,
     generated_at: datetime | None = None,
 ) -> bytes:
+    check_export_size(reports)
     generated_at = generated_at or timezone.localtime()
     template_name = _template_name(reports, is_center)
     template_path = TEMPLATE_DIR / template_name

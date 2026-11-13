@@ -238,20 +238,71 @@ def _activities_in_period(
     ]
 
 
+def _activity_phieu_map(activities) -> dict[int, str]:
+    """Load one phiếu status per activity in one query."""
+    activity_ids = [activity.pk for activity in activities]
+    if not activity_ids:
+        return {}
+    rows = PhieuNhapLieu.objects.filter(
+        loai_phieu=LoaiPhieu.HOAT_DONG,
+        hoat_dong_id__in=activity_ids,
+    ).values_list("hoat_dong_id", "trang_thai")
+    mapping = {}
+    for activity_id, status in rows:
+        mapping.setdefault(activity_id, status)
+    return mapping
+
+
+def _activity_indicator_map(phong, loai_ids) -> dict[int, frozenset[int]]:
+    """Load indicator ids for every activity type in one query."""
+    loai_ids = list(dict.fromkeys(loai_ids))
+    if not loai_ids:
+        return {}
+    rows = (
+        ChiTieu.objects.filter(nhom__phong=phong)
+        .filter(
+            Q(loai_hoat_dong_id__in=loai_ids)
+            | Q(bieu_mau__loai_hoat_dong_id__in=loai_ids)
+        )
+        .values_list(
+            "pk",
+            "loai_hoat_dong_id",
+            "bieu_mau__loai_hoat_dong_id",
+        )
+    )
+    grouped = {}
+    for pk, direct_id, form_id in rows:
+        if direct_id in loai_ids:
+            grouped.setdefault(direct_id, set()).add(pk)
+        if form_id in loai_ids:
+            grouped.setdefault(form_id, set()).add(pk)
+    return {
+        loai_id: frozenset(indicator_ids)
+        for loai_id, indicator_ids in grouped.items()
+    }
+
+
 def _activity_gaps(
     period: ReportPeriod,
     phong: PhongBan,
 ) -> list[MissingInput]:
+    activities = [
+        activity
+        for activity in _activities_in_period(period, phong)
+        if activity.trang_thai == TrangThaiHoatDong.DA_TO_CHUC
+    ]
+    phieu_map = _activity_phieu_map(activities)
+    missing = [
+        activity for activity in activities if activity.pk not in phieu_map
+    ]
+    if not missing:
+        return []
+    indicator_map = _activity_indicator_map(
+        phong,
+        [activity.loai_hoat_dong_id for activity in missing],
+    )
     gaps = []
-    for activity in _activities_in_period(period, phong):
-        if activity.trang_thai != TrangThaiHoatDong.DA_TO_CHUC:
-            continue
-        has_phieu = PhieuNhapLieu.objects.filter(
-            loai_phieu=LoaiPhieu.HOAT_DONG,
-            hoat_dong=activity,
-        ).exists()
-        if has_phieu:
-            continue
+    for activity in missing:
         gaps.append(
             MissingInput(
                 phong=phong,
@@ -260,9 +311,9 @@ def _activity_gaps(
                     f"Hoạt động “{activity.ten}” đã tổ chức nhưng chưa có "
                     "phiếu kết quả."
                 ),
-                chi_tieu_ids=_activity_indicator_ids(
-                    phong,
+                chi_tieu_ids=indicator_map.get(
                     activity.loai_hoat_dong_id,
+                    frozenset(),
                 ),
             )
         )
@@ -436,8 +487,10 @@ def activities_for_department(
     period: ReportPeriod,
     phong: PhongBan,
 ) -> list[dict]:
+    activity_rows = _activities_in_period(period, phong)
+    phieu_map = _activity_phieu_map(activity_rows)
     activities = []
-    for activity in _activities_in_period(period, phong):
+    for activity in activity_rows:
         ad_hoc = activity.la_nhiem_vu_phat_sinh
         activities.append(
             {
@@ -451,10 +504,7 @@ def activities_for_department(
                 "trang_thai": activity.get_trang_thai_display(),
                 "noi_dung": (activity.noi_dung or "") if ad_hoc else "",
                 "ket_qua": (activity.ket_qua or "") if ad_hoc else "",
-                "phieu": PhieuNhapLieu.objects.filter(
-                    loai_phieu=LoaiPhieu.HOAT_DONG,
-                    hoat_dong=activity,
-                ).exists(),
+                "phieu": activity.pk in phieu_map,
             }
         )
     activities.sort(key=lambda item: (item["loai"], item["thoi_gian"], item["id"]))

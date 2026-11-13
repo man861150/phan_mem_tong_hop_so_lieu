@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-from zipfile import BadZipFile
+from zipfile import BadZipFile, ZipFile
 
 from openpyxl import load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
@@ -13,6 +13,12 @@ from apps.reporting.formatting import format_vi_number
 from apps.reporting.xlsx_export import DANH_GIA_HEADER, HEADERS
 
 HEADER_ERROR = "Tệp Excel không đúng mẫu báo cáo."
+ZIP_LIMIT_ERROR = (
+    "Tệp Excel có quá nhiều thành phần hoặc nội dung giải nén "
+    "vượt quá giới hạn."
+)
+MAX_ZIP_ENTRIES = 64
+MAX_ZIP_UNCOMPRESSED_BYTES = 32 * 1024 * 1024
 
 
 class WorkbookFormatError(ValueError):
@@ -67,11 +73,34 @@ def _normalised_headers(values) -> tuple[str, ...]:
     return tuple(headers)
 
 
+def _check_zip_limits(uploaded_file) -> None:
+    """Reject oversized ZIP metadata before openpyxl reads any cell."""
+    too_large = False
+    try:
+        uploaded_file.seek(0)
+        with ZipFile(uploaded_file) as archive:
+            entries = archive.infolist()
+            too_large = len(entries) > MAX_ZIP_ENTRIES or (
+                sum(info.file_size for info in entries)
+                > MAX_ZIP_UNCOMPRESSED_BYTES
+            )
+    except (BadZipFile, OSError, ValueError):
+        return
+    finally:
+        try:
+            uploaded_file.seek(0)
+        except (AttributeError, OSError):
+            pass
+    if too_large:
+        raise WorkbookFormatError(ZIP_LIMIT_ERROR)
+
+
 def parse_workbook(uploaded_file) -> tuple[list[ImportedRow], int]:
     """Return parsed preview rows and the workbook's column count.
 
     The preview is read-only. No database row is created or approved here.
     """
+    _check_zip_limits(uploaded_file)
     try:
         workbook = load_workbook(
             uploaded_file,

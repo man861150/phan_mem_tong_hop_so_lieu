@@ -59,7 +59,12 @@ from apps.reporting.report_data import (
     scope_departments,
 )
 from apps.reporting.rollup import ReportPeriod, rollup
-from apps.reporting.xlsx_export import ExcelPrecisionError, build_workbook
+from apps.reporting.xlsx_export import (
+    ExcelPrecisionError,
+    build_workbook,
+    count_export_rows,
+    export_size_error,
+)
 from apps.reporting.xlsx_import import WorkbookFormatError, parse_workbook
 
 SCOPE_PARAMS = ("kind", "year", "month", "quarter", "phong")
@@ -359,6 +364,18 @@ def xuat_bao_cao(request, dinh_dang):
             "Còn số liệu chưa đầy đủ. Chọn “Vẫn lập báo cáo” trước khi xuất.",
         )
         return redirect(_preview_url(period, scope, False))
+
+    size_error = export_size_error(count_export_rows(reports))
+    if size_error:
+        return _render_report(
+            request,
+            form=form,
+            period=period,
+            scope=scope,
+            user=request.user,
+            accepted=accepted,
+            export_error=size_error,
+        )
 
     ky = period_label(period)
     if dinh_dang == "xlsx":

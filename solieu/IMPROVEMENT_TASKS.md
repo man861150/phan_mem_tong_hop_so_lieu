@@ -267,7 +267,7 @@ These review sentences are stale against the current code. They do not get a tas
 
 ## P3 — Polish
 
-- [ ] **IMP-15 — Batch the per-activity report queries**
+- [x] **IMP-15 — Batch the per-activity report queries**
   - **Priority:** P3
   - **Why:** gap detection and the HTKN activity list each ask whether a phiếu exists, once per activity. Indicator ids for a gap are queried once per activity that has no phiếu.
   - **Evidence:** `apps/reporting/report_data.py` `_activity_gaps`, `_activity_indicator_ids`, `activities_for_department`. `rollup_by_department` is one rollup per phòng (three departments) and can stay. Review §5.4.
@@ -279,7 +279,7 @@ These review sentences are stale against the current code. They do not get a tas
   - **Verify (localhost):** leave one organized HTKN activity without a phiếu. Open the quarter preview and confirm the sentence "Hoạt động “…” đã tổ chức nhưng chưa có phiếu kết quả." In `manage.py shell` with `DEBUG` query logging, call `activities_for_department` for a period that contains several activities and confirm the query count stays flat when another activity is added.
   - **Estimate:** M
 
-- [ ] **IMP-16 — Stop an export that would build an unbounded file in memory**
+- [x] **IMP-16 — Stop an export that would build an unbounded file in memory**
   - **Priority:** P3
   - **Why:** `.xlsx` and `.docx` are built entirely in a `BytesIO`, then held again as the saved file. A localhost kỳ with a very large activity list will grow without a warning.
   - **Evidence:** `apps/reporting/xlsx_export.py` and `apps/reporting/docx_export.py` (both return `BytesIO.getvalue()`); `apps/reporting/exports.py` `content_stream`. Review §5.4.
@@ -291,7 +291,7 @@ These review sentences are stale against the current code. They do not get a tas
   - **Verify (localhost):** export the current HTKN month and confirm a file downloads. In `manage.py shell`, call the size check with a fake row count of 10,001 and confirm the Vietnamese sentence and no bytes. `ruff check .` exits 0.
   - **Estimate:** S
 
-- [ ] **IMP-17 — Cap Excel uploads and reject oversized zip contents**
+- [x] **IMP-17 — Cap Excel uploads and reject oversized zip contents**
   - **Priority:** P3
   - **Why:** the upload checks the `.xlsx` suffix and then lets openpyxl read the zip. A large or highly compressed file will spend disk and memory on the dev machine. The preview still must not write `SoLieu`.
   - **Evidence:** `apps/reporting/forms.py` `XlsxUploadForm.clean_file`; `apps/reporting/xlsx_import.py` `parse_workbook`; `apps/reporting/views.py` `nhap_xlsx`. No `DATA_UPLOAD_MAX_MEMORY_SIZE` override in `config/settings.py`. Review §3 row "Upload Excel".
@@ -304,7 +304,7 @@ These review sentences are stale against the current code. They do not get a tas
   - **Verify (localhost):** upload this app's HTKN export and confirm the preview. Upload a file over 5 MiB and confirm the size sentence. In `manage.py shell`, build a zip whose central directory claims an uncompressed size over 32 MiB and confirm the guard raises before openpyxl reads cells. `ruff check .` exits 0.
   - **Estimate:** M
 
-- [ ] **IMP-18 — Make the Axes lockout threshold a setting, and keep today's value**
+- [x] **IMP-18 — Make the Axes lockout threshold a setting, and keep today's value**
   - **Priority:** P3
   - **Why:** lockout runs at 10 failures. `TASKS.md` M1-T05's verify text says the Vietnamese message appears after five. Those two were never reconciled. The number itself waits on a decision; the code should show which value is live.
   - **Evidence:** `config/settings.py` `AXES_FAILURE_LIMIT = 10`, cooloff 15 minutes, message "Tài khoản tạm khóa vì đăng nhập sai quá nhiều lần. Vui lòng thử lại sau."; `TASKS.md` M1-T05. Review §4 item 9.

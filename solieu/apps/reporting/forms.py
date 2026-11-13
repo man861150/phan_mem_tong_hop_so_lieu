@@ -14,6 +14,9 @@ from apps.reporting.periods import (
     today,
 )
 
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+UPLOAD_TOO_LARGE = "Tệp vượt quá dung lượng cho phép (5 MB)."
+
 
 class BaoCaoPeriodForm(forms.Form):
     """Choose a reporting period and a department or the whole center."""
@@ -98,4 +101,6 @@ class XlsxUploadForm(forms.Form):
         uploaded = self.cleaned_data["file"]
         if Path(uploaded.name).suffix.lower() != ".xlsx":
             raise forms.ValidationError("Vui lòng chọn tệp có đuôi .xlsx.")
+        if uploaded.size > MAX_UPLOAD_BYTES:
+            raise forms.ValidationError(UPLOAD_TOO_LARGE)
         return uploaded

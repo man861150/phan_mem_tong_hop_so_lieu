@@ -23,10 +23,19 @@ HEADERS = (
 DANH_GIA_HEADER = "Đánh giá hiệu quả"
 NUMBER_FORMAT = "#,##0.##"
 NUMBER_STEP = Decimal("0.0001")
+MAX_EXPORT_ROWS = 10_000
+EXPORT_TOO_LARGE_MESSAGE = (
+    "Báo cáo quá lớn để xuất trên máy này (trên 10000 dòng). "
+    "Thu hẹp kỳ hoặc phòng rồi xuất lại."
+)
 SECTION_FILL = PatternFill("solid", fgColor="D9E7F4")
 HEADER_FILL = PatternFill("solid", fgColor="1F4E78")
 THIN = Side(style="thin", color="B7C9D6")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
+
+
+class ExportTooLargeError(Exception):
+    """The report exceeds the local in-memory export limit."""
 
 
 class ExcelPrecisionError(Exception):
@@ -105,6 +114,34 @@ def _check_report_numbers(reports: list[DepartmentReport]) -> None:
             for dimension in breakdown["dimensions"]:
                 for item in dimension["items"]:
                     check_number_precision(item.get("raw"), breakdown["chi_tieu"])
+
+
+def count_export_rows(reports: list[DepartmentReport]) -> int:
+    """Count the data rows the exporters would write."""
+    count = 0
+    for report in reports:
+        count += len(report.rows)
+        if report.ma_phong == "TTTK":
+            for breakdown in report.breakdowns:
+                for dimension in breakdown["dimensions"]:
+                    count += len(dimension["items"])
+        if report.ma_phong == "HTKN":
+            count += len(report.activities)
+            count += len(report.projects)
+    return count
+
+
+def export_size_error(row_count: int) -> str | None:
+    """Return the oversized-export message for a row count, else ``None``."""
+    if row_count > MAX_EXPORT_ROWS:
+        return EXPORT_TOO_LARGE_MESSAGE
+    return None
+
+
+def check_export_size(reports: list[DepartmentReport]) -> None:
+    error = export_size_error(count_export_rows(reports))
+    if error:
+        raise ExportTooLargeError(error)
 
 
 def _number(value):
@@ -272,6 +309,7 @@ def build_workbook(
     period_label: str,
     accepted: bool,
 ) -> bytes:
+    check_export_size(reports)
     _check_report_numbers(reports)
     headers = _headers_for(reports)
     column_count = len(headers)
