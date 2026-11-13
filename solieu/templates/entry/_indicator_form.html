@@ -12,13 +12,6 @@
   <div class="form-hint mb-2">Lưu nháp giữ số chưa đủ. Gửi duyệt yêu cầu các chỉ tiêu bắt buộc.</div>
 {% endif %}
 
-<style>
-  [x-cloak] { display: none !important; }
-  .entry-form .text-secondary,
-  .entry-form .form-hint { color: #475467 !important; }
-  .entry-form :focus-visible { outline: 2px solid #206bc4; outline-offset: 2px; }
-</style>
-
 {% for row in rows %}
   <div class="card mb-3">
     <div class="card-header">
@@ -31,7 +24,7 @@
     </div>
     <div class="card-body">
       <div class="grid grid-cols-12 gap-3">
-        <div class="md:col-span-4">
+        <div class="col-span-12 md:col-span-4">
           <label class="form-label" for="{{ row.total.id_for_label }}">Giá trị</label>
           {% if can_edit %}
             {{ row.total }}
@@ -40,7 +33,7 @@
           {% endif %}
           {% if row.total.errors %}<div class="text-red-700">{{ row.total.errors }}</div>{% endif %}
         </div>
-        <div class="md:col-span-4">
+        <div class="col-span-12 md:col-span-4">
           <label class="form-label" for="{{ row.nguon.id_for_label }}">Nguồn số liệu</label>
           {% if can_edit %}
             {{ row.nguon }}
@@ -50,11 +43,11 @@
           {% if row.nguon.errors %}<div class="text-red-700">{{ row.nguon.errors }}</div>{% endif %}
         </div>
         {% if show_month_info %}
-          <div class="md:col-span-2">
+          <div class="col-span-12 md:col-span-2">
             <label class="form-label">Tháng trước</label>
             <div class="form-control-plaintext">{{ row.previous|vi_number }}</div>
           </div>
-          <div class="md:col-span-2">
+          <div class="col-span-12 md:col-span-2">
             <label class="form-label">Lũy kế năm</label>
             <div class="form-control-plaintext">{{ row.cumulative|vi_number }}</div>
           </div>

@@ -1,3 +1,6 @@
+/* Load order: Tailwind and tokens, shell, shared components, then page CSS. */
 @import "./system.css";
 @import "./layout.css";
 @import "./components.css";
+@import "./pages/home.css";
+@import "./pages/activities.css";

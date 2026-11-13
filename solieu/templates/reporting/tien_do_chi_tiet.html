@@ -32,21 +32,21 @@
     <div class="card-body">
       {% if summary %}
         <div class="grid grid-cols-12 gap-3">
-          <div class="md:col-span-3">
+          <div class="col-span-12 md:col-span-3">
             <div class="text-slate-500 small">Kế hoạch năm</div>
             <div class="h3 mb-0">{{ summary.plan }} {{ indicator.don_vi_tinh }}</div>
           </div>
-          <div class="md:col-span-3">
+          <div class="col-span-12 md:col-span-3">
             <div class="text-slate-500 small">Lũy kế đã duyệt</div>
             <div class="h3 mb-0">{{ summary.cumulative }} {{ indicator.don_vi_tinh }}</div>
           </div>
-          <div class="md:col-span-3">
+          <div class="col-span-12 md:col-span-3">
             <div class="text-slate-500 small">% hoàn thành</div>
             <div class="h3 mb-0">
               {{ summary.percent }}{% if summary.percent != "—" %}%{% endif %}
             </div>
           </div>
-          <div class="md:col-span-3">
+          <div class="col-span-12 md:col-span-3">
             <div class="text-slate-500 small">Còn lại</div>
             <div class="h3 mb-0">{{ summary.remainder }} {{ indicator.don_vi_tinh }}</div>
           </div>

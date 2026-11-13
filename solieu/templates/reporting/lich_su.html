@@ -16,11 +16,11 @@
 
   <div class="card mb-3">
     <div class="card-body">
-      <ul class="nav nav-tabs">
-        <li class="nav-item">
+      <ul class="nav-tabs">
+        <li>
           <a class="nav-link {% if mode == 'tra_cuu' %}active{% endif %}" href="?che_do=tra_cuu">Tra cứu</a>
         </li>
-        <li class="nav-item">
+        <li>
           <a class="nav-link {% if mode == 'so_sanh' %}active{% endif %}" href="?che_do=so_sanh">So sánh cùng kỳ</a>
         </li>
       </ul>
@@ -42,7 +42,7 @@
         <form method="get">
           <input type="hidden" name="che_do" value="tra_cuu">
           <div class="grid grid-cols-12 gap-3 items-end">
-            <div class="md:col-span-2">
+            <div class="col-span-12 md:col-span-2">
               <label class="form-label" for="year">Năm</label>
               <select class="form-select" id="year" name="year">
                 {% for year in year_options %}
@@ -50,7 +50,7 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="md:col-span-2">
+            <div class="col-span-12 md:col-span-2">
               <label class="form-label" for="ky">Kỳ</label>
               <select class="form-select" id="ky" name="ky">
                 {% for value, label in period_choices %}
@@ -58,7 +58,7 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="md:col-span-3">
+            <div class="col-span-12 md:col-span-3">
               <label class="form-label" for="phong">Phòng ban</label>
               <select class="form-select" id="phong" name="phong">
                 <option value="">Tất cả phòng ban trong phạm vi</option>
@@ -69,7 +69,7 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="md:col-span-3">
+            <div class="col-span-12 md:col-span-3">
               <label class="form-label" for="loai">Loại hoạt động</label>
               <select class="form-select" id="loai" name="loai">
                 <option value="">Tất cả loại hoạt động</option>
@@ -80,7 +80,7 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="md:col-span-3">
+            <div class="col-span-12 md:col-span-3">
               <label class="form-label" for="linh_vuc">Lĩnh vực</label>
               <select class="form-select" id="linh_vuc" name="linh_vuc">
                 <option value="">Tất cả lĩnh vực</option>
@@ -91,15 +91,15 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="md:col-span-4">
+            <div class="col-span-12 md:col-span-4">
               <label class="form-label" for="ten">Tên hoạt động, dự án hoặc chỉ tiêu</label>
               <input class="form-control" id="ten" name="ten" value="{{ filters.ten }}" placeholder="Nhập tên cần tìm">
             </div>
-            <div class="md:col-span-4">
+            <div class="col-span-12 md:col-span-4">
               <label class="form-label" for="don_vi">Đơn vị phối hợp</label>
               <input class="form-control" id="don_vi" name="don_vi" value="{{ filters.don_vi }}" placeholder="Nhập tên đơn vị">
             </div>
-            <div class="md:col-span-2">
+            <div class="col-span-12 md:col-span-2">
               <button class="btn btn-primary w-full" type="submit">Tìm kiếm</button>
             </div>
           </div>
@@ -255,14 +255,14 @@
         <form method="get">
           <input type="hidden" name="che_do" value="so_sanh">
           <div class="grid grid-cols-12 gap-3 items-end">
-            <div class="md:col-span-2">
+            <div class="col-span-12 md:col-span-2">
               <label class="form-label" for="kind">Loại kỳ</label>
               <select class="form-select" id="kind" name="kind">
                 <option value="month" {% if comparison.kind == 'month' %}selected{% endif %}>Tháng</option>
                 <option value="quarter" {% if comparison.kind == 'quarter' %}selected{% endif %}>Quý</option>
               </select>
             </div>
-            <div class="md:col-span-2">
+            <div class="col-span-12 md:col-span-2">
               <label class="form-label" for="month">Tháng</label>
               <select class="form-select" id="month" name="month">
                 {% for month in month_options %}
@@ -270,7 +270,7 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="md:col-span-2">
+            <div class="col-span-12 md:col-span-2">
               <label class="form-label" for="quarter">Quý</label>
               <select class="form-select" id="quarter" name="quarter">
                 {% for quarter in quarter_options %}
@@ -278,17 +278,17 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="md:col-span-2">
+            <div class="col-span-12 md:col-span-2">
               <label class="form-label" for="year_a">Năm A</label>
               <input class="form-control" type="number" id="year_a" name="year_a"
                      min="2000" max="2100" value="{{ comparison.year_a }}">
             </div>
-            <div class="md:col-span-2">
+            <div class="col-span-12 md:col-span-2">
               <label class="form-label" for="year_b">Năm B</label>
               <input class="form-control" type="number" id="year_b" name="year_b"
                      min="2000" max="2100" value="{{ comparison.year_b }}">
             </div>
-            <div class="md:col-span-2">
+            <div class="col-span-12 md:col-span-2">
               <label class="form-label" for="phong">Phạm vi</label>
               <select class="form-select" id="phong" name="phong">
                 {% if can_choose_center %}
@@ -301,7 +301,7 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="md:col-span-2">
+            <div class="col-span-12 md:col-span-2">
               <button class="btn btn-primary w-full" type="submit">So sánh</button>
             </div>
           </div>

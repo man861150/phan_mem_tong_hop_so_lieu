@@ -35,39 +35,39 @@
     <div class="card-body">
       <form method="get">
         <div class="grid grid-cols-12 gap-3 items-end">
-          <div class="md:col-span-2">
+          <div class="col-span-12 md:col-span-2">
             <label class="form-label" for="{{ form.kind.id_for_label }}">{{ form.kind.label }}</label>
             {{ form.kind }}
             {% if form.kind.errors %}<div class="text-red-700 small">{{ form.kind.errors }}</div>{% endif %}
           </div>
-          <div class="md:col-span-2">
+          <div class="col-span-12 md:col-span-2">
             <label class="form-label" for="{{ form.year.id_for_label }}">{{ form.year.label }}</label>
             {{ form.year }}
             {% if form.year.errors %}<div class="text-red-700 small">{{ form.year.errors }}</div>{% endif %}
           </div>
-          <div class="md:col-span-2">
+          <div class="col-span-12 md:col-span-2">
             <label class="form-label" for="{{ form.month.id_for_label }}">{{ form.month.label }}</label>
             {{ form.month }}
             {% if form.month.errors %}<div class="text-red-700 small">{{ form.month.errors }}</div>{% endif %}
           </div>
-          <div class="md:col-span-2">
+          <div class="col-span-12 md:col-span-2">
             <label class="form-label" for="{{ form.quarter.id_for_label }}">{{ form.quarter.label }}</label>
             {{ form.quarter }}
             {% if form.quarter.errors %}<div class="text-red-700 small">{{ form.quarter.errors }}</div>{% endif %}
           </div>
           {% if not is_scoped %}
-            <div class="md:col-span-3">
+            <div class="col-span-12 md:col-span-3">
               <label class="form-label" for="{{ form.phong.id_for_label }}">{{ form.phong.label }}</label>
               {{ form.phong }}
               {% if form.phong.errors %}<div class="text-red-700 small">{{ form.phong.errors }}</div>{% endif %}
             </div>
           {% else %}
-            <div class="md:col-span-3">
+            <div class="col-span-12 md:col-span-3">
               <div class="text-slate-500 small">Phạm vi</div>
               <div class="form-control-plaintext">{{ scope.label }}</div>
             </div>
           {% endif %}
-          <div class="md:col-span-1">
+          <div class="col-span-12 md:col-span-1">
             <button class="btn btn-primary w-full" type="submit">Xem</button>
           </div>
         </div>
@@ -177,7 +177,7 @@
                 <h4 class="mb-2">{{ breakdown.chi_tieu }} <span class="text-slate-500 small">({{ breakdown.ma_chi_tieu }})</span></h4>
                 <div class="grid grid-cols-12 gap-3 mb-3">
                   {% for dimension in breakdown.dimensions %}
-                    <div class="md:col-span-4">
+                    <div class="col-span-12 md:col-span-4">
                       <div class="text-slate-500 small mb-1">{{ dimension.ten }}</div>
                       <table class="table table-sm table-bordered mb-0">
                         <tbody>

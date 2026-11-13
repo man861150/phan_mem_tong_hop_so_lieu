@@ -4,12 +4,6 @@
 {% block title %}Hỗ trợ dự án — {{ project.ten_du_an }}{% endblock %}
 
 {% block content %}
-  <style>
-    .entry-form .text-secondary,
-    .entry-form .form-hint { color: #475467 !important; }
-    .entry-form :focus-visible { outline: 2px solid #206bc4; outline-offset: 2px; }
-  </style>
-
   <div class="page-header d-print-none">
     <div class="grid grid-cols-12 items-center">
       <div class="col-span-12">
@@ -107,22 +101,22 @@
           <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
         <div class="grid grid-cols-12 gap-3">
-          <div class="md:col-span-3">
+          <div class="col-span-12 md:col-span-3">
             <label class="form-label" for="{{ form.loai_ho_tro.id_for_label }}">{{ form.loai_ho_tro.label }}</label>
             {{ form.loai_ho_tro }}
             {% if form.loai_ho_tro.errors %}<div class="text-red-700">{{ form.loai_ho_tro.errors }}</div>{% endif %}
           </div>
-          <div class="md:col-span-3">
+          <div class="col-span-12 md:col-span-3">
             <label class="form-label" for="{{ form.ngay_ho_tro.id_for_label }}">{{ form.ngay_ho_tro.label }}</label>
             {{ form.ngay_ho_tro }}
             {% if form.ngay_ho_tro.errors %}<div class="text-red-700">{{ form.ngay_ho_tro.errors }}</div>{% endif %}
           </div>
-          <div class="md:col-span-2">
+          <div class="col-span-12 md:col-span-2">
             <label class="form-label" for="{{ form.so_chuyen_gia.id_for_label }}">{{ form.so_chuyen_gia.label }}</label>
             {{ form.so_chuyen_gia }}
             {% if form.so_chuyen_gia.errors %}<div class="text-red-700">{{ form.so_chuyen_gia.errors }}</div>{% endif %}
           </div>
-          <div class="md:col-span-4">
+          <div class="col-span-12 md:col-span-4">
             <label class="form-label" for="{{ form.noi_dung.id_for_label }}">{{ form.noi_dung.label }}</label>
             {{ form.noi_dung }}
             {% if form.noi_dung.errors %}<div class="text-red-700">{{ form.noi_dung.errors }}</div>{% endif %}

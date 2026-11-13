@@ -28,27 +28,27 @@
           <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
         <div class="grid grid-cols-12 gap-3">
-          <div class="md:col-span-6">
+          <div class="col-span-12 md:col-span-6">
             <label class="form-label" for="{{ form.phong.id_for_label }}">{{ form.phong.label }}</label>
             {{ form.phong }}
             {% if form.phong.errors %}<div class="text-red-700">{{ form.phong.errors }}</div>{% endif %}
           </div>
-          <div class="md:col-span-6">
+          <div class="col-span-12 md:col-span-6">
             <label class="form-label" for="{{ form.ten_du_an.id_for_label }}">{{ form.ten_du_an.label }}</label>
             {{ form.ten_du_an }}
             {% if form.ten_du_an.errors %}<div class="text-red-700">{{ form.ten_du_an.errors }}</div>{% endif %}
           </div>
-          <div class="md:col-span-4">
+          <div class="col-span-12 md:col-span-4">
             <label class="form-label" for="{{ form.chuong_trinh.id_for_label }}">{{ form.chuong_trinh.label }}</label>
             {{ form.chuong_trinh }}
             {% if form.chuong_trinh.errors %}<div class="text-red-700">{{ form.chuong_trinh.errors }}</div>{% endif %}
           </div>
-          <div class="md:col-span-4">
+          <div class="col-span-12 md:col-span-4">
             <label class="form-label" for="{{ form.hinh_thuc.id_for_label }}">{{ form.hinh_thuc.label }}</label>
             {{ form.hinh_thuc }}
             {% if form.hinh_thuc.errors %}<div class="text-red-700">{{ form.hinh_thuc.errors }}</div>{% endif %}
           </div>
-          <div class="md:col-span-4">
+          <div class="col-span-12 md:col-span-4">
             <label class="form-label" for="{{ form.nam.id_for_label }}">{{ form.nam.label }}</label>
             {{ form.nam }}
             {% if form.nam.errors %}<div class="text-red-700">{{ form.nam.errors }}</div>{% endif %}
@@ -64,14 +64,14 @@
     <div class="card">
       <div class="card-body">
         <dl class="grid grid-cols-12 mb-0">
-          <dt class="sm:col-span-3">Phòng ban</dt>
-          <dd class="sm:col-span-9">{{ project.phong }}</dd>
-          <dt class="sm:col-span-3">Chương trình</dt>
-          <dd class="sm:col-span-9">{{ project.get_chuong_trinh_display }}</dd>
-          <dt class="sm:col-span-3">Hình thức</dt>
-          <dd class="sm:col-span-9">{{ project.get_hinh_thuc_display }}</dd>
-          <dt class="sm:col-span-3">Năm</dt>
-          <dd class="sm:col-span-9">{{ project.nam }}</dd>
+          <dt class="col-span-12 sm:col-span-3">Phòng ban</dt>
+          <dd class="col-span-12 sm:col-span-9">{{ project.phong }}</dd>
+          <dt class="col-span-12 sm:col-span-3">Chương trình</dt>
+          <dd class="col-span-12 sm:col-span-9">{{ project.get_chuong_trinh_display }}</dd>
+          <dt class="col-span-12 sm:col-span-3">Hình thức</dt>
+          <dd class="col-span-12 sm:col-span-9">{{ project.get_hinh_thuc_display }}</dd>
+          <dt class="col-span-12 sm:col-span-3">Năm</dt>
+          <dd class="col-span-12 sm:col-span-9">{{ project.nam }}</dd>
         </dl>
       </div>
     </div>

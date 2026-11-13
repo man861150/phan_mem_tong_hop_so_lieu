@@ -47,19 +47,19 @@
     </div>
     <div class="card-body">
       <div class="grid grid-cols-12 gap-3">
-        <div class="md:col-span-3">
+        <div class="col-span-12 md:col-span-3">
           <div class="text-slate-500 small">Phòng ban</div>
           <div>{{ phieu.phong.ma_phong }} — {{ phieu.phong.ten_phong }}</div>
         </div>
-        <div class="md:col-span-3">
+        <div class="col-span-12 md:col-span-3">
           <div class="text-slate-500 small">Người nhập</div>
           <div>{{ phieu.nguoi_nhap.ho_ten }}</div>
         </div>
-        <div class="md:col-span-3">
+        <div class="col-span-12 md:col-span-3">
           <div class="text-slate-500 small">Ngày gửi</div>
           <div>{{ phieu.ngay_gui|date:"d/m/Y H:i"|default:"—" }}</div>
         </div>
-        <div class="md:col-span-3">
+        <div class="col-span-12 md:col-span-3">
           <div class="text-slate-500 small">Đối tượng</div>
           <div>{{ target }}</div>
         </div>
@@ -72,7 +72,7 @@
       <div class="card-header">
         <h3 class="card-title">Xử lý phiếu</h3>
       </div>
-      <div class="card-body flex flex-wrap align-items-start gap-3">
+      <div class="card-body flex flex-wrap items-start gap-3">
         {% if can_submit %}
           <form method="post" action="{% url 'entry:phieu_gui' phieu.pk %}">
             {% csrf_token %}
