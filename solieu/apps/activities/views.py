@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
@@ -102,6 +103,15 @@ def _render_detail(
     )
 
 
+def _status_options():
+    """Return filter labels, using the activity-list wording."""
+    labels = {TrangThaiHoatDong.KE_HOACH: "Sắp diễn ra"}
+    return [
+        (value, labels.get(value, label))
+        for value, label in TrangThaiHoatDong.choices
+    ]
+
+
 @login_required
 @require_GET
 def hoat_dong_list(request):
@@ -110,6 +120,30 @@ def hoat_dong_list(request):
     queryset = _activity_queryset(request.user)
     if show_filter and selected_phong:
         queryset = queryset.filter(loai_hoat_dong__phong__ma_phong=selected_phong)
+
+    # The summary cards describe the scoped year, not the narrowed filter view.
+    current_year = timezone.localdate().year
+    nam = request.GET.get("nam", str(current_year))
+    if nam.isdigit():
+        queryset = queryset.filter(tu_ngay__year=int(nam))
+    else:
+        nam = ""
+    year_options = list(range(current_year - 5, current_year + 2))
+    if nam.isdigit() and int(nam) not in year_options:
+        year_options.append(int(nam))
+        year_options.sort()
+    summary_queryset = queryset
+    summary = summary_queryset.aggregate(
+        total=Count("pk"),
+        da_to_chuc=Count(
+            "pk",
+            filter=Q(trang_thai=TrangThaiHoatDong.DA_TO_CHUC),
+        ),
+        sap_dien_ra=Count(
+            "pk",
+            filter=Q(trang_thai=TrangThaiHoatDong.KE_HOACH),
+        ),
+    )
 
     loai_hoat_dong = None
     loai_value = request.GET.get("loai", "")
@@ -126,13 +160,9 @@ def hoat_dong_list(request):
 
     ten = request.GET.get("ten", "").strip()
     if ten:
-        queryset = queryset.filter(ten__icontains=ten)
-
-    nam = request.GET.get("nam", str(timezone.localdate().year))
-    if nam.isdigit():
-        queryset = queryset.filter(tu_ngay__year=int(nam))
-    else:
-        nam = ""
+        queryset = queryset.filter(
+            Q(ten__icontains=ten) | Q(dia_diem__icontains=ten)
+        )
 
     selected_loai = "" if loai_hoat_dong is None else str(loai_hoat_dong.pk)
     filters = {}
@@ -149,16 +179,22 @@ def hoat_dong_list(request):
     page_obj = Paginator(queryset, LIST_PAGE_SIZE).get_page(
         request.GET.get("trang")
     )
+    # A stable display code for the table; the model has no code field.
+    activities = list(page_obj.object_list)
+    for activity in activities:
+        activity.display_code = f"MÃ HĐ-{activity.pk:03d}"
 
     return render(
         request,
         "activities/hoat_dong_list.html",
         {
-            "activities": page_obj.object_list,
+            "activities": activities,
             "page_obj": page_obj,
             "page_query": urlencode(filters),
             "activity_types": _activity_types(departments),
             "statuses": TrangThaiHoatDong.choices,
+            "status_options": _status_options(),
+            "summary": summary,
             "selected_nam": nam,
             "selected_loai": selected_loai,
             "selected_trang_thai": trang_thai,
@@ -167,7 +203,7 @@ def hoat_dong_list(request):
             "phong_options": visible,
             "selected_phong": selected_phong,
             "can_create": can(request.user, "edit_entry", request.user.phong_id),
-            "year_options": range(timezone.localdate().year - 5, timezone.localdate().year + 2),
+            "year_options": year_options,
         },
     )
 

@@ -2,134 +2,188 @@
 
 {% block title %}Hoạt động — Tổng hợp số liệu{% endblock %}
 
+{% block topbar_actions %}
+  <form class="topbar-year" method="get" action="{% url 'activities:hoat_dong_list' %}">
+    {% if show_filter and selected_phong %}
+      <input type="hidden" name="phong" value="{{ selected_phong }}">
+    {% endif %}
+    {% if selected_loai %}<input type="hidden" name="loai" value="{{ selected_loai }}">{% endif %}
+    {% if selected_trang_thai %}<input type="hidden" name="trang_thai" value="{{ selected_trang_thai }}">{% endif %}
+    {% if selected_ten %}<input type="hidden" name="ten" value="{{ selected_ten }}">{% endif %}
+    <label class="topbar-year-control" for="year-select">
+      <svg class="size-4" aria-hidden="true"><use href="#icon-calendar"></use></svg>
+      <span class="sr-only">Chọn năm</span>
+      <select id="year-select" name="nam" aria-label="Chọn năm" onchange="this.form.submit()">
+        {% for nam in year_options %}
+          <option value="{{ nam }}"{% if nam|stringformat:"s" == selected_nam %} selected{% endif %}>Năm {{ nam }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <noscript>
+      <button class="btn btn-secondary" type="submit">Chọn</button>
+    </noscript>
+  </form>
+{% endblock %}
+
 {% block content %}
-  <div class="page-header d-print-none">
-    <div class="grid grid-cols-12 items-center">
-      <div class="col-span-12">
-        <h2 class="page-title">Hoạt động</h2>
+  <section class="page-hero">
+    <div class="page-hero-main">
+      <p class="eyebrow">Quản lý dữ liệu</p>
+      <h1 class="page-hero-title">Hoạt động</h1>
+      <p class="page-hero-copy">Quản lý các sự kiện, hội thảo và chương trình huấn luyện của đơn vị.</p>
+    </div>
+    {% if can_create %}
+      <a class="btn btn-primary btn-lg" href="{% url 'activities:hoat_dong_create' %}">
+        <svg class="size-5" aria-hidden="true"><use href="#icon-plus"></use></svg>
+        Thêm hoạt động
+      </a>
+    {% endif %}
+  </section>
+
+  <section class="summary-grid" aria-label="Tóm tắt hoạt động">
+    <article class="summary-card">
+      <span class="summary-card-label">Tổng hoạt động</span>
+      <strong class="summary-card-value">{{ summary.total|stringformat:"02d" }}</strong>
+      <span class="summary-card-caption">
+        {% if selected_nam %}Trong năm {{ selected_nam }}{% else %}Trong tất cả các năm{% endif %}
+      </span>
+    </article>
+    <article class="summary-card summary-card--success">
+      <span class="summary-card-label">Đã tổ chức</span>
+      <strong class="summary-card-value">{{ summary.da_to_chuc }}</strong>
+      <span class="summary-card-caption">Hoạt động đã hoàn thành</span>
+    </article>
+    <article class="summary-card summary-card--warning">
+      <span class="summary-card-label">Sắp diễn ra</span>
+      <strong class="summary-card-value">{{ summary.sap_dien_ra }}</strong>
+      <span class="summary-card-caption">Đang chờ triển khai</span>
+    </article>
+  </section>
+
+  <form class="card filter-card" method="get" action="{% url 'activities:hoat_dong_list' %}">
+    <div class="filter-form">
+      <div class="filter-field filter-field--search">
+        <label class="sr-only" for="ten">Tìm kiếm hoạt động</label>
+        <div class="search-input">
+          <svg aria-hidden="true"><use href="#icon-search"></use></svg>
+          <input class="form-control" id="ten" name="ten" type="search"
+                 value="{{ selected_ten }}" placeholder="Tìm theo tên hoặc địa điểm...">
+        </div>
       </div>
-      {% if can_create %}
-        <div class="col-auto">
-          <a class="btn btn-primary" href="{% url 'activities:hoat_dong_create' %}">Thêm hoạt động</a>
+
+      {% if show_filter %}
+        <div class="filter-field">
+          <label class="form-label" for="phong">Phòng ban</label>
+          <select class="form-select" id="phong" name="phong">
+            <option value="">Tất cả phòng</option>
+            {% for phong in phong_options %}
+              <option value="{{ phong.ma_phong }}"{% if phong.ma_phong == selected_phong %} selected{% endif %}>{{ phong }}</option>
+            {% endfor %}
+          </select>
         </div>
       {% endif %}
-    </div>
-  </div>
 
-  <form class="card mb-3" method="get">
-    <div class="card-body">
-      <div class="grid grid-cols-12 gap-2">
-        {% if show_filter %}
-          <div class="md:col-span-3">
-            <label class="form-label" for="phong">Phòng ban</label>
-            <select class="form-select" id="phong" name="phong">
-              <option value="">Tất cả phòng</option>
-              {% for phong in phong_options %}
-                <option value="{{ phong.ma_phong }}"{% if phong.ma_phong == selected_phong %} selected{% endif %}>{{ phong }}</option>
-              {% endfor %}
-            </select>
-          </div>
-        {% endif %}
-        <div class="md:col-span-2">
-          <label class="form-label" for="nam">Năm</label>
-          <select class="form-select" id="nam" name="nam">
-            <option value="">Tất cả</option>
-            {% for nam in year_options %}
-              <option value="{{ nam }}"{% if nam|stringformat:"s" == selected_nam %} selected{% endif %}>{{ nam }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="md:col-span-3">
-          <label class="form-label" for="loai">Loại hoạt động</label>
-          <select class="form-select" id="loai" name="loai">
-            <option value="">Tất cả loại</option>
-            {% for loai in activity_types %}
-              <option value="{{ loai.pk }}"{% if loai.pk|stringformat:"s" == selected_loai %} selected{% endif %}>{{ loai.ten_loai }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="md:col-span-2">
-          <label class="form-label" for="trang_thai">Trạng thái</label>
-          <select class="form-select" id="trang_thai" name="trang_thai">
-            <option value="">Tất cả</option>
-            {% for value, label in statuses %}
-              <option value="{{ value }}"{% if value == selected_trang_thai %} selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="md:col-span-2">
-          <label class="form-label" for="ten">Tên</label>
-          <input class="form-control" id="ten" name="ten" type="search" value="{{ selected_ten }}">
-        </div>
+      <div class="filter-field">
+        <label class="form-label" for="loai">Loại hoạt động</label>
+        <select class="form-select" id="loai" name="loai">
+          <option value="">Tất cả loại</option>
+          {% for loai in activity_types %}
+            <option value="{{ loai.pk }}"{% if loai.pk|stringformat:"s" == selected_loai %} selected{% endif %}>{{ loai.ten_loai }}</option>
+          {% endfor %}
+        </select>
       </div>
-      <div class="mt-3">
-        <button class="btn btn-secondary" type="submit">Lọc</button>
-        <a class="btn btn-link" href="{% url 'activities:hoat_dong_list' %}">Xóa lọc</a>
+
+      <div class="filter-field">
+        <label class="form-label" for="trang_thai">Trạng thái</label>
+        <select class="form-select" id="trang_thai" name="trang_thai">
+          <option value="">Tất cả trạng thái</option>
+          {% for value, label in status_options %}
+            <option value="{{ value }}"{% if value == selected_trang_thai %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn btn-primary filter-submit" type="submit">
+          <svg class="size-4" aria-hidden="true"><use href="#icon-filter"></use></svg>
+          Lọc
+        </button>
+        {% if selected_ten or selected_loai or selected_trang_thai or selected_phong %}
+          <a class="btn btn-link" href="{% url 'activities:hoat_dong_list' %}{% if selected_nam %}?nam={{ selected_nam }}{% endif %}">Xóa lọc</a>
+        {% endif %}
       </div>
     </div>
+    {% if selected_nam %}<input type="hidden" name="nam" value="{{ selected_nam }}">{% endif %}
   </form>
 
-  <div class="card">
+  <section class="card table-card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">Danh sách hoạt động</h2>
+        <p class="card-subtitle">Hiển thị {{ page_obj|length }} trong tổng số {{ page_obj.paginator.count }} hoạt động</p>
+      </div>
+      <span class="period-chip year-chip">
+        <svg class="size-4" aria-hidden="true"><use href="#icon-calendar"></use></svg>
+        {% if selected_nam %}Năm {{ selected_nam }}{% else %}Tất cả năm{% endif %}
+      </span>
+    </div>
+
     <div class="table-responsive">
-      <table class="table table-vcenter card-table">
+      <table class="table activity-table">
+        <colgroup>
+          <col class="activity-col-name">
+          <col class="activity-col-type">
+          <col class="activity-col-department">
+          <col class="activity-col-time">
+          <col class="activity-col-place">
+          <col class="activity-col-status">
+        </colgroup>
         <thead>
           <tr>
-            <th>Tên hoạt động</th>
-            <th>Loại</th>
-            <th>Phòng</th>
-            <th>Thời gian</th>
-            <th>Địa điểm</th>
-            <th>Trạng thái</th>
+            <th scope="col">Tên hoạt động</th>
+            <th scope="col">Loại</th>
+            <th scope="col">Phòng</th>
+            <th scope="col">Thời gian</th>
+            <th scope="col">Địa điểm</th>
+            <th scope="col">Trạng thái</th>
           </tr>
         </thead>
         <tbody>
           {% for activity in activities %}
-            <tr>
-              <td>
-                <a href="{% url 'activities:hoat_dong_detail' activity.pk %}">{{ activity.ten }}</a>
-              </td>
-              <td>{{ activity.loai_hoat_dong.ten_loai }}</td>
-              <td>{{ activity.loai_hoat_dong.phong.ma_phong }}</td>
-              <td>
-                {{ activity.tu_ngay|date:"d/m/Y" }}
-                {% if activity.den_ngay and activity.den_ngay != activity.tu_ngay %}
-                  – {{ activity.den_ngay|date:"d/m/Y" }}
-                {% endif %}
-              </td>
-              <td>{{ activity.dia_diem|default:"—" }}</td>
-              <td>
-                {% if activity.trang_thai == "da_to_chuc" %}
-                  <span class="badge bg-success-lt">Đã tổ chức</span>
-                {% else %}
-                  <span class="badge bg-warning-lt">Kế hoạch</span>
-                {% endif %}
-              </td>
-            </tr>
+            {% include "activities/_hoat_dong_row.html" with activity=activity %}
           {% empty %}
             <tr>
-              <td colspan="6">Không có hoạt động phù hợp.</td>
+              <td colspan="6">
+                <div class="table-empty">
+                  <span class="table-empty-icon" aria-hidden="true">
+                    <svg class="size-5"><use href="#icon-activity"></use></svg>
+                  </span>
+                  <strong>Không có hoạt động phù hợp.</strong>
+                  <span>Thử điều chỉnh bộ lọc hoặc chọn năm khác.</span>
+                </div>
+              </td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-  </div>
 
-  {% if page_obj.paginator.num_pages > 1 %}
-    <div class="card mt-3">
-      <div class="card-body flex flex-wrap justify-between items-center gap-2">
-        <div>Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</div>
-        <div class="btn-group">
+    {% if page_obj.paginator.num_pages > 1 %}
+      <div class="page-pagination">
+        <span>Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        <div class="btn-group" role="group" aria-label="Phân trang hoạt động">
           {% if page_obj.has_previous %}
-            <a class="btn btn-outline-secondary btn-sm"
+            <a class="btn btn-outline-secondary"
+               aria-label="Trang trước"
                href="?{% if page_query %}{{ page_query }}&{% endif %}trang={{ page_obj.previous_page_number }}">Trước</a>
           {% endif %}
           {% if page_obj.has_next %}
-            <a class="btn btn-outline-secondary btn-sm"
+            <a class="btn btn-outline-secondary"
+               aria-label="Trang sau"
                href="?{% if page_query %}{{ page_query }}&{% endif %}trang={{ page_obj.next_page_number }}">Sau</a>
           {% endif %}
         </div>
       </div>
-    </div>
-  {% endif %}
+    {% endif %}
+  </section>
 {% endblock %}

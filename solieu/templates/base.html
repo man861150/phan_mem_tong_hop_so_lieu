@@ -5,6 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}Tổng hợp số liệu{% endblock %}</title>
+  <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
   {# Tailwind CSS, HTMX 2.0.11, Alpine.js 3.17.5, ECharts 5.6.0 #}
   <link rel="stylesheet" href="{% static 'css/app.generated.css' %}">
   <script src="{% static 'vendor/htmx/htmx.min.js' %}" defer></script>
@@ -12,43 +13,54 @@
   <script src="{% static 'vendor/echarts/echarts.min.js' %}" defer></script>
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-  <div class="app-shell">
-    <header class="site-header d-print-none">
-      <div class="container-app flex flex-wrap items-center justify-between gap-3 py-3">
-        <h1 class="mb-0 text-lg font-bold">
-          <a href="{% url 'home' %}">Tổng hợp số liệu</a>
-        </h1>
-        <div class="flex flex-wrap items-center gap-2 text-sm">
-          {% if user.is_authenticated %}
-            {% for item in navigation %}
-              {% if item.visible %}
-                <a class="rounded px-2 py-1 font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700{% if item.active %} bg-blue-50 text-blue-700{% endif %}"
-                   href="{{ item.url }}"
-                   {% if item.active %}aria-current="page"{% endif %}>{{ item.label }}</a>
-              {% endif %}
-            {% endfor %}
-            <span class="px-2 py-1 text-slate-500">{{ user.ho_ten }} — {{ user.get_role_display }}</span>
-            <form method="post" action="{% url 'accounts:logout' %}">
-              {% csrf_token %}
-              <button class="btn btn-link" type="submit">Đăng xuất</button>
-            </form>
-          {% else %}
+  {% include "partials/icons.html" %}
+  <div class="app-shell{% if user.is_authenticated %} has-sidebar{% endif %}"
+       x-data="{ navOpen: false }"
+       @keydown.escape.window="navOpen = false">
+    {% if user.is_authenticated %}
+      {% include "partials/sidebar.html" %}
+      <div class="sidebar-backdrop lg:hidden d-print-none"
+           x-show="navOpen"
+           x-cloak
+           @click="navOpen = false"
+           aria-hidden="true"></div>
+    {% endif %}
+
+    <div class="app-main">
+      <header class="topbar d-print-none">
+        {% if user.is_authenticated %}
+          <button type="button" class="topbar-menu lg:hidden"
+                  @click="navOpen = true"
+                  :aria-expanded="navOpen ? 'true' : 'false'"
+                  aria-label="Mở menu">
+            <svg class="size-5" aria-hidden="true"><use href="#icon-menu"></use></svg>
+          </button>
+          <a class="topbar-brand lg:hidden" href="{% url 'home' %}">iHUB</a>
+          <div class="topbar-actions">
+            {% block topbar_actions %}{% endblock %}
+            <button type="button" class="topbar-icon" aria-label="Thông báo" title="Thông báo">
+              <svg class="size-5" aria-hidden="true"><use href="#icon-bell"></use></svg>
+            </button>
+            <span class="avatar avatar-sm" aria-label="Tài khoản {{ user.ho_ten }}">{{ user.phong.ma_phong|default:user.ho_ten|slice:":2"|upper }}</span>
+          </div>
+        {% else %}
+          <a class="topbar-brand" href="{% url 'home' %}">Tổng hợp số liệu</a>
+          <div class="topbar-actions">
             <a class="btn btn-primary" href="{% url 'accounts:login' %}">Đăng nhập</a>
-          {% endif %}
-        </div>
-      </div>
-    </header>
-    <div class="flex min-h-[calc(100vh-73px)] flex-col">
-      <main class="page-content flex-1">
+          </div>
+        {% endif %}
+      </header>
+
+      <main class="page-content">
         <div class="container-app">
           {% block content %}{% endblock %}
         </div>
       </main>
+
       <footer class="page-footer d-print-none">
-        <div class="container-app">
-          <div>
-            Trung tâm Khởi nghiệp sáng tạo Thành phố Hồ Chí Minh
-          </div>
+        <div class="container-app page-footer-inner">
+          <span>© {% now "Y" %} Trung tâm Khởi nghiệp sáng tạo Thành phố Hồ Chí Minh</span>
+          <span>Hệ thống tổng hợp số liệu - v2.0</span>
         </div>
       </footer>
     </div>

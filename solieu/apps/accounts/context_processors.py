@@ -3,10 +3,21 @@
 from django.urls import reverse
 
 from apps.accounts.permissions import can
+from apps.entry.models import PhieuNhapLieu, TrangThaiPhieu
 
 
 def _can_any(user, *actions) -> bool:
     return any(can(user, action) for action in actions)
+
+
+def _editable_phieu_count(user):
+    """Count this user's phiếu that still need attention."""
+    if not can(user, "edit_entry"):
+        return 0
+    return PhieuNhapLieu.objects.filter(
+        nguoi_nhap=user,
+        trang_thai__in=(TrangThaiPhieu.NHAP, TrangThaiPhieu.TRA_LAI),
+    ).count()
 
 
 def navigation(request):
@@ -17,21 +28,27 @@ def navigation(request):
 
     path = request.path
     home_url = reverse("home")
+    editable_phieu_count = _editable_phieu_count(user)
     items = [
         {
             "label": "Trang chủ",
+            "icon": "home",
             "url": home_url,
             "active": path == home_url,
             "visible": can(user, "view_progress"),
         },
         {
             "label": "Phiếu tháng",
+            "icon": "file",
             "url": reverse("entry:phieu_thang_chon"),
             "active": path.startswith("/phieu/thang/"),
-            "visible": _can_any(user, "edit_entry", "view_progress"),
+            # The month chooser is a data-entry screen, not a read-only report.
+            "visible": can(user, "edit_entry"),
+            "badge": editable_phieu_count,
         },
         {
             "label": "Hoạt động",
+            "icon": "activity",
             "url": reverse("activities:hoat_dong_list"),
             "active": path.startswith("/hoat-dong/")
             or path.startswith("/phieu/hoat-dong/"),
@@ -39,6 +56,7 @@ def navigation(request):
         },
         {
             "label": "Dự án",
+            "icon": "project",
             "url": reverse("activities:du_an_list"),
             "active": path.startswith("/du-an/")
             or path.startswith("/phieu/du-an/"),
@@ -46,18 +64,21 @@ def navigation(request):
         },
         {
             "label": "Duyệt",
+            "icon": "check",
             "url": reverse("entry:duyet_list"),
             "active": path.startswith("/duyet/"),
             "visible": can(user, "approve_entry"),
         },
         {
             "label": "Tiến độ",
+            "icon": "chart",
             "url": reverse("reporting:tien_do"),
             "active": path.startswith("/tien-do/"),
             "visible": can(user, "view_progress"),
         },
         {
             "label": "Báo cáo",
+            "icon": "report",
             "url": reverse("reporting:bao_cao"),
             "active": path.startswith("/bao-cao/"),
             "visible": _can_any(
@@ -69,12 +90,14 @@ def navigation(request):
         },
         {
             "label": "Lịch sử",
+            "icon": "history",
             "url": reverse("reporting:lich_su"),
             "active": path.startswith("/lich-su/"),
             "visible": can(user, "view_history"),
         },
         {
             "label": "Danh mục",
+            "icon": "catalog",
             "url": reverse("catalog:danh_muc"),
             "active": path.startswith("/danh-muc/")
             or path.startswith("/ke-hoach/"),
@@ -82,6 +105,7 @@ def navigation(request):
         },
         {
             "label": "Quản trị",
+            "icon": "settings",
             "url": reverse("admin:index"),
             "active": path.startswith("/admin/"),
             "visible": _can_any(

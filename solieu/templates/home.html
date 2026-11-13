@@ -2,153 +2,237 @@
 
 {% block title %}Trang chủ — Tổng hợp số liệu{% endblock %}
 
+{% block topbar_actions %}
+  <span class="period-chip">
+    <svg class="size-4" aria-hidden="true"><use href="#icon-calendar"></use></svg>
+    Năm {{ year }}
+  </span>
+{% endblock %}
+
 {% block content %}
-  <div class="page-header d-print-none">
-    <div class="grid grid-cols-12 items-center">
-      <div class="col-span-12">
-        <h2 class="page-title">Trang chủ</h2>
-        <div class="text-slate-500">
-          Trung tâm Khởi nghiệp sáng tạo Thành phố Hồ Chí Minh — năm {{ year }}
-        </div>
-      </div>
-      <div class="col-auto">
-        <a class="btn btn-outline-secondary" href="{{ progress_url }}">Xem bảng tiến độ</a>
-      </div>
+  <section class="welcome-row">
+    <div>
+      <p class="eyebrow">Trung tâm Khởi nghiệp sáng tạo TP.HCM</p>
+      <h1 class="welcome-title">Xin chào, {% if user.phong %}{{ user.phong.ten_phong }}{% else %}{{ user.ho_ten }}{% endif %}</h1>
+      <p class="welcome-copy">Theo dõi tiến độ và cập nhật số liệu hoạt động của đơn vị.</p>
     </div>
-  </div>
+    <a class="btn btn-primary btn-lg w-full sm:w-auto" href="{{ progress_url }}">
+      Xem bảng tiến độ
+      <svg class="size-5" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+    </a>
+  </section>
 
-  {% if is_scoped %}
-    <div class="grid grid-cols-12 row-cards mb-3">
-      <div class="md:col-span-6">
-        <div class="card h-100">
-          <div class="card-header">
-            <h3 class="card-title">Phiếu nháp của tôi</h3>
-            <div class="card-actions">
-              <span class="badge bg-secondary-lt">{{ my_drafts|length }}</span>
-            </div>
+  <section class="stats-grid" aria-label="Số liệu tổng quan">
+    {% if is_scoped %}
+      {% with card=completion_cards.0 %}
+        <article class="stat-card stat-card--feature">
+          <div class="stat-icon stat-icon--blue">
+            <svg class="size-5" aria-hidden="true"><use href="#icon-chart"></use></svg>
           </div>
-          <div class="list-group list-group-flush">
-            {% for phieu in my_drafts %}
-              <a class="list-group-item list-group-item-action flex justify-between items-center"
-                 href="{% url 'entry:phieu_detail' phieu.pk %}">
-                <span>{{ phieu }}</span>
-                <span class="badge bg-secondary-lt">Nháp</span>
-              </a>
-            {% empty %}
-              <div class="list-group-item text-slate-500">Chưa có phiếu nháp.</div>
-            {% endfor %}
+          <div class="stat-main">
+            <span class="stat-label">Bình quân hoàn thành</span>
+            {% if card and card.percent is not None %}
+              <strong class="stat-value">{{ card.percent_display }}%</strong>
+              <small class="stat-caption">Toàn bộ chỉ tiêu năm {{ year }}</small>
+            {% else %}
+              <strong class="stat-value stat-value--text">Chưa có số liệu</strong>
+              <small class="stat-caption">Toàn bộ chỉ tiêu năm {{ year }}</small>
+            {% endif %}
           </div>
-        </div>
-      </div>
-      <div class="md:col-span-6">
-        <div class="card h-100">
-          <div class="card-header">
-            <h3 class="card-title">Phiếu bị trả lại</h3>
-            <div class="card-actions">
-              <span class="badge bg-warning-lt">{{ my_returned|length }}</span>
-            </div>
-          </div>
-          <div class="list-group list-group-flush">
-            {% for phieu in my_returned %}
-              <a class="list-group-item list-group-item-action flex justify-between items-center"
-                 href="{% url 'entry:phieu_detail' phieu.pk %}">
-                <span>{{ phieu }}</span>
-                <span class="badge bg-warning-lt">Trả lại</span>
-              </a>
-            {% empty %}
-              <div class="list-group-item text-slate-500">Chưa có phiếu bị trả lại.</div>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-      {% if is_department_head %}
-        <div class="md:col-span-6">
-          <a class="card card-link h-100" href="{% url 'entry:duyet_list' %}">
-            <div class="card-body">
-              <div class="text-slate-500">Phiếu chờ duyệt</div>
-              <div class="h1 mb-0">{{ pending_count }}</div>
-              <div class="text-slate-500 small">Mở danh sách chờ duyệt của phòng ban</div>
-            </div>
-          </a>
-        </div>
-      {% endif %}
-    </div>
-  {% endif %}
+          {% if card and card.percent is not None %}
+            {% include "partials/progress_ring.html" with percent=card.percent %}
+          {% endif %}
+        </article>
+      {% endwith %}
 
-  <div class="grid grid-cols-12 row-cards mb-3">
-    {% for item in completion_cards %}
-      <div class="md:col-span-4">
-        <div class="card h-100">
-          <div class="card-body">
-            <div class="text-slate-500">{{ item.ma_phong }} — {{ item.ten_phong }}</div>
-            <div class="h1 mb-0">
-              {% if item.percent is not None %}
-                {{ item.percent_display }}%
-              {% else %}
-                Chưa có số liệu
-              {% endif %}
-            </div>
-            <div class="text-slate-500 small">Bình quân % hoàn thành năm {{ year }}</div>
-          </div>
+      <article class="stat-card">
+        <div class="stat-icon stat-icon--orange">
+          <svg class="size-5" aria-hidden="true"><use href="#icon-file"></use></svg>
         </div>
-      </div>
-    {% empty %}
-      <div class="col-span-12">
-        <div class="card">
+        <div class="stat-main">
+          <span class="stat-label">Phiếu nháp của tôi</span>
+          <strong class="stat-value">{{ my_drafts|length }}</strong>
+          <small class="stat-caption">{{ my_drafts|length }} phiếu đang ở trạng thái nháp</small>
+        </div>
+        {% if my_drafts %}
+          <span class="badge bg-warning-lt stat-badge">Cần hoàn tất</span>
+        {% else %}
+          <span class="badge bg-success-lt stat-badge">Đã hoàn tất</span>
+        {% endif %}
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-icon stat-icon--green">
+          <svg class="size-5" aria-hidden="true"><use href="#icon-check"></use></svg>
+        </div>
+        <div class="stat-main">
+          <span class="stat-label">Phiếu bị trả lại</span>
+          <strong class="stat-value">{{ my_returned|length }}</strong>
+          <small class="stat-caption">{% if my_returned %}{{ my_returned|length }} phiếu cần chỉnh sửa{% else %}Không có phiếu cần chỉnh sửa{% endif %}</small>
+        </div>
+        {% if my_returned %}
+          <span class="badge bg-danger-lt stat-badge">Cần chỉnh sửa</span>
+        {% else %}
+          <span class="badge bg-success-lt stat-badge">Ổn định</span>
+        {% endif %}
+      </article>
+
+    {% else %}
+      {% for item in completion_cards %}
+        <article class="stat-card">
+          <div class="stat-icon stat-icon--blue">
+            <svg class="size-5" aria-hidden="true"><use href="#icon-chart"></use></svg>
+          </div>
+          <div class="stat-main">
+            <span class="stat-label">{{ item.ma_phong }} — {{ item.ten_phong }}</span>
+            {% if item.percent is not None %}
+              <strong class="stat-value">{{ item.percent_display }}%</strong>
+            {% else %}
+              <strong class="stat-value stat-value--text">Chưa có số liệu</strong>
+            {% endif %}
+            <small class="stat-caption">Bình quân % hoàn thành năm {{ year }}</small>
+          </div>
+          {% if item.percent is not None %}
+            {% include "partials/progress_ring.html" with percent=item.percent %}
+          {% endif %}
+        </article>
+      {% empty %}
+        <div class="card stats-grid-full">
           <div class="card-body text-slate-500">Chưa có số liệu.</div>
         </div>
-      </div>
-    {% endfor %}
-  </div>
+      {% endfor %}
+    {% endif %}
+  </section>
 
-  <div class="grid grid-cols-12 row-cards">
-    <div class="lg:col-span-6">
-      <div class="card h-100">
-        <div class="card-header">
-          <h3 class="card-title">{{ chart1_title }}</h3>
-        </div>
-        <div class="card-body">
-          <div id="chart1" style="height: 320px;"></div>
-          <div class="text-slate-500 small mt-2">
-            Bình quân các chỉ tiêu có kế hoạch đã xác nhận; chỉ tiêu “chỉ theo dõi” không được tính.
-          </div>
+  <section class="dashboard-row{% if is_scoped %} dashboard-row--split{% endif %}">
+    <article class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">{{ chart1_title }}</h2>
+          <p class="card-subtitle">Tỷ lệ bình quân trên các kế hoạch đã xác nhận</p>
         </div>
       </div>
-    </div>
-    <div class="lg:col-span-6">
-      <div class="card h-100">
+      <div class="card-body">
+        <div id="chart1" class="chart-canvas"></div>
+        <p class="card-note">
+          <span class="note-dot" aria-hidden="true"></span>
+          Chỉ tiêu “chỉ theo dõi” không được tính vào tỷ lệ hoàn thành.
+        </p>
+      </div>
+    </article>
+
+    {% if is_scoped %}
+      <article class="card">
         <div class="card-header">
           <div>
-            <h3 class="card-title mb-0">Lũy kế so với kế hoạch năm</h3>
-            <div class="text-slate-500 small">
-              Phòng:
-              <span id="chart2-department-label">{% if selected_department %}{{ selected_department.ma_phong }}{% else %}Chưa chọn{% endif %}</span>
-            </div>
+            <h2 class="card-title">Phiếu gần đây</h2>
+            <p class="card-subtitle">Cập nhật mới nhất của đơn vị</p>
           </div>
-          {% if show_department_switch %}
-            <div class="card-actions">
-              <select id="chart-department" class="form-select"
-                      data-endpoint="{% url 'home' %}"
-                      aria-label="Chọn phòng ban cho biểu đồ lũy kế">
-                {% for department in departments %}
-                  <option value="{{ department.pk }}"
-                          {% if selected_department and department.pk == selected_department.pk %}selected{% endif %}>
-                    {{ department.ma_phong }} — {{ department.ten_phong }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-          {% endif %}
+          <a class="btn btn-link card-actions" href="{% url 'entry:phieu_thang_chon' %}">Xem tất cả</a>
         </div>
         <div class="card-body">
-          <div id="chart2" style="height: 320px;"></div>
-          <div class="text-slate-500 small mt-2">
-            Chỉ hiển thị chỉ tiêu có kế hoạch năm đã xác nhận.
+          {% if is_department_head %}
+            <div class="recent-section">
+              <a class="list-row" href="{% url 'entry:duyet_list' %}">
+                <span class="list-row-icon list-row-icon--amber" aria-hidden="true">
+                  <svg class="size-4"><use href="#icon-activity"></use></svg>
+                </span>
+                <span class="list-row-copy">
+                  <span class="list-row-title">Phiếu chờ duyệt</span>
+                  <span class="list-row-meta">Mở danh sách chờ duyệt của phòng ban</span>
+                </span>
+                <span class="badge bg-warning-lt">{{ pending_count }}</span>
+              </a>
+            </div>
+          {% endif %}
+
+          <div class="recent-section">
+            <div class="recent-heading">
+              <h3>Phiếu nháp của tôi</h3>
+              <span class="badge bg-secondary-lt">{{ my_drafts|length }}</span>
+            </div>
+            {% for phieu in my_drafts %}
+              <a class="list-row" href="{% url 'entry:phieu_detail' phieu.pk %}">
+                <span class="list-row-icon" aria-hidden="true">
+                  <svg class="size-4"><use href="#icon-activity"></use></svg>
+                </span>
+                <span class="list-row-title">{{ phieu }}</span>
+                <span class="badge bg-warning-lt">Nháp</span>
+              </a>
+            {% empty %}
+              <div class="empty-state">Chưa có phiếu nháp.</div>
+            {% endfor %}
+          </div>
+
+          <div class="recent-section">
+            <div class="recent-heading">
+              <h3>Phiếu bị trả lại</h3>
+              <span class="badge bg-secondary-lt">{{ my_returned|length }}</span>
+            </div>
+            {% for phieu in my_returned %}
+              <a class="list-row" href="{% url 'entry:phieu_detail' phieu.pk %}">
+                <span class="list-row-icon list-row-icon--danger" aria-hidden="true">
+                  <svg class="size-4"><use href="#icon-file"></use></svg>
+                </span>
+                <span class="list-row-title">{{ phieu }}</span>
+                <span class="badge bg-danger-lt">Trả lại</span>
+              </a>
+            {% empty %}
+              <div class="empty-state">
+                <span class="empty-state-icon" aria-hidden="true">
+                  <svg class="size-4"><use href="#icon-check"></use></svg>
+                </span>
+                <div>
+                  <strong>Không có phiếu bị trả lại</strong>
+                  <span>Các phiếu đã gửi đều đang được xử lý.</span>
+                </div>
+              </div>
+            {% endfor %}
           </div>
         </div>
+      </article>
+    {% endif %}
+  </section>
+
+  <section>
+    <article class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Lũy kế so với kế hoạch năm</h2>
+          <p class="card-subtitle">
+            Phòng:
+            <span id="chart2-department-label">{% if selected_department %}{{ selected_department.ma_phong }}{% else %}Chưa chọn{% endif %}</span>
+            · Năm {{ year }}
+          </p>
+        </div>
+        <div class="card-actions chart-toolbar">
+          <div class="chart-legend">
+            <span><i class="legend-swatch legend-swatch--plan" aria-hidden="true"></i>Kế hoạch</span>
+            <span><i class="legend-swatch legend-swatch--total" aria-hidden="true"></i>Lũy kế</span>
+          </div>
+          {% if show_department_switch %}
+            <select id="chart-department" class="form-select form-select--compact"
+                    data-endpoint="{% url 'home' %}"
+                    aria-label="Chọn phòng ban cho biểu đồ lũy kế">
+              {% for department in departments %}
+                <option value="{{ department.pk }}"
+                        {% if selected_department and department.pk == selected_department.pk %}selected{% endif %}>
+                  {{ department.ma_phong }} — {{ department.ten_phong }}
+                </option>
+              {% endfor %}
+            </select>
+          {% endif %}
+        </div>
       </div>
-    </div>
-  </div>
+      <div class="card-body">
+        <div id="chart2" class="chart-canvas chart-canvas--tall"></div>
+        <p class="card-note">
+          <span class="note-dot note-dot--accent" aria-hidden="true"></span>
+          Chỉ hiển thị chỉ tiêu có kế hoạch năm đã xác nhận.
+        </p>
+      </div>
+    </article>
+  </section>
 
   {{ chart1|json_script:"chart1-data" }}
   {{ chart2|json_script:"chart2-data" }}
@@ -162,13 +246,29 @@
       const chart1Element = document.getElementById("chart1");
       const chart2Element = document.getElementById("chart2");
 
+      const rootStyle = getComputedStyle(document.documentElement);
+      function token(name) {
+        return rootStyle.getPropertyValue(name).trim();
+      }
+      const palette = {
+        plan: token("--color-chart-plan"),
+        total: token("--color-chart-total"),
+        value: token("--color-chart-value"),
+        totalValue: token("--color-chart-total-value"),
+        grid: token("--color-chart-grid"),
+        axis: token("--color-chart-axis"),
+        label: token("--color-chart-label")
+      };
+      const fontFamily = getComputedStyle(document.body).fontFamily;
+      const axisLabel = { color: palette.label, fontSize: 12, fontFamily: fontFamily };
+
       function emptyOption(message) {
         return {
           title: {
             text: message,
             left: "center",
             top: "middle",
-            textStyle: { fontSize: 14, color: "#667382", fontWeight: "normal" }
+            textStyle: { fontSize: 14, color: palette.label, fontWeight: "normal", fontFamily: fontFamily }
           },
           xAxis: { show: false },
           yAxis: { show: false },
@@ -187,22 +287,33 @@
             trigger: "axis",
             valueFormatter: function (value) { return value + "%"; }
           },
-          grid: { left: 48, right: 24, top: 24, bottom: 56 },
+          grid: { left: 40, right: 16, top: 32, bottom: 48 },
           xAxis: {
             type: "category",
             data: data.labels,
-            axisLabel: { interval: 0, rotate: 20 }
+            axisLine: { lineStyle: { color: palette.axis } },
+            axisTick: { show: false },
+            axisLabel: Object.assign({ interval: 0, width: 160, overflow: "break" }, axisLabel)
           },
-          yAxis: { type: "value", name: "%" },
+          yAxis: {
+            type: "value",
+            axisLine: { show: false },
+            axisLabel: axisLabel,
+            splitLine: { lineStyle: { color: palette.grid } }
+          },
           series: [{
             name: "% hoàn thành",
             type: "bar",
             data: data.values,
-            barMaxWidth: 48,
+            barMaxWidth: 64,
+            itemStyle: { color: palette.plan, borderRadius: [8, 8, 0, 0] },
             label: {
               show: true,
               position: "top",
-              formatter: function (item) { return item.value.toFixed(1) + "%"; }
+              fontFamily: fontFamily,
+              color: palette.value,
+              fontWeight: 800,
+              formatter: function (item) { return item.value.toFixed(2).replace(".", ",") + "%"; }
             }
           }]
         }, true);
@@ -219,31 +330,40 @@
             trigger: "axis",
             axisPointer: { type: "shadow" }
           },
-          legend: { data: ["Kế hoạch", "Lũy kế"] },
-          grid: { left: 56, right: 24, top: 40, bottom: 100 },
+          grid: { left: 48, right: 16, top: 32, bottom: 64 },
           xAxis: {
             type: "category",
             data: data.labels,
-            axisLabel: {
+            axisLine: { lineStyle: { color: palette.axis } },
+            axisTick: { show: false },
+            axisLabel: Object.assign({
               interval: 0,
-              rotate: 35,
               width: 140,
-              overflow: "truncate"
-            }
+              overflow: "break"
+            }, axisLabel)
           },
-          yAxis: { type: "value" },
+          yAxis: {
+            type: "value",
+            axisLine: { show: false },
+            axisLabel: axisLabel,
+            splitLine: { lineStyle: { color: palette.grid } }
+          },
           series: [
             {
               name: "Kế hoạch",
               type: "bar",
               data: data.plans,
-              barMaxWidth: 32
+              barMaxWidth: 48,
+              itemStyle: { color: palette.plan, borderRadius: [8, 8, 0, 0] },
+              label: { show: true, position: "top", fontFamily: fontFamily, color: palette.value, fontWeight: 800 }
             },
             {
               name: "Lũy kế",
               type: "bar",
               data: data.cumulative,
-              barMaxWidth: 32
+              barMaxWidth: 48,
+              itemStyle: { color: palette.total, borderRadius: [8, 8, 0, 0] },
+              label: { show: true, position: "top", fontFamily: fontFamily, color: palette.totalValue, fontWeight: 800 }
             }
           ]
         }, true);
@@ -270,7 +390,7 @@
           const label = document.getElementById("chart2-department-label");
           if (label) {
             const option = departmentSelect.options[departmentSelect.selectedIndex];
-            label.textContent = option.value ? option.textContent.split(" — ")[0] : "Chưa chọn";
+            label.textContent = option.value ? option.textContent.trim().split(" — ")[0] : "Chưa chọn";
           }
         });
       }

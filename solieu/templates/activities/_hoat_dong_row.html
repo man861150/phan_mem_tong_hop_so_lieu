@@ -1,0 +1,35 @@
+<tr>
+  <td>
+    <div class="activity-name">
+      <span class="activity-tile" aria-hidden="true">
+        <svg class="size-5"><use href="#icon-activity"></use></svg>
+      </span>
+      <span class="activity-name-copy">
+        <a class="activity-name-link" href="{% url 'activities:hoat_dong_detail' activity.pk %}">{{ activity.ten }}</a>
+        <span class="activity-code">{{ activity.display_code }}</span>
+      </span>
+    </div>
+  </td>
+  <td>{{ activity.loai_hoat_dong.ten_loai }}</td>
+  <td><span class="activity-department">{{ activity.loai_hoat_dong.phong.ma_phong }}</span></td>
+  <td>
+    <span class="cell-icon">
+      <svg aria-hidden="true"><use href="#icon-clock"></use></svg>
+      <span>
+        {{ activity.tu_ngay|date:"d/m/Y" }}
+        {% if activity.den_ngay and activity.den_ngay != activity.tu_ngay %}
+          – {{ activity.den_ngay|date:"d/m/Y" }}
+        {% endif %}
+      </span>
+    </span>
+  </td>
+  <td>
+    <span class="cell-icon">
+      <svg aria-hidden="true"><use href="#icon-pin"></use></svg>
+      <span>{{ activity.dia_diem|default:"—" }}</span>
+    </span>
+  </td>
+  <td>
+    {% include "activities/_trang_thai_pill.html" with trang_thai=activity.trang_thai %}
+  </td>
+</tr>

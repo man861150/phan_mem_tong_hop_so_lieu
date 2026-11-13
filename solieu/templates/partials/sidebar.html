@@ -1,0 +1,49 @@
+<aside class="app-sidebar d-print-none" :class="{ 'is-open': navOpen }" aria-label="Menu chính">
+  <div class="sidebar-brand">
+    <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+    <div class="min-w-0">
+      <strong class="brand-name">iHUB</strong>
+      <small class="brand-sub">Tổng hợp số liệu</small>
+    </div>
+    <button type="button" class="sidebar-close lg:hidden" @click="navOpen = false" aria-label="Đóng menu">
+      <svg class="size-5" aria-hidden="true"><use href="#icon-close"></use></svg>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav" aria-label="Điều hướng chính">
+    <p class="sidebar-label">Tổng quan</p>
+    {% for item in navigation %}
+      {% if item.visible %}
+        <a class="nav-item{% if item.active %} is-active{% endif %}"
+           href="{{ item.url }}"
+           {% if item.active %}aria-current="page"{% endif %}>
+          <svg class="nav-icon" aria-hidden="true"><use href="#icon-{{ item.icon }}"></use></svg>
+          <span>{{ item.label }}</span>
+          {% if item.badge %}
+            <span class="nav-badge" aria-label="{{ item.badge }} phiếu cần xử lý">{{ item.badge }}</span>
+          {% endif %}
+        </a>
+      {% endif %}
+    {% endfor %}
+
+    <p class="sidebar-label sidebar-label--account">Tài khoản</p>
+    <div class="nav-item nav-item--static" aria-label="Vai trò: {{ user.get_role_display }}">
+      <svg class="nav-icon" aria-hidden="true"><use href="#icon-user"></use></svg>
+      <span>{{ user.get_role_display }}</span>
+    </div>
+  </nav>
+
+  <div class="sidebar-user">
+    <span class="avatar" aria-hidden="true">{{ user.phong.ma_phong|default:user.ho_ten|slice:":2"|upper }}</span>
+    <div class="sidebar-user-copy">
+      <strong>{% if user.phong %}{{ user.phong.ten_phong }}{% else %}{{ user.ho_ten }}{% endif %}</strong>
+      <span>{{ user.get_role_display }}</span>
+    </div>
+    <form method="post" action="{% url 'accounts:logout' %}">
+      {% csrf_token %}
+      <button class="logout-button" type="submit" aria-label="Đăng xuất" title="Đăng xuất">
+        <svg class="size-5" aria-hidden="true"><use href="#icon-logout"></use></svg>
+      </button>
+    </form>
+  </div>
+</aside>
