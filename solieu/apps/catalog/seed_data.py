@@ -240,6 +240,8 @@ def _ct(ma, ten, don_vi, nhom, kieu, cach, **extra):
         "cap": None,
         "tu": None,
         "mau": None,
+        "toi_thieu": None,
+        "toi_da": None,
     }
     row.update(extra)
     return row
@@ -669,6 +671,8 @@ INDICATORS = (
         CachTongHop.AVERAGE,
         doi_tuong=NAM_NHOM,
         linh_vuc=True,
+        toi_thieu=Decimal("1"),
+        toi_da=Decimal("5"),
     ),
     _sum(
         "TTTK-HT-NHU-CAU",
@@ -882,6 +886,8 @@ def _scalar(spec, groups, activity_types):
         "loai_hoat_dong_id": None if loai is None else loai.pk,
         "phan_loai_doi_tuong": spec["doi_tuong"] is not None,
         "phan_loai_linh_vuc": spec["linh_vuc"],
+        "gia_tri_toi_thieu": spec["toi_thieu"],
+        "gia_tri_toi_da": spec["toi_da"],
         "dang_su_dung": True,
     }
 

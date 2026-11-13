@@ -11,6 +11,7 @@ from apps.activities.models import (
     HoatDongDonVi,
 )
 from apps.catalog.admin import CatalogPermissionMixin
+from apps.entry.admin import BusinessReadOnlyAdminMixin
 
 
 class DonViPhoiHopForm(forms.ModelForm):
@@ -102,10 +103,21 @@ class HoatDongDonViInline(admin.TabularInline):
     model = HoatDongDonVi
     extra = 0
     autocomplete_fields = ("don_vi",)
+    readonly_fields = ("don_vi",)
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(HoatDong)
-class HoatDongAdmin(SimpleHistoryAdmin):
+class HoatDongAdmin(BusinessReadOnlyAdminMixin, SimpleHistoryAdmin):
     list_display = (
         "ten",
         "loai_hoat_dong",
@@ -127,7 +139,7 @@ class HoatDongAdmin(SimpleHistoryAdmin):
 
 
 @admin.register(DuAn)
-class DuAnAdmin(SimpleHistoryAdmin):
+class DuAnAdmin(BusinessReadOnlyAdminMixin, SimpleHistoryAdmin):
     list_display = ("ten_du_an", "phong", "chuong_trinh", "hinh_thuc", "nam")
     list_filter = ("phong", "chuong_trinh", "hinh_thuc", "nam")
     search_fields = ("ten_du_an",)

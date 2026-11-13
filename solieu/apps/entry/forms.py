@@ -25,6 +25,14 @@ ZERO = Decimal("0")
 SOURCE_SURVEY = "Phiếu khảo sát sau sự kiện"
 
 
+def _format_bound(value):
+    """Render a Decimal bound without trailing zeros."""
+    text = format(Decimal(value).normalize(), "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text
+
+
 @dataclass(frozen=True)
 class IndicatorLine:
     """One indicator shown on an entry form."""
@@ -332,6 +340,9 @@ class IndicatorEntryForm(forms.Form):
         for line in self.indicators:
             chi_tieu = line.chi_tieu
             total = values[chi_tieu.pk]
+            bound = self._bound_error(chi_tieu, total)
+            if bound:
+                self.add_error(f"gia_tri_{chi_tieu.pk}", bound)
             if chi_tieu.phan_loai_doi_tuong:
                 self._clean_object_split(chi_tieu, total, cleaned)
             if chi_tieu.phan_loai_linh_vuc:
@@ -341,11 +352,40 @@ class IndicatorEntryForm(forms.Form):
 
         return cleaned
 
+    def _bound_error(self, chi_tieu, value):
+        """Return the indicator's own bound message, or ``None`` when valid."""
+        if value is None:
+            return None
+        low = chi_tieu.gia_tri_toi_thieu
+        high = chi_tieu.gia_tri_toi_da
+        if low is None and high is None:
+            return None
+        if low is not None and high is not None:
+            if low <= value <= high:
+                return None
+            return (
+                f"Giá trị phải từ {_format_bound(low)} đến "
+                f"{_format_bound(high)}."
+            )
+        if low is not None:
+            if value >= low:
+                return None
+            return f"Giá trị phải từ {_format_bound(low)}."
+        if value <= high:
+            return None
+        return f"Giá trị không được vượt quá {_format_bound(high)}."
+
     def _clean_object_split(self, chi_tieu, total, cleaned):
         parts = []
         for doi_tuong in self.object_options[chi_tieu.pk]:
             value = cleaned.get(f"doi_tuong_{chi_tieu.pk}_{doi_tuong.pk}")
             if value is not None:
+                bound = self._bound_error(chi_tieu, value)
+                if bound:
+                    self.add_error(
+                        f"doi_tuong_{chi_tieu.pk}_{doi_tuong.pk}",
+                        bound,
+                    )
                 parts.append((doi_tuong, value))
         if not parts:
             return
@@ -471,7 +511,11 @@ class IndicatorEntryForm(forms.Form):
                     if value < ZERO:
                         row["error"] = "Giá trị không được âm."
                     else:
-                        row["value"] = value
+                        bound = self._bound_error(chi_tieu, value)
+                        if bound:
+                            row["error"] = bound
+                        else:
+                            row["value"] = value
             elif not row["error"]:
                 row["error"] = "Nhập giá trị cho lĩnh vực đã chọn."
             if row["error"]:

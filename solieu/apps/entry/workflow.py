@@ -17,6 +17,7 @@ from django.http import QueryDict
 from django.utils import timezone
 
 from apps.accounts.permissions import can
+from apps.catalog.models import KyBaoCao, TrangThaiKy
 from apps.entry.models import (
     HanhDongXuLy,
     HoTroDuAn,
@@ -25,6 +26,13 @@ from apps.entry.models import (
     PhieuNhapLieu,
     SoLieu,
     TrangThaiPhieu,
+)
+
+PERIOD_CLOSED_MESSAGE = (
+    "Kỳ đã đóng. Phiếu tháng chỉ được xem, không được lưu."
+)
+PHIEU_PROCESSED_MESSAGE = (
+    "Phiếu đã được xử lý. Tải lại trang trước khi lưu."
 )
 
 
@@ -91,7 +99,7 @@ def _transition(phieu_id, user, action, *, y_kien="", apply=None):
 
     try:
         current = PhieuNhapLieu.objects.only(
-            "pk", "phong_id", "trang_thai"
+            "pk", "phong_id", "trang_thai", "ky_id"
         ).get(pk=phieu_id)
     except PhieuNhapLieu.DoesNotExist as exc:
         raise InvalidTransition("Không tìm thấy phiếu nhập liệu.") from exc
@@ -102,6 +110,14 @@ def _transition(phieu_id, user, action, *, y_kien="", apply=None):
     comment = (y_kien or "").strip()
 
     with transaction.atomic():
+        # Lock order everywhere: period first, then phiếu.
+        if current.ky_id:
+            ky = KyBaoCao.objects.select_for_update().get(pk=current.ky_id)
+            if (
+                action == HanhDongXuLy.GUI
+                and ky.trang_thai == TrangThaiKy.KHOA
+            ):
+                raise InvalidTransition(PERIOD_CLOSED_MESSAGE)
         phieu = PhieuNhapLieu.objects.select_for_update().get(pk=phieu_id)
         if not can(user, rule.permission, phieu.phong_id):
             raise PermissionDenied

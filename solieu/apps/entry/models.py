@@ -121,7 +121,40 @@ class PhieuNhapLieu(ValidatingModel):
                     "Phiếu phải có đúng một đối tượng: hoạt động, kỳ báo cáo "
                     "hoặc dự án, và loại phiếu phải khớp với đối tượng đó."
                 ),
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["hoat_dong"],
+                condition=models.Q(
+                    loai_phieu=LoaiPhieu.HOAT_DONG,
+                    la_phieu_bo_sung=False,
+                ),
+                name="entry_phieu_activity_primary_uniq",
+                violation_error_message=(
+                    "Mỗi hoạt động chỉ có một phiếu chính."
+                ),
+            ),
+            models.UniqueConstraint(
+                fields=["phong", "ky"],
+                condition=models.Q(
+                    loai_phieu=LoaiPhieu.THANG,
+                    la_phieu_bo_sung=False,
+                ),
+                name="entry_phieu_month_primary_uniq",
+                violation_error_message=(
+                    "Mỗi phòng chỉ có một phiếu chính cho một kỳ."
+                ),
+            ),
+            models.UniqueConstraint(
+                fields=["du_an"],
+                condition=models.Q(
+                    loai_phieu=LoaiPhieu.DU_AN,
+                    la_phieu_bo_sung=False,
+                ),
+                name="entry_phieu_project_primary_uniq",
+                violation_error_message=(
+                    "Mỗi dự án chỉ có một phiếu chính."
+                ),
+            ),
         ]
 
     def __str__(self):

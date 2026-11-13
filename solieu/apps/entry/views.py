@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
+from django.db import IntegrityError, transaction
 from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -65,6 +66,45 @@ def _phieu_queryset(user):
 
 
 EDITABLE_STATUSES = (TrangThaiPhieu.NHAP, TrangThaiPhieu.TRA_LAI)
+
+PERIOD_CLOSED_MESSAGE = workflow.PERIOD_CLOSED_MESSAGE
+PHIEU_PROCESSED_MESSAGE = workflow.PHIEU_PROCESSED_MESSAGE
+
+
+def _create_primary_phieu(lookup, **fields):
+    """Insert one primary phiếu, or return the one that won a race.
+
+    ``ValidatingModel.save()`` runs ``full_clean()``, so a duplicate primary
+    can raise ``ValidationError`` before PostgreSQL reports ``IntegrityError``.
+    Both mean another request inserted the winner first.  The nested atomic
+    block uses a savepoint so the caller's transaction can continue.
+    """
+    try:
+        with transaction.atomic():
+            return PhieuNhapLieu.objects.create(**fields)
+    except (IntegrityError, ValidationError):
+        phieu = lookup()
+        if phieu is not None:
+            return phieu
+        raise
+
+
+def _lock_for_write(phieu_id, ky_id=None):
+    """Lock the period (when present) then the phiếu, and re-read statuses.
+
+    Returns ``(period, phiếu, refusal)``.  A non-null ``refusal`` means the
+    caller must write nothing and show that sentence.  Callers run this inside
+    ``transaction.atomic()``.
+    """
+    ky = None
+    if ky_id is not None:
+        ky = KyBaoCao.objects.select_for_update().get(pk=ky_id)
+        if ky.trang_thai == TrangThaiKy.KHOA:
+            return ky, None, PERIOD_CLOSED_MESSAGE
+    phieu = PhieuNhapLieu.objects.select_for_update().get(pk=phieu_id)
+    if phieu.trang_thai not in EDITABLE_STATUSES:
+        return ky, phieu, PHIEU_PROCESSED_MESSAGE
+    return ky, phieu, None
 
 
 def _status_is_editable(phieu):
@@ -131,7 +171,10 @@ def _ensure_activity_phieu(activity, user, *, bo_sung=False):
     queryset = _activity_phieus(activity).filter(la_phieu_bo_sung=False)
     phieu = queryset.first()
     if phieu is None:
-        phieu = PhieuNhapLieu.objects.create(
+        phieu = _create_primary_phieu(
+            lambda: _activity_phieus(activity)
+            .filter(la_phieu_bo_sung=False)
+            .first(),
             phong=activity.phong,
             loai_phieu=LoaiPhieu.HOAT_DONG,
             hoat_dong=activity,
@@ -154,7 +197,8 @@ def _month_phieu(phong, ky):
 def _ensure_month_phieu(phong, ky, user):
     phieu = _month_phieu(phong, ky)
     if phieu is None:
-        phieu = PhieuNhapLieu.objects.create(
+        phieu = _create_primary_phieu(
+            lambda: _month_phieu(phong, ky),
             phong=phong,
             loai_phieu=LoaiPhieu.THANG,
             ky=ky,
@@ -176,7 +220,8 @@ def _project_phieu(du_an):
 def _ensure_project_phieu(du_an, user):
     phieu = _project_phieu(du_an)
     if phieu is None:
-        phieu = PhieuNhapLieu.objects.create(
+        phieu = _create_primary_phieu(
+            lambda: _project_phieu(du_an),
             phong=du_an.phong,
             loai_phieu=LoaiPhieu.DU_AN,
             du_an=du_an,
@@ -356,7 +401,12 @@ def phieu_hoat_dong(request, hoat_dong_id):
                     "Đã gửi duyệt phiếu nhiệm vụ phát sinh.",
                 )
             else:
-                form.save()
+                with transaction.atomic():
+                    _ky, _locked, refusal = _lock_for_write(phieu.pk)
+                    if refusal:
+                        messages.error(request, refusal)
+                        return redirect(_activity_url(activity, phieu))
+                    form.save()
                 messages.success(
                     request,
                     "Đã lưu nội dung nhiệm vụ phát sinh.",
@@ -390,7 +440,12 @@ def phieu_hoat_dong(request, hoat_dong_id):
                 messages.success(request, "Đã gửi duyệt phiếu kết quả.")
                 return redirect(_activity_url(activity, phieu))
         else:
-            form.save(phieu)
+            with transaction.atomic():
+                _ky, locked, refusal = _lock_for_write(phieu.pk)
+                if refusal:
+                    messages.error(request, refusal)
+                    return redirect(_activity_url(activity, phieu))
+                form.save(locked)
             messages.success(request, "Đã lưu nháp phiếu kết quả.")
             return redirect(_activity_url(activity, phieu))
     return _render_activity(
@@ -431,13 +486,14 @@ def phieu_xoa(request, phieu_id):
     phieu = get_object_or_404(_phieu_queryset(request.user), pk=phieu_id)
     if not can(request.user, "edit_entry", phieu.phong_id):
         raise PermissionDenied
-    if phieu.trang_thai not in (
-        TrangThaiPhieu.NHAP,
-        TrangThaiPhieu.TRA_LAI,
-    ):
-        raise PermissionDenied
-    target = _delete_redirect(phieu)
-    phieu.delete()
+    ky_id = phieu.ky_id if phieu.loai_phieu == LoaiPhieu.THANG else None
+    with transaction.atomic():
+        _ky, locked, refusal = _lock_for_write(phieu.pk, ky_id)
+        if refusal:
+            messages.error(request, refusal)
+            return redirect(_delete_redirect(phieu))
+        target = _delete_redirect(locked)
+        locked.delete()
     messages.success(request, "Đã xóa phiếu nháp và toàn bộ số liệu của phiếu.")
     return redirect(target)
 
@@ -545,16 +601,28 @@ def phieu_thang(request, ky_id):
         cumulative_values=cumulative_values,
     )
     if request.method == "POST" and form.is_valid():
+        with transaction.atomic():
+            _ky_locked, locked, refusal = _lock_for_write(phieu.pk, ky.pk)
+            if refusal:
+                messages.error(request, refusal)
+                return redirect("entry:phieu_thang", ky_id=ky.pk)
+            if action == "gui":
+                try:
+                    submitted = _submit_entry_form(
+                        form,
+                        locked,
+                        request.user,
+                    )
+                except workflow.InvalidTransition as exc:
+                    return HttpResponseBadRequest(str(exc))
+            else:
+                form.save(locked)
+                submitted = False
         if action == "gui":
-            try:
-                submitted = _submit_entry_form(form, phieu, request.user)
-            except workflow.InvalidTransition as exc:
-                return HttpResponseBadRequest(str(exc))
             if submitted:
                 messages.success(request, "Đã gửi duyệt phiếu tháng.")
                 return redirect("entry:phieu_thang", ky_id=ky.pk)
         else:
-            form.save(phieu)
             messages.success(request, "Đã lưu nháp phiếu tháng.")
             return redirect("entry:phieu_thang", ky_id=ky.pk)
 
@@ -631,7 +699,15 @@ def phieu_du_an(request, du_an_id):
             phieu=phieu,
         )
         if request.method == "POST" and form.is_valid():
-            form.save()
+            with transaction.atomic():
+                _ky, _locked, refusal = _lock_for_write(phieu.pk)
+                if refusal:
+                    messages.error(request, refusal)
+                    return redirect(
+                        "entry:phieu_du_an",
+                        du_an_id=project.pk,
+                    )
+                form.save()
             messages.success(request, "Đã thêm dòng hỗ trợ dự án.")
             return redirect("entry:phieu_du_an", du_an_id=project.pk)
 

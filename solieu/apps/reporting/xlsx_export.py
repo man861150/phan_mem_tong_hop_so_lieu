@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from io import BytesIO
 
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
@@ -21,10 +22,85 @@ HEADERS = (
 )
 DANH_GIA_HEADER = "Đánh giá hiệu quả"
 NUMBER_FORMAT = "#,##0.##"
+NUMBER_STEP = Decimal("0.0001")
 SECTION_FILL = PatternFill("solid", fgColor="D9E7F4")
 HEADER_FILL = PatternFill("solid", fgColor="1F4E78")
 THIN = Side(style="thin", color="B7C9D6")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
+
+
+class ExcelPrecisionError(Exception):
+    """A Decimal that an Excel numeric cell would store differently."""
+
+    def __init__(self, value, name, stored):
+        self.value = value
+        self.name = name
+        self.stored = stored
+        super().__init__(
+            "Không xuất được vì số "
+            f"{_format_decimal(value)} của chỉ tiêu {name} không giữ được "
+            f"trong ô Excel (ô sẽ lưu {_format_decimal(stored)})."
+        )
+
+
+def _format_decimal(value):
+    """Render a Decimal without trailing zeros."""
+    text = format(Decimal(value).normalize(), "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text
+
+
+def _quantize(value):
+    return Decimal(value).quantize(NUMBER_STEP)
+
+
+def _stored_excel_value(value):
+    """Write one number to an in-memory workbook and read the cell back."""
+    workbook = Workbook()
+    workbook.active["A1"] = float(value)
+    output = BytesIO()
+    workbook.save(output)
+    output.seek(0)
+    read_back = load_workbook(output, read_only=True, data_only=True)
+    try:
+        stored = read_back.active["A1"].value
+    finally:
+        read_back.close()
+    if stored is None:
+        raise ExcelPrecisionError(
+            _quantize(value),
+            "",
+            _quantize(value),
+        )
+    return _quantize(Decimal(str(stored)))
+
+
+def check_number_precision(value, name):
+    """Raise when the numeric cell cannot hold the quantized Decimal.
+
+    This is judged by the file, not by a digit count: 16 significant digits
+    can survive while 17 cannot.  Returns the value the cell will store.
+    """
+    if value is None:
+        return None
+    original = _quantize(value)
+    stored = _stored_excel_value(original)
+    if stored != original:
+        raise ExcelPrecisionError(original, name, stored)
+    return stored
+
+
+def _check_report_numbers(reports: list[DepartmentReport]) -> None:
+    for report in reports:
+        for row in report.rows:
+            for value in (
+                row.plan,
+                row.period_value,
+                row.cumulative,
+                row.percent,
+            ):
+                check_number_precision(value, row.ten_chi_tieu)
 
 
 def _number(value):
@@ -46,6 +122,7 @@ def build_workbook(
     period_label: str,
     accepted: bool,
 ) -> bytes:
+    _check_report_numbers(reports)
     headers = _headers_for(reports)
     column_count = len(headers)
     workbook = Workbook()

@@ -24,6 +24,10 @@
     {% endfor %}
   {% endif %}
 
+  {% if export_error %}
+    <div class="alert alert-danger">{{ export_error }}</div>
+  {% endif %}
+
   <div class="card mb-3">
     <div class="card-header">
       <h3 class="card-title">Kỳ báo cáo và phạm vi</h3>

@@ -6,8 +6,26 @@ from simple_history.admin import SimpleHistoryAdmin
 from apps.entry.models import HoTroDuAn, LichSuXuLy, PhieuNhapLieu, SoLieu
 
 
+class BusinessReadOnlyAdminMixin:
+    """Business data is written through the app, never through /admin/.
+
+    Do not call ``super()``: ``ModelAdmin`` returns true for superusers, and
+    the seeded ``admin`` account is a superuser.  View permission is left to
+    ``SimpleHistoryAdmin`` so changelists and history pages stay readable.
+    """
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(PhieuNhapLieu)
-class PhieuNhapLieuAdmin(SimpleHistoryAdmin):
+class PhieuNhapLieuAdmin(BusinessReadOnlyAdminMixin, SimpleHistoryAdmin):
     list_display = (
         "id",
         "phong",
@@ -94,7 +112,7 @@ class LichSuXuLyAdmin(admin.ModelAdmin):
 
 
 @admin.register(SoLieu)
-class SoLieuAdmin(SimpleHistoryAdmin):
+class SoLieuAdmin(BusinessReadOnlyAdminMixin, SimpleHistoryAdmin):
     list_display = (
         "phieu",
         "chi_tieu",
@@ -137,7 +155,7 @@ class SoLieuAdmin(SimpleHistoryAdmin):
 
 
 @admin.register(HoTroDuAn)
-class HoTroDuAnAdmin(SimpleHistoryAdmin):
+class HoTroDuAnAdmin(BusinessReadOnlyAdminMixin, SimpleHistoryAdmin):
     list_display = (
         "du_an",
         "phieu",

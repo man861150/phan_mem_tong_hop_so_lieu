@@ -62,7 +62,7 @@ These review sentences are stale against the current code. They do not get a tas
 
 ## P0 — Correctness
 
-- [ ] **IMP-01 — Stop business writes through `/admin/`**
+- [x] **IMP-01 — Stop business writes through `/admin/`**
   - **Priority:** P0
   - **Why:** the seeded superuser can change phiếu status, numbers, activities, and projects without `can()` and without `LichSuXuLy`. Rollup then treats those numbers as official.
   - **Evidence:** `apps/accounts/management/commands/seed_localhost.py` users tuple (`admin` is `is_superuser=True`); `apps/entry/admin.py` `PhieuNhapLieuAdmin`, `SoLieuAdmin`, `HoTroDuAnAdmin` (no permission override); `apps/activities/admin.py` `HoatDongAdmin`, `DuAnAdmin`. Catalog admins already call `can()` via `CatalogPermissionMixin`. Review §3 row "Ghi business data qua Admin", §4 item 7.
@@ -76,7 +76,7 @@ These review sentences are stale against the current code. They do not get a tas
   - **Verify (localhost):** as `admin`, open each of the five changelists and confirm there is no add, save, or delete. Open a phiếu history page and confirm it still loads. Change an HTKN indicator label in catalog admin and confirm that save still works. Approve a phiếu in the app as `ld.htkn` and confirm `LichSuXuLy` gained a row.
   - **Estimate:** S
 
-- [ ] **IMP-02 — One primary phiếu per target**
+- [x] **IMP-02 — One primary phiếu per target**
   - **Priority:** P0
   - **Why:** `_ensure_activity_phieu`, `_ensure_month_phieu`, and `_ensure_project_phieu` read then insert. Two requests can both see no row. Sum and activity-count rollups add every matching approved phiếu, so a second primary doubles the figure.
   - **Evidence:** `apps/entry/views.py` `_ensure_activity_phieu`, `_ensure_month_phieu`, `_ensure_project_phieu`; `apps/entry/models.py` `PhieuNhapLieu.Meta.constraints` (type check only); `apps/reporting/rollup.py` `_sum_map` and `_activity_count_queryset` (`la_phieu_bo_sung=False` still counts every primary). Review §3 row "Khóa kỳ/sửa đồng thời", §4 item 8. This database currently has 3 phiếu and no duplicate primary.
@@ -90,7 +90,7 @@ These review sentences are stale against the current code. They do not get a tas
   - **Verify (localhost):** `manage.py migrate` applies on this database. In `manage.py shell`, insert a second primary month phiếu for the same phòng and kỳ and confirm `IntegrityError`. Create a supplemental activity phiếu in the browser and confirm the primary is unchanged. `manage.py check` and `ruff check .` exit 0.
   - **Estimate:** M
 
-- [ ] **IMP-03 — Re-check the period and the phiếu inside the write**
+- [x] **IMP-03 — Re-check the period and the phiếu inside the write**
   - **Priority:** P0
   - **Why:** draft save reads `KyBaoCao.trang_thai` and `PhieuNhapLieu.trang_thai`, then writes in a later transaction that does not lock either row. A close or an approval that commits in between is stored anyway. Submit locks the phiếu and still uses the earlier period read.
   - **Evidence:** `apps/entry/views.py` `phieu_thang` (period flag, then `form.save` on the draft branch), `phieu_hoat_dong` draft branch, `phieu_du_an` `form.save`, `phieu_xoa`; `apps/entry/forms.py` `IndicatorEntryForm.save`; `apps/entry/workflow.py` `_transition` (locks the phiếu only). Review §4 item 8.
@@ -105,7 +105,7 @@ These review sentences are stale against the current code. They do not get a tas
   - **Verify (localhost):** open a month as `cb.htkn`. In another `manage.py shell`, lock that `KyBaoCao`, set `khoa`, and hold the transaction. Submit the open form and confirm it waits, then shows the closed-period sentence and leaves `SoLieu` unchanged. Release the shell, reopen the month, save `4`, and confirm the row. Repeat with the phiếu moved to `da_duyet` under a lock and confirm the draft save does not change `gia_tri`.
   - **Estimate:** M
 
-- [ ] **IMP-04 — Enforce each indicator's own min and max**
+- [x] **IMP-04 — Enforce each indicator's own min and max**
   - **Priority:** P0
   - **Why:** "Mức độ hài lòng" is specified as 1–5 and aggregated with `average`. The form only rejects negatives, so `6` is stored and moves the average.
   - **Evidence:** `apps/entry/forms.py` `_number_field` (`min_value` is 0, no `max_value`) and `_parse_field_rows` (rejects `value < 0` only). `clean()` at the split checks does not add a scale rule. `apps/catalog/seed_data.py` `_ct("TTTK-HT-HL", …)` sets `CachTongHop.AVERAGE` and `KieuGhiNhan.ACTIVITY`. `ChiTieu` has no bounds field (`apps/catalog/models.py`). `TASKS.md` Q3. Review §4 item 2. No hội thảo activity exists locally, so the form probe was not re-run; the field definition accepts any non-negative `Decimal(18, 4)`.
@@ -119,7 +119,7 @@ These review sentences are stale against the current code. They do not get a tas
   - **Verify (localhost):** `seed_catalog`. Open a TTTK hội thảo phiếu as an entry officer, enter `6` on "Mức độ hài lòng", and confirm the Vietnamese message on the total and on an object part. Enter `4`, save, approve as `ld.htkn`, and confirm `rollup_preview` shows `4` for that indicator. `manage.py check` and `ruff check .` exit 0.
   - **Estimate:** S
 
-- [ ] **IMP-05 — Reject Excel values the numeric cell cannot store**
+- [x] **IMP-05 — Reject Excel values the numeric cell cannot store**
   - **Priority:** P0
   - **Why:** `SoLieu.gia_tri` is `Decimal(18, 4)`. The workbook writes a binary float. `12345678901234.1234` is stored as `12345678901234.12`. Passing a `Decimal` into the cell does the same thing, because openpyxl persists a float.
   - **Evidence:** `apps/reporting/xlsx_export.py` `_number` and the numeric columns; `apps/entry/models.py` `SoLieu.gia_tri`. Local probe on 13 November 2026: openpyxl read-back of that decimal is `12345678901234.12`. `123456789012.1234` survives; `1234567890123.1234` becomes `1234567890123.123`. Review §4 item 3. Word export is unaffected.

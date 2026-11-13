@@ -1,6 +1,7 @@
 """Departments, indicators, annual plans, lookup tables, and form templates."""
 
 from django.contrib import admin
+from django.db import transaction
 from simple_history.admin import SimpleHistoryAdmin
 
 from apps.accounts.permissions import can
@@ -128,6 +129,16 @@ class ChiTieuAdmin(
                 )
             },
         ),
+        (
+            "Giới hạn giá trị",
+            {
+                "fields": ("gia_tri_toi_thieu", "gia_tri_toi_da"),
+                "description": (
+                    "Để trống nếu chỉ tiêu chỉ cần không âm. Khi cả hai "
+                    "được nhập, giá trị tối thiểu không được lớn hơn tối đa."
+                ),
+            },
+        ),
     )
     filter_horizontal = ("doi_tuong_ap_dung", "nguon_cho_phep")
 
@@ -238,8 +249,11 @@ class KyBaoCaoAdmin(CatalogPermissionMixin, SimpleHistoryAdmin):
     def _dat_trang_thai(self, request, queryset, trang_thai, reason, verb):
         count = 0
         for row in queryset:
-            row.trang_thai = trang_thai
-            row._change_reason = reason
-            row.save()
+            # Same lock order as entry saves: the period first.
+            with transaction.atomic():
+                locked = KyBaoCao.objects.select_for_update().get(pk=row.pk)
+                locked.trang_thai = trang_thai
+                locked._change_reason = reason
+                locked.save()
             count += 1
         self.message_user(request, f"Đã {verb} {count} kỳ.")

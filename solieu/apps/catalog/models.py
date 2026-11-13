@@ -142,6 +142,20 @@ class ChiTieu(ValidatingModel):
     )
     phan_loai_doi_tuong = models.BooleanField("Phân loại đối tượng", default=False)
     phan_loai_linh_vuc = models.BooleanField("Phân loại lĩnh vực", default=False)
+    gia_tri_toi_thieu = models.DecimalField(
+        "Giá trị tối thiểu",
+        max_digits=18,
+        decimal_places=4,
+        null=True,
+        blank=True,
+    )
+    gia_tri_toi_da = models.DecimalField(
+        "Giá trị tối đa",
+        max_digits=18,
+        decimal_places=4,
+        null=True,
+        blank=True,
+    )
     khong_vuot_chi_tieu = models.ForeignKey(
         "self",
         verbose_name="Không vượt chỉ tiêu",
@@ -245,6 +259,14 @@ class ChiTieu(ValidatingModel):
             errors["loai_ho_tro"] = "Chỉ tiêu đếm dự án phải chọn loại hỗ trợ."
         if self.count_subject != CountSubject.PROJECT and self.loai_ho_tro:
             errors["loai_ho_tro"] = "Chỉ chỉ tiêu đếm dự án mới được gắn loại hỗ trợ."
+        if (
+            self.gia_tri_toi_thieu is not None
+            and self.gia_tri_toi_da is not None
+            and self.gia_tri_toi_thieu > self.gia_tri_toi_da
+        ):
+            errors["gia_tri_toi_da"] = (
+                "Giá trị tối đa phải lớn hơn hoặc bằng giá trị tối thiểu."
+            )
         self._clean_loai_hoat_dong(errors)
         if errors:
             raise ValidationError(errors)

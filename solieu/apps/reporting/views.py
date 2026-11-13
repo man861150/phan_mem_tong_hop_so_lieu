@@ -59,7 +59,7 @@ from apps.reporting.report_data import (
     scope_departments,
 )
 from apps.reporting.rollup import ReportPeriod, rollup
-from apps.reporting.xlsx_export import build_workbook
+from apps.reporting.xlsx_export import ExcelPrecisionError, build_workbook
 from apps.reporting.xlsx_import import WorkbookFormatError, parse_workbook
 
 SCOPE_PARAMS = ("kind", "year", "month", "quarter", "phong")
@@ -197,6 +197,7 @@ def _render_report(
     scope,
     user,
     accepted: bool,
+    export_error=None,
 ):
     departments, reports, gaps_by_department = _load_report_data(
         request,
@@ -238,6 +239,7 @@ def _render_report(
         ),
         "hidden_scope": _scope_fields(period, scope),
         "tiep_tuc_value": "1" if accepted else "",
+        "export_error": export_error,
     }
     return render(request, "reporting/bao_cao.html", context)
 
@@ -360,11 +362,22 @@ def xuat_bao_cao(request, dinh_dang):
 
     ky = period_label(period)
     if dinh_dang == "xlsx":
-        content = build_workbook(
-            reports,
-            period_label=ky,
-            accepted=accepted,
-        )
+        try:
+            content = build_workbook(
+                reports,
+                period_label=ky,
+                accepted=accepted,
+            )
+        except ExcelPrecisionError as exc:
+            return _render_report(
+                request,
+                form=form,
+                period=period,
+                scope=scope,
+                user=request.user,
+                accepted=accepted,
+                export_error=str(exc),
+            )
     else:
         content = build_docx(
             reports,
