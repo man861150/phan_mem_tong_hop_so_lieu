@@ -3,7 +3,14 @@
 {% block title %}{% if activity %}{{ activity.ten }}{% else %}Thêm hoạt động{% endif %} — Tổng hợp số liệu{% endblock %}
 
 {% block content %}
-  <style>[x-cloak] { display: none !important; }</style>
+  <style>
+    [x-cloak] { display: none !important; }
+    #don-vi-spinner { display: none; }
+    #don-vi-spinner.htmx-request { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .entry-form .text-secondary,
+    .entry-form .form-hint { color: #475467 !important; }
+    .entry-form :focus-visible { outline: 2px solid #206bc4; outline-offset: 2px; }
+  </style>
 
   <div class="page-header d-print-none">
     <div class="row align-items-center">
@@ -38,7 +45,7 @@
   {% endif %}
 
   {% if can_edit %}
-    <form id="activity-form" class="card" method="post" x-data="{ adHoc: false, syncAdHoc() { const el = this.$refs.loai; this.adHoc = !!(el &amp;&amp; el.selectedOptions[0] &amp;&amp; el.selectedOptions[0].dataset.adHoc === 'true'); } }" x-init="syncAdHoc()">
+    <form id="activity-form" class="card entry-form" method="post" x-data="{ adHoc: false, syncAdHoc() { const el = this.$refs.loai; this.adHoc = !!(el &amp;&amp; el.selectedOptions[0] &amp;&amp; el.selectedOptions[0].dataset.adHoc === 'true'); } }" x-init="syncAdHoc()">
       {% csrf_token %}
       <div class="card-body">
         {% if form.non_field_errors %}
@@ -97,9 +104,16 @@
             <div class="border rounded p-2" id="don-vi-options">
               {% include "activities/don_vi_form.html" %}
             </div>
-            <div class="input-group mt-2">
+            <label class="form-label" for="id_ten_don_vi_moi">Tên đơn vị phối hợp mới</label>
+            <div class="input-group mt-1">
               <input class="form-control" id="id_ten_don_vi_moi" name="ten_don_vi_moi" type="text" placeholder="Tên đơn vị mới">
-              <button class="btn btn-outline-secondary" type="button" hx-post="{% url 'activities:don_vi_them' %}" hx-target="#don-vi-options" hx-swap="innerHTML" hx-include="#don-vi-add">Thêm đơn vị</button>
+              <button class="btn btn-outline-secondary" type="button" hx-post="{% url 'activities:don_vi_them' %}" hx-target="#don-vi-options" hx-swap="innerHTML" hx-include="#don-vi-add" hx-indicator="#don-vi-spinner">Thêm đơn vị</button>
+            </div>
+            <div class="mt-2">
+              <span id="don-vi-spinner" class="htmx-indicator text-secondary small" role="status" aria-live="polite">
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                Đang lưu đơn vị…
+              </span>
             </div>
             <div class="form-hint">Đơn vị mới được lưu ngay vào danh mục và chọn sẵn cho hoạt động này.</div>
           </div>

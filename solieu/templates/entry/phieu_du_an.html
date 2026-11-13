@@ -4,6 +4,12 @@
 {% block title %}Hỗ trợ dự án — {{ project.ten_du_an }}{% endblock %}
 
 {% block content %}
+  <style>
+    .entry-form .text-secondary,
+    .entry-form .form-hint { color: #475467 !important; }
+    .entry-form :focus-visible { outline: 2px solid #206bc4; outline-offset: 2px; }
+  </style>
+
   <div class="page-header d-print-none">
     <div class="row align-items-center">
       <div class="col">
@@ -90,12 +96,13 @@
   {% endif %}
 
   {% if can_edit %}
-    <form method="post" class="card">
+    <form method="post" class="card entry-form">
       {% csrf_token %}
       <div class="card-header">
         <h3 class="card-title">Thêm dòng hỗ trợ</h3>
       </div>
       <div class="card-body">
+        <div class="form-hint mb-2">Mỗi dòng là một lần hỗ trợ. Số chuyên gia không được âm.</div>
         {% if form.non_field_errors %}
           <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}

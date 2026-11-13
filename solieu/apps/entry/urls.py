@@ -4,6 +4,7 @@ from django.urls import path
 
 from apps.entry.views import (
     duyet_list,
+    linh_vuc_search,
     phieu_detail,
     phieu_du_an,
     phieu_duyet,
@@ -21,6 +22,11 @@ from apps.entry.views import (
 app_name = "entry"
 
 urlpatterns = [
+    path(
+        "linh-vuc/tim-kiem/",
+        linh_vuc_search,
+        name="linh_vuc_search",
+    ),
     path(
         "phieu/hoat-dong/<int:hoat_dong_id>/",
         phieu_hoat_dong,

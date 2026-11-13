@@ -198,7 +198,7 @@ These review sentences are stale against the current code. They do not get a tas
 
 ## P2 — Usability
 
-- [ ] **IMP-10 — Paginate activity and project lists**
+- [x] **IMP-10 — Paginate activity and project lists**
   - **Priority:** P2
   - **Why:** both lists render every row. Search already pages at 25.
   - **Evidence:** `apps/activities/views.py` `hoat_dong_list`, `du_an_list`; `templates/activities/hoat_dong_list.html`, `templates/activities/du_an_list.html`. Review §3 row "Hiệu năng", §5.4.
@@ -210,7 +210,7 @@ These review sentences are stale against the current code. They do not get a tas
   - **Verify (localhost):** with the seeded activities, the list shows one page and no pager. In `manage.py shell`, the paginator for a queryset longer than 25 reports 25 per page. Click a second page in the browser if you add rows, and confirm the năm filter is still selected.
   - **Estimate:** S
 
-- [ ] **IMP-11 — Search the field tree instead of repeating it in every select**
+- [x] **IMP-11 — Search the field tree instead of repeating it in every select**
   - **Priority:** P2
   - **Why:** each indicator with `phan_loai_linh_vuc` loads every `DanhMucLinhVuc` row, and each QĐ 36 or TT 24 row, including the add-row template, repeats that full `<option>` list.
   - **Evidence:** `apps/entry/forms.py` `_add_fields` (`DanhMucLinhVuc.objects.all()`); `templates/entry/phan_loai_grid.html` selects and the two `<template>` blocks. Review §5.4, §5.5.
@@ -224,7 +224,7 @@ These review sentences are stale against the current code. They do not get a tas
   - **Verify (localhost):** after IMP-09 has loaded the sample, open a hội thảo phiếu, type "mẫu", pick `MAU-01`, enter a value that matches the total, and save. View source and confirm the option list is not repeated once per indicator. `ruff check .` exits 0.
   - **Estimate:** M
 
-- [ ] **IMP-12 — Show a spinner on the HTMX post**
+- [x] **IMP-12 — Show a spinner on the HTMX post**
   - **Priority:** P2
   - **Why:** "Thêm đơn vị" posts with HTMX and the button gives no feedback while the request runs. That is the only `hx-post` in the templates.
   - **Evidence:** `templates/activities/hoat_dong_form.html` partner-unit button (`hx-post`, no `hx-indicator`). Review §5.5.
@@ -236,7 +236,7 @@ These review sentences are stale against the current code. They do not get a tas
   - **Verify (localhost):** as `cb.htkn`, on an activity form, add a partner unit and confirm the spinner appears and the new name is selected. Submit an empty name and confirm the Vietnamese error.
   - **Estimate:** S
 
-- [ ] **IMP-13 — Bind labels, keyboard order, and focus on the entry screens**
+- [x] **IMP-13 — Bind labels, keyboard order, and focus on the entry screens**
   - **Priority:** P2
   - **Why:** object-split labels are not tied to their inputs, field-split controls have no label, and the partner-unit text input's label is not tied to `id_ten_don_vi_moi`. A keyboard user cannot tell which control is active if focus is restyled away.
   - **Evidence:** `templates/entry/phan_loai_grid.html` (object `<label>` without `for`; field `<select>` and value `<input>` without a label); `templates/activities/hoat_dong_form.html` partner block. Review §3 row "Responsive/accessibility", §5.5. Login, activity fields, and indicator totals already use `form-label` with `for`.
@@ -249,7 +249,7 @@ These review sentences are stale against the current code. They do not get a tas
   - **Verify (localhost):** with the mouse unplugged, sign in, open an activity, tab through partner units and the field grid, save, and confirm focus was always visible. Repeat on a monthly phiếu and a project phiếu.
   - **Estimate:** M
 
-- [ ] **IMP-14 — Add the missing entry hints**
+- [x] **IMP-14 — Add the missing entry hints**
   - **Priority:** P2
   - **Why:** several empty sentences already exist ("Chưa có chỉ tiêu nào được cấu hình cho biểu mẫu này.", "Chưa có dòng hỗ trợ nào."). The three entry forms still do not say what draft save does, or that the monthly comparison figures are read-only.
   - **Evidence:** `templates/entry/phieu_form.html`, `templates/entry/phieu_thang.html`, `templates/entry/phieu_du_an.html`, `templates/entry/_indicator_form.html`. Review §5.5.

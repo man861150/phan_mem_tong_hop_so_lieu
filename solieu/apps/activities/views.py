@@ -1,7 +1,10 @@
 """Activity types, activities, partner units, and projects."""
 
+from urllib.parse import urlencode
+
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
@@ -20,6 +23,7 @@ from apps.catalog.models import LoaiHoatDong, PhongBan
 
 _UNSCOPED = frozenset({Role.CENTER_HEAD, Role.SYSTEM_ADMIN})
 _ACTIVITY_PHONG = "loai_hoat_dong__phong_id"
+LIST_PAGE_SIZE = 25
 
 
 def _require_view(user):
@@ -130,15 +134,33 @@ def hoat_dong_list(request):
     else:
         nam = ""
 
+    selected_loai = "" if loai_hoat_dong is None else str(loai_hoat_dong.pk)
+    filters = {}
+    if show_filter and selected_phong:
+        filters["phong"] = selected_phong
+    if nam:
+        filters["nam"] = nam
+    if selected_loai:
+        filters["loai"] = selected_loai
+    if trang_thai:
+        filters["trang_thai"] = trang_thai
+    if ten:
+        filters["ten"] = ten
+    page_obj = Paginator(queryset, LIST_PAGE_SIZE).get_page(
+        request.GET.get("trang")
+    )
+
     return render(
         request,
         "activities/hoat_dong_list.html",
         {
-            "activities": queryset,
+            "activities": page_obj.object_list,
+            "page_obj": page_obj,
+            "page_query": urlencode(filters),
             "activity_types": _activity_types(departments),
             "statuses": TrangThaiHoatDong.choices,
             "selected_nam": nam,
-            "selected_loai": "" if loai_hoat_dong is None else str(loai_hoat_dong.pk),
+            "selected_loai": selected_loai,
             "selected_trang_thai": trang_thai,
             "selected_ten": ten,
             "show_filter": show_filter,
@@ -262,11 +284,17 @@ def _du_an_queryset(user):
 @require_GET
 def du_an_list(request):
     _require_view(request.user)
+    page_obj = Paginator(
+        _du_an_queryset(request.user),
+        LIST_PAGE_SIZE,
+    ).get_page(request.GET.get("trang"))
     return render(
         request,
         "activities/du_an_list.html",
         {
-            "projects": _du_an_queryset(request.user),
+            "projects": page_obj.object_list,
+            "page_obj": page_obj,
+            "page_query": "",
             "can_create": can(request.user, "edit_entry", request.user.phong_id),
         },
     )

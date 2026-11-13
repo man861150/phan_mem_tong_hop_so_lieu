@@ -84,13 +84,24 @@ class IndicatorEntryForm(forms.Form):
         self.indicators = list(indicators or [])
         self.default_nguon_name = default_nguon_name
         self.object_options = {}
-        self.linh_vuc_options = {}
         self.linh_vuc_map = {}
+        self.linh_vuc_systems = {code: False for code in HeThongLinhVuc.values}
         self.lv_errors = {}
         self.parsed_field_rows = {}
         super().__init__(*args, **kwargs)
         self._add_fields()
         self._load_initial()
+        self._load_linh_vuc_systems()
+
+    def _load_linh_vuc_systems(self):
+        if not any(line.chi_tieu.phan_loai_linh_vuc for line in self.indicators):
+            return
+        systems = set(
+            DanhMucLinhVuc.objects.values_list("he_thong", flat=True).distinct()
+        )
+        self.linh_vuc_systems = {
+            code: code in systems for code in HeThongLinhVuc.values
+        }
 
     # ------------------------------------------------------------------
     # Field construction
@@ -150,14 +161,7 @@ class IndicatorEntryForm(forms.Form):
                         ),
                     )
 
-            self.linh_vuc_options[chi_tieu.pk] = []
             if chi_tieu.phan_loai_linh_vuc:
-                linh_vucs = list(
-                    DanhMucLinhVuc.objects.all().order_by("he_thong", "ma")
-                )
-                self.linh_vuc_options[chi_tieu.pk] = linh_vucs
-                for linh_vuc in linh_vucs:
-                    self.linh_vuc_map[linh_vuc.pk] = linh_vuc
                 # A hidden field lets row-level split errors mark the form
                 # invalid while the row message renders beside the grid.
                 self.fields[f"linh_vuc_grid_{chi_tieu.pk}"] = forms.CharField(
@@ -220,7 +224,7 @@ class IndicatorEntryForm(forms.Form):
                 "has_object": chi_tieu.phan_loai_doi_tuong,
                 "has_linh_vuc": chi_tieu.phan_loai_linh_vuc,
                 "linh_vuc_groups": {"qd36": [], "tt24": []},
-                "linh_vuc_options": {"qd36": [], "tt24": []},
+                "linh_vuc_available": self.linh_vuc_systems,
                 "grid_error": None,
                 "previous": getattr(self, "previous_values", {}).get(
                     chi_tieu.pk
@@ -240,19 +244,6 @@ class IndicatorEntryForm(forms.Form):
                     for doi_tuong in self.object_options[chi_tieu.pk]
                 ]
             if chi_tieu.phan_loai_linh_vuc:
-                options = self.linh_vuc_options[chi_tieu.pk]
-                row["linh_vuc_options"] = {
-                    "qd36": [
-                        lv
-                        for lv in options
-                        if lv.he_thong == HeThongLinhVuc.QD36
-                    ],
-                    "tt24": [
-                        lv
-                        for lv in options
-                        if lv.he_thong == HeThongLinhVuc.TT24
-                    ],
-                }
                 row["grid_error"] = self[f"linh_vuc_grid_{chi_tieu.pk}"]
                 for item in self._field_items(chi_tieu):
                     system = item.get("he_thong") or HeThongLinhVuc.QD36
@@ -469,6 +460,15 @@ class IndicatorEntryForm(forms.Form):
     def _parse_field_rows(self, chi_tieu):
         linh_vuc_ids = self.data.getlist(f"linh_vuc_{chi_tieu.pk}")
         raw_values = self.data.getlist(f"gia_tri_lv_{chi_tieu.pk}")
+        posted_ids = []
+        for raw_id in linh_vuc_ids:
+            raw_id = (raw_id or "").strip()
+            if raw_id.isdigit():
+                posted_ids.append(int(raw_id))
+        missing = [pk for pk in posted_ids if pk not in self.linh_vuc_map]
+        if missing:
+            for linh_vuc in DanhMucLinhVuc.objects.filter(pk__in=missing):
+                self.linh_vuc_map[linh_vuc.pk] = linh_vuc
         rows = []
         seen = set()
         for index, raw_id in enumerate(linh_vuc_ids):

@@ -1,4 +1,5 @@
 {% load vi_numbers %}
+<div class="entry-form">
 {% if form and form.non_field_errors %}
   <div class="alert alert-danger">{{ form.non_field_errors }}</div>
 {% endif %}
@@ -6,6 +7,17 @@
 {% if not rows %}
   <div class="alert alert-info">Chưa có chỉ tiêu nào được cấu hình cho biểu mẫu này.</div>
 {% endif %}
+
+{% if can_edit %}
+  <div class="form-hint mb-2">Lưu nháp giữ số chưa đủ. Gửi duyệt yêu cầu các chỉ tiêu bắt buộc.</div>
+{% endif %}
+
+<style>
+  [x-cloak] { display: none !important; }
+  .entry-form .text-secondary,
+  .entry-form .form-hint { color: #475467 !important; }
+  .entry-form :focus-visible { outline: 2px solid #206bc4; outline-offset: 2px; }
+</style>
 
 {% for row in rows %}
   <div class="card mb-3">
@@ -59,7 +71,6 @@
 {% endfor %}
 
 {% if rows %}
-  <style>[x-cloak] { display: none !important; }</style>
   {% if has_split_grids %}
     <script>
       function splitGrid(chiTieuId) {
@@ -95,6 +106,42 @@
           }
         };
       }
+
+      function linhVucPicker(endpoint, heThong) {
+        return {
+          endpoint: endpoint,
+          heThong: heThong,
+          query: '',
+          results: [],
+          searched: false,
+          selected: { id: '', ma: '', ten: '' },
+          async search() {
+            const query = (this.query || '').trim();
+            this.results = [];
+            this.searched = false;
+            if (!query) {
+              return;
+            }
+            const url = this.endpoint
+              + '?he_thong=' + encodeURIComponent(this.heThong)
+              + '&q=' + encodeURIComponent(query);
+            const response = await fetch(url, { headers: { Accept: 'application/json' } });
+            if (!response.ok) {
+              return;
+            }
+            const payload = await response.json();
+            this.results = payload.results || [];
+            this.searched = true;
+          },
+          select(item) {
+            this.selected = item;
+            this.query = item.ma + ' — ' + item.ten;
+            this.results = [];
+            this.searched = false;
+          }
+        };
+      }
     </script>
   {% endif %}
 {% endif %}
+</div>

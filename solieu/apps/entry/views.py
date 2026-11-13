@@ -5,7 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
-from django.http import Http404, HttpResponseBadRequest
+from django.db.models import Q
+from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import (
@@ -21,6 +22,8 @@ from apps.catalog.models import (
     CachTongHop,
     ChiTieu,
     CountSubject,
+    DanhMucLinhVuc,
+    HeThongLinhVuc,
     KieuGhiNhan,
     KyBaoCao,
     PhongBan,
@@ -50,6 +53,32 @@ from apps.reporting.rollup import ReportPeriod, rollup
 def _require_view(user):
     if not (can(user, "edit_entry") or can(user, "view_progress")):
         raise PermissionDenied
+
+
+@login_required
+@require_http_methods(["GET"])
+def linh_vuc_search(request):
+    """Search the shared field tree for one picker, at most 20 rows."""
+    _require_view(request.user)
+    he_thong = request.GET.get("he_thong", "")
+    if he_thong not in HeThongLinhVuc.values:
+        return JsonResponse({"results": []})
+    query = request.GET.get("q", "").strip()
+    if not query:
+        return JsonResponse({"results": []})
+    rows = (
+        DanhMucLinhVuc.objects.filter(he_thong=he_thong)
+        .filter(Q(ma__icontains=query) | Q(ten__icontains=query))
+        .order_by("ma")[:20]
+    )
+    return JsonResponse(
+        {
+            "results": [
+                {"id": row.pk, "ma": row.ma, "ten": row.ten}
+                for row in rows
+            ]
+        }
+    )
 
 
 def _phieu_queryset(user):
