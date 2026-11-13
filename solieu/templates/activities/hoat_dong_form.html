@@ -3,40 +3,36 @@
 {% block title %}{% if activity %}{{ activity.ten }}{% else %}Thêm hoạt động{% endif %} — Tổng hợp số liệu{% endblock %}
 
 {% block content %}
-  <style>
-    [x-cloak] { display: none !important; }
-    #don-vi-spinner { display: none; }
-    #don-vi-spinner.htmx-request { display: inline-flex; align-items: center; gap: 0.35rem; }
-    .entry-form .text-secondary,
-    .entry-form .form-hint { color: #475467 !important; }
-    .entry-form :focus-visible { outline: 2px solid #206bc4; outline-offset: 2px; }
-  </style>
-
-  <div class="page-header d-print-none">
-    <div class="grid grid-cols-12 items-center">
-      <div class="col-span-12">
-        <h2 class="page-title">
-          {% if activity %}
-            {{ activity.ten }}
+  <header class="activity-page-header">
+    <a class="back-link" href="{% url 'activities:hoat_dong_list' %}">
+      <span class="back-link-icon" aria-hidden="true">
+        <svg class="size-4"><use href="#icon-arrow"></use></svg>
+      </span>
+      Quay lại danh sách
+    </a>
+    <div class="activity-page-heading">
+      <div class="activity-page-heading-copy">
+        <p class="eyebrow">Quản lý hoạt động</p>
+        <h1 class="page-hero-title">
+          {% if not activity %}
+            Thêm hoạt động mới
+          {% elif can_edit %}
+            Chỉnh sửa hoạt động
           {% else %}
-            Thêm hoạt động
+            Chi tiết hoạt động
           {% endif %}
-        </h2>
-        {% if activity %}
-          <div class="text-slate-500">
-            {{ activity.loai_hoat_dong.phong.ma_phong }} — {{ activity.loai_hoat_dong.ten_loai }}
-          </div>
-        {% endif %}
+        </h1>
+        <p class="page-hero-copy">Ghi nhận thông tin sự kiện, chương trình hoặc khóa huấn luyện của đơn vị.</p>
       </div>
-      <div class="col-auto">
-        <a class="btn btn-outline-secondary" href="{% url 'activities:hoat_dong_list' %}">Danh sách</a>
-      </div>
+      <span class="status-pill {% if activity and activity.trang_thai == 'da_to_chuc' %}status-pill--success{% else %}status-pill--draft{% endif %}">
+        {% if activity and activity.trang_thai == 'da_to_chuc' %}Đã tổ chức{% else %}Bản nháp{% endif %}
+      </span>
     </div>
-  </div>
+  </header>
 
   {% if transition_errors %}
-    <div class="alert alert-danger">
-      <ul class="mb-0">
+    <div class="alert alert-danger mb-3" role="alert">
+      <ul class="form-alert-list">
         {% for error in transition_errors %}
           <li>{{ error }}</li>
         {% endfor %}
@@ -45,169 +41,360 @@
   {% endif %}
 
   {% if can_edit %}
-    <form id="activity-form" class="card entry-form" method="post" x-data="{ adHoc: false, syncAdHoc() { const el = this.$refs.loai; this.adHoc = !!(el &amp;&amp; el.selectedOptions[0] &amp;&amp; el.selectedOptions[0].dataset.adHoc === 'true'); } }" x-init="syncAdHoc()">
+    <form id="activity-form"
+          class="card activity-form-card activity-form"
+          method="post"
+          novalidate
+          x-data="{ adHoc: false, syncAdHoc() { const el = this.$refs.loai; this.adHoc = !!(el &amp;&amp; el.selectedOptions[0] &amp;&amp; el.selectedOptions[0].dataset.adHoc === 'true'); } }"
+          x-init="syncAdHoc()">
       {% csrf_token %}
-      <div class="card-body">
-        {% if form.non_field_errors %}
-          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-        {% endif %}
 
-        <div class="grid grid-cols-12 gap-3">
-          <div class="md:col-span-6">
-            <label class="form-label" for="{{ form.loai_hoat_dong.id_for_label }}">{{ form.loai_hoat_dong.label }}</label>
-            {{ form.loai_hoat_dong }}
-            {% if form.loai_hoat_dong.errors %}<div class="text-red-700">{{ form.loai_hoat_dong.errors }}</div>{% endif %}
+      {% if form.non_field_errors %}
+        <div class="form-global-error alert alert-danger" role="alert">
+          {% for error in form.non_field_errors %}<p class="form-alert-line">{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
+
+      <section class="form-section">
+        {% include "activities/_form_section_head.html" with number="01" title="Thông tin cơ bản" copy="Các thông tin chính để phân loại hoạt động." %}
+        <div class="form-section-body">
+          <div class="form-grid">
+            {% include "activities/_form_field.html" with field=form.loai_hoat_dong %}
+            {% include "activities/_form_field.html" with field=form.ten %}
+            {% include "activities/_linh_vuc_field.html" with field=form.linh_vuc show_required=1 %}
+            {% include "activities/_form_field.html" with field=form.hinh_thuc hide_required=1 %}
           </div>
-          <div class="md:col-span-6">
-            <label class="form-label" for="{{ form.ten.id_for_label }}">{{ form.ten.label }}</label>
-            {{ form.ten }}
-            {% if form.ten.errors %}<div class="text-red-700">{{ form.ten.errors }}</div>{% endif %}
-          </div>
-          <div class="md:col-span-6">
-            <label class="form-label" for="{{ form.tu_ngay.id_for_label }}">{{ form.tu_ngay.label }}</label>
-            {{ form.tu_ngay }}
-            {% if form.tu_ngay.errors %}<div class="text-red-700">{{ form.tu_ngay.errors }}</div>{% endif %}
-          </div>
-          <div class="md:col-span-6">
-            <label class="form-label" for="{{ form.den_ngay.id_for_label }}">{{ form.den_ngay.label }}</label>
-            {{ form.den_ngay }}
-            <div class="form-hint">Để trống, hệ thống dùng ngày bắt đầu.</div>
-            {% if form.den_ngay.errors %}<div class="text-red-700">{{ form.den_ngay.errors }}</div>{% endif %}
-          </div>
-          <div class="md:col-span-6">
-            <label class="form-label" for="{{ form.dia_diem.id_for_label }}">{{ form.dia_diem.label }}</label>
-            {{ form.dia_diem }}
-            {% if form.dia_diem.errors %}<div class="text-red-700">{{ form.dia_diem.errors }}</div>{% endif %}
-          </div>
-          <div class="md:col-span-6">
-            <label class="form-label" for="{{ form.hinh_thuc.id_for_label }}">{{ form.hinh_thuc.label }}</label>
-            {{ form.hinh_thuc }}
-            {% if form.hinh_thuc.errors %}<div class="text-red-700">{{ form.hinh_thuc.errors }}</div>{% endif %}
-          </div>
-          <div class="md:col-span-6">
-            <label class="form-label" for="{{ form.linh_vuc.id_for_label }}">{{ form.linh_vuc.label }}</label>
-            {{ form.linh_vuc }}
-            {% if form.linh_vuc.errors %}<div class="text-red-700">{{ form.linh_vuc.errors }}</div>{% endif %}
-          </div>
-          <div class="md:col-span-6">
-            <label class="form-label" for="{{ form.doi_tuong_huong_toi.id_for_label }}">{{ form.doi_tuong_huong_toi.label }}</label>
-            {{ form.doi_tuong_huong_toi }}
-            {% if form.doi_tuong_huong_toi.errors %}<div class="text-red-700">{{ form.doi_tuong_huong_toi.errors }}</div>{% endif %}
+
+          <div class="ad-hoc-block" x-show="adHoc" x-cloak>
+            <p class="ad-hoc-heading">
+              <svg class="size-4" aria-hidden="true"><use href="#icon-report"></use></svg>
+              Nhiệm vụ phát sinh
+            </p>
+            <div class="form-grid">
+              {% include "activities/_form_field.html" with field=form.noi_dung %}
+              {% include "activities/_form_field.html" with field=form.ket_qua %}
+            </div>
           </div>
         </div>
+      </section>
 
-        <hr class="my-4">
+      <section class="form-section">
+        {% include "activities/_form_section_head.html" with number="02" title="Thời gian & địa điểm" copy="Thiết lập thời gian và nơi diễn ra hoạt động." %}
+        <div class="form-section-body">
+          <div class="form-grid">
+            {% include "activities/_date_field.html" with field=form.tu_ngay %}
+            {% include "activities/_date_field.html" with field=form.den_ngay hint="Bỏ trống nếu hoạt động diễn ra trong một ngày." %}
+            {% include "activities/_form_field_icon.html" with field=form.dia_diem icon="pin" wide=1 %}
+          </div>
+        </div>
+      </section>
 
-        <div>
-          <label class="form-label">{{ form.don_vi_phoi_hop.label }}</label>
+      <section class="form-section">
+        {% include "activities/_form_section_head.html" with number="03" title="Đối tượng hướng tới" copy="Chọn một hoặc nhiều nhóm thuộc của hoạt động." %}
+        <div class="form-section-body">
+          <fieldset class="choice-fieldset">
+            <legend class="sr-only">{{ form.doi_tuong_huong_toi.label }}</legend>
+            <div class="choice-grid">
+              {% for choice in form.doi_tuong_huong_toi %}
+                <label class="choice-tile" for="{{ choice.id_for_label }}">
+                  {{ choice.tag }}
+                  <span class="choice-tile-label">{{ choice.choice_label }}</span>
+                </label>
+              {% empty %}
+                <p class="form-hint">Chưa có đối tượng hướng tới trong danh mục.</p>
+              {% endfor %}
+            </div>
+            {% for error in form.doi_tuong_huong_toi.errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
+          </fieldset>
+        </div>
+      </section>
+
+      <section class="form-section">
+        {% include "activities/_form_section_head.html" with number="04" title="Đơn vị phối hợp" copy="Chọn đơn vị có sẵn hoặc bổ sung một đơn vị mới." %}
+        <div class="form-section-body">
           <div id="don-vi-add">
-            <div class="border rounded p-2" id="don-vi-options">
-              {% include "activities/don_vi_form.html" %}
-            </div>
-            <label class="form-label" for="id_ten_don_vi_moi">Tên đơn vị phối hợp mới</label>
-            <div class="input-group mt-1">
-              <input class="form-control" id="id_ten_don_vi_moi" name="ten_don_vi_moi" type="text" placeholder="Tên đơn vị mới">
-              <button class="btn btn-outline-secondary" type="button" hx-post="{% url 'activities:don_vi_them' %}" hx-target="#don-vi-options" hx-swap="innerHTML" hx-include="#don-vi-add" hx-indicator="#don-vi-spinner">Thêm đơn vị</button>
-            </div>
-            <div class="mt-2">
-              <span id="don-vi-spinner" class="htmx-indicator text-slate-500 small" role="status" aria-live="polite">
-                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <fieldset class="choice-fieldset">
+              <legend class="sr-only">{{ form.don_vi_phoi_hop.label }}</legend>
+              <div class="choice-grid choice-grid--two" id="don-vi-options">
+                {% include "activities/don_vi_form.html" %}
+              </div>
+            </fieldset>
+
+            <div class="partner-add">
+              <label class="form-label" for="id_ten_don_vi_moi">Tên đơn vị phối hợp mới</label>
+              <div class="partner-add-row">
+                <input class="form-control"
+                       id="id_ten_don_vi_moi"
+                       name="ten_don_vi_moi"
+                       type="text"
+                       placeholder="Nhập tên đơn vị">
+                <button class="partner-add-button"
+                        type="button"
+                        hx-post="{% url 'activities:don_vi_them' %}"
+                        hx-target="#don-vi-options"
+                        hx-swap="innerHTML"
+                        hx-include="#don-vi-add"
+                        hx-indicator="#don-vi-spinner">
+                  <svg class="size-4" aria-hidden="true"><use href="#icon-plus"></use></svg>
+                  Thêm đơn vị
+                </button>
+              </div>
+              <span id="don-vi-spinner" class="don-vi-spinner htmx-indicator" role="status" aria-live="polite">
+                <span class="spinner-border" aria-hidden="true"></span>
                 Đang lưu đơn vị…
               </span>
+              <p class="form-hint">Đơn vị mới được thêm vào danh sách và tự động chọn cho hoạt động này.</p>
             </div>
-            <div class="form-hint">Đơn vị mới được lưu ngay vào danh mục và chọn sẵn cho hoạt động này.</div>
-          </div>
-        </div>
 
-        <div class="mt-4" x-show="adHoc" x-cloak>
-          <div class="grid grid-cols-12 gap-3">
-            <div class="md:col-span-6">
-              <label class="form-label" for="{{ form.noi_dung.id_for_label }}">{{ form.noi_dung.label }}</label>
-              {{ form.noi_dung }}
-              <div class="form-hint">{{ form.noi_dung.help_text }}</div>
-              {% if form.noi_dung.errors %}<div class="text-red-700">{{ form.noi_dung.errors }}</div>{% endif %}
-            </div>
-            <div class="md:col-span-6">
-              <label class="form-label" for="{{ form.ket_qua.id_for_label }}">{{ form.ket_qua.label }}</label>
-              {{ form.ket_qua }}
-              <div class="form-hint">{{ form.ket_qua.help_text }}</div>
-              {% if form.ket_qua.errors %}<div class="text-red-700">{{ form.ket_qua.errors }}</div>{% endif %}
-            </div>
+            {% for error in form.don_vi_phoi_hop.errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
           </div>
         </div>
-        <div class="alert alert-info mt-4" x-show="!adHoc" x-cloak>
-          Các chỉ tiêu định lượng được nhập trong phiếu kết quả sau khi hoạt động chuyển sang Đã tổ chức.
+      </section>
+
+      <div class="form-callout-area">
+        <div class="form-callout">
+          <span class="form-callout-icon" aria-hidden="true">
+            <svg class="size-5"><use href="#icon-report"></use></svg>
+          </span>
+          <div>
+            <p class="form-callout-title">Chỉ tiêu kết quả được cập nhật sau</p>
+            <p class="form-callout-copy">Các chỉ tiêu định lượng sẽ được nhập trong phiếu kết quả khi hoạt động chuyển sang trạng thái “Đã tổ chức”.</p>
+          </div>
         </div>
       </div>
-      <div class="card-footer flex justify-between">
-        <a class="btn btn-link" href="{% url 'activities:hoat_dong_list' %}">Hủy</a>
-        <button class="btn btn-primary" type="submit">Lưu hoạt động</button>
+
+      <div class="form-actions">
+        <a class="btn btn-outline-secondary" href="{% url 'activities:hoat_dong_list' %}">Hủy</a>
+        <button class="btn btn-primary" type="submit">
+          <svg class="size-4" aria-hidden="true"><use href="#icon-check"></use></svg>
+          Lưu hoạt động
+        </button>
       </div>
     </form>
   {% else %}
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">Thông tin hoạt động</h3>
-      </div>
-      <div class="card-body">
-        <dl class="grid grid-cols-12 mb-0">
-          <dt class="sm:col-span-3">Loại hoạt động</dt>
-          <dd class="sm:col-span-9">{{ activity.loai_hoat_dong.ten_loai }}</dd>
-          <dt class="sm:col-span-3">Thời gian</dt>
-          <dd class="sm:col-span-9">
-            {{ activity.tu_ngay|date:"d/m/Y" }}
-            {% if activity.den_ngay and activity.den_ngay != activity.tu_ngay %}
-              – {{ activity.den_ngay|date:"d/m/Y" }}
-            {% endif %}
-          </dd>
-          <dt class="sm:col-span-3">Địa điểm</dt>
-          <dd class="sm:col-span-9">{{ activity.dia_diem|default:"—" }}</dd>
-          <dt class="sm:col-span-3">Hình thức</dt>
-          <dd class="sm:col-span-9">{{ activity.get_hinh_thuc_display }}</dd>
-          <dt class="sm:col-span-3">Lĩnh vực</dt>
-          <dd class="sm:col-span-9">{{ activity.linh_vuc|default:"—" }}</dd>
-          <dt class="sm:col-span-3">Đối tượng hướng tới</dt>
-          <dd class="sm:col-span-9">
+    <div class="card activity-form-card activity-form">
+      <section class="form-section">
+        {% include "activities/_form_section_head.html" with number="01" title="Thông tin cơ bản" copy="Các thông tin chính để phân loại hoạt động." %}
+        <div class="form-section-body">
+          <div class="form-grid">
+            {% include "activities/_static_field.html" with label="Loại hoạt động" value=activity.loai_hoat_dong.ten_loai %}
+            {% include "activities/_static_field.html" with label="Tên hoạt động" value=activity.ten %}
+            {% include "activities/_static_field.html" with label="Lĩnh vực" value=activity.linh_vuc.ten %}
+            {% include "activities/_static_field.html" with label="Hình thức tổ chức" value=activity.get_hinh_thuc_display %}
+          </div>
+          {% if activity.la_nhiem_vu_phat_sinh %}
+            <div class="ad-hoc-block">
+              <p class="ad-hoc-heading">
+                <svg class="size-4" aria-hidden="true"><use href="#icon-report"></use></svg>
+                Nhiệm vụ phát sinh
+              </p>
+              <div class="form-grid">
+                {% include "activities/_static_field.html" with label="Nội dung" value=activity.noi_dung|linebreaksbr multiline=1 wide=1 %}
+                {% include "activities/_static_field.html" with label="Kết quả" value=activity.ket_qua|linebreaksbr multiline=1 wide=1 %}
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="form-section">
+        {% include "activities/_form_section_head.html" with number="02" title="Thời gian & địa điểm" copy="Thiết lập thời gian và nơi diễn ra hoạt động." %}
+        <div class="form-section-body">
+          <div class="form-grid">
+            {% include "activities/_static_field.html" with label="Từ ngày" value=activity.tu_ngay|date:"d/m/Y" %}
+            {% include "activities/_static_field.html" with label="Đến ngày" value=activity.den_ngay|date:"d/m/Y" %}
+            {% include "activities/_static_field.html" with label="Địa điểm tổ chức" value=activity.dia_diem wide=1 %}
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        {% include "activities/_form_section_head.html" with number="03" title="Đối tượng hướng tới" copy="Chọn một hoặc nhiều nhóm thuộc của hoạt động." %}
+        <div class="form-section-body">
+          <div class="choice-grid">
             {% for doi_tuong in activity.doi_tuong_huong_toi.all %}
-              {{ doi_tuong.ten_doi_tuong }}{% if not forloop.last %}, {% endif %}
+              <div class="choice-tile choice-tile--static">
+                <svg class="choice-static-icon" aria-hidden="true"><use href="#icon-check"></use></svg>
+                <span class="choice-tile-label">{{ doi_tuong.ten_doi_tuong }}</span>
+              </div>
             {% empty %}
-              —
+              <p class="form-hint">Chưa chọn đối tượng hướng tới.</p>
             {% endfor %}
-          </dd>
-          <dt class="sm:col-span-3">Đơn vị phối hợp</dt>
-          <dd class="sm:col-span-9">
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        {% include "activities/_form_section_head.html" with number="04" title="Đơn vị phối hợp" copy="Chọn đơn vị có sẵn hoặc bổ sung một đơn vị mới." %}
+        <div class="form-section-body">
+          <div class="choice-grid choice-grid--two">
             {% for tham_gia in activity.don_vi_tham_gia.all %}
-              {{ tham_gia.don_vi.ten_don_vi }}{% if tham_gia.vai_tro %} ({{ tham_gia.vai_tro }}){% endif %}{% if not forloop.last %}, {% endif %}
+              <div class="choice-tile choice-tile--static">
+                <svg class="choice-static-icon" aria-hidden="true"><use href="#icon-check"></use></svg>
+                <span class="choice-tile-label">{{ tham_gia.don_vi.ten_don_vi }}</span>
+              </div>
             {% empty %}
-              —
+              <p class="form-hint">Chưa có đơn vị phối hợp.</p>
             {% endfor %}
-          </dd>
-          <dt class="sm:col-span-3">Nội dung</dt>
-          <dd class="sm:col-span-9">{{ activity.noi_dung|linebreaksbr|default:"—" }}</dd>
-          <dt class="sm:col-span-3">Kết quả</dt>
-          <dd class="sm:col-span-9">{{ activity.ket_qua|linebreaksbr|default:"—" }}</dd>
-        </dl>
+          </div>
+        </div>
+      </section>
+
+      <div class="form-callout-area">
+        <div class="form-callout">
+          <span class="form-callout-icon" aria-hidden="true">
+            <svg class="size-5"><use href="#icon-report"></use></svg>
+          </span>
+          <div>
+            <p class="form-callout-title">Chỉ tiêu kết quả được cập nhật sau</p>
+            <p class="form-callout-copy">Các chỉ tiêu định lượng sẽ được nhập trong phiếu kết quả khi hoạt động chuyển sang trạng thái “Đã tổ chức”.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <a class="btn btn-outline-secondary" href="{% url 'activities:hoat_dong_list' %}">Quay lại danh sách</a>
       </div>
     </div>
   {% endif %}
 
   {% if activity %}
-    <div class="card mt-3">
-      <div class="card-body flex flex-wrap items-center gap-2">
-        <span class="text-slate-500">Trạng thái:</span>
-        {% if activity.trang_thai == "da_to_chuc" %}
-          <span class="badge bg-success-lt">Đã tổ chức</span>
-          <a class="btn btn-primary ml-auto" href="/phieu/hoat-dong/{{ activity.pk }}/">Nhập phiếu kết quả</a>
-        {% else %}
-          <span class="badge bg-warning-lt">Kế hoạch</span>
-          {% if can_edit %}
-            <form class="ml-auto" method="post" action="{% url 'activities:hoat_dong_da_to_chuc' activity.pk %}">
-              {% csrf_token %}
-              <button class="btn btn-success" type="submit">Chuyển sang Đã tổ chức</button>
-            </form>
+    <section class="card activity-workflow" aria-label="Trạng thái hoạt động">
+      <div class="activity-workflow-copy">
+        <h2 class="activity-workflow-title">Trạng thái hoạt động</h2>
+        <p class="activity-workflow-note">
+          {% if activity.trang_thai == 'da_to_chuc' %}
+            Hoạt động đã được tổ chức. Bạn có thể nhập hoặc xem phiếu kết quả.
+          {% elif can_edit %}
+            Hoạt động đang ở trạng thái kế hoạch. Chuyển sang Đã tổ chức khi hoạt động đã diễn ra.
+          {% else %}
+            Hoạt động đang ở trạng thái kế hoạch.
           {% endif %}
+        </p>
+      </div>
+      <div class="activity-workflow-actions">
+        {% if activity.trang_thai == 'da_to_chuc' %}
+          <a class="btn btn-primary" href="/phieu/hoat-dong/{{ activity.pk }}/">Nhập phiếu kết quả</a>
+        {% elif can_edit %}
+          <form method="post" action="{% url 'activities:hoat_dong_da_to_chuc' activity.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-outline-primary" type="submit">Chuyển sang Đã tổ chức</button>
+          </form>
         {% endif %}
       </div>
-    </div>
+    </section>
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  {% if can_edit %}
+    <script>
+      function activityLinhVucPicker(element) {
+        return {
+          endpoint: element.dataset.endpoint,
+          query: element.dataset.selectedLabel || '',
+          results: [],
+          open: false,
+          loading: false,
+          timer: null,
+          selected: {
+            id: element.dataset.selectedId || '',
+            label: element.dataset.selectedLabel || ''
+          },
+          onFocus() {
+            this.open = true;
+            if (this.selected.id && this.query === this.selected.label) {
+              this.query = '';
+              this.results = [];
+            }
+            this.search();
+          },
+          close() {
+            this.open = false;
+            if (this.selected.id) {
+              this.query = this.selected.label;
+            } else {
+              this.query = '';
+            }
+            this.results = [];
+          },
+          onQuery(value) {
+            this.query = value;
+            if (this.selected.id && value !== this.selected.label) {
+              this.selected = { id: '', label: '' };
+            }
+            this.open = true;
+            window.clearTimeout(this.timer);
+            this.timer = window.setTimeout(() => this.search(), 220);
+          },
+          async search() {
+            const query = (this.query || '').trim();
+            if (!query) {
+              this.results = [];
+              this.loading = false;
+              return;
+            }
+            this.loading = true;
+            try {
+              const response = await fetch(
+                this.endpoint + '?q=' + encodeURIComponent(query),
+                { headers: { Accept: 'application/json' } }
+              );
+              if (!response.ok) {
+                throw new Error('search failed');
+              }
+              const payload = await response.json();
+              this.results = payload.results || [];
+            } catch (error) {
+              this.results = [];
+            } finally {
+              this.loading = false;
+            }
+          },
+          choose(item) {
+            this.selected = {
+              id: String(item.id),
+              label: item.ma + ' — ' + item.ten
+            };
+            this.query = this.selected.label;
+            this.results = [];
+            this.open = false;
+          },
+          chooseFirst() {
+            if (this.results.length > 0) {
+              this.choose(this.results[0]);
+            }
+          }
+        };
+      }
+
+      document.querySelectorAll('[data-date-field]').forEach(function (field) {
+        const input = field.querySelector('input[type="date"]');
+        const display = field.querySelector('[data-date-display]');
+        if (!input || !display) {
+          return;
+        }
+        if (!/Firefox/.test(navigator.userAgent)) {
+          field.classList.add('is-date-overlay');
+        }
+        const paint = function () {
+          const value = input.value;
+          if (!value) {
+            display.textContent = 'dd/mm/yyyy';
+            display.classList.add('is-placeholder');
+            return;
+          }
+          const parts = value.split('-');
+          if (parts.length === 3) {
+            display.textContent = parts[2] + '/' + parts[1] + '/' + parts[0];
+            display.classList.remove('is-placeholder');
+          }
+        };
+        ['input', 'change', 'blur'].forEach(function (eventName) {
+          input.addEventListener(eventName, paint);
+        });
+        paint();
+      });
+    </script>
   {% endif %}
 {% endblock %}

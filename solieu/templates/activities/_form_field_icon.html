@@ -1,0 +1,9 @@
+<div class="form-field{% if wide %} form-field--full{% endif %}{% if field.errors %} form-field--error{% endif %}">
+  <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="required-mark" aria-hidden="true">*</span><span class="sr-only"> (bắt buộc)</span>{% endif %}</label>
+  <div class="field-control">
+    <svg class="field-icon" aria-hidden="true"><use href="#icon-{{ icon }}"></use></svg>
+    {{ field }}
+  </div>
+  {% if hint %}<p class="form-hint">{{ hint }}</p>{% endif %}
+  {% for error in field.errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
+</div>

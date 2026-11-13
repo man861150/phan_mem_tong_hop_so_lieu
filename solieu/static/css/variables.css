@@ -10,6 +10,10 @@
   --color-subtle: #98a29e;
   --color-border: #e3e9e6;
   --color-border-soft: #edf1ef;
+  --color-field-bg: #fbfcfa;
+  --color-field-border: #dce6e1;
+  --color-info-panel: #f4f9fc;
+  --color-info-panel-border: #d8e9f1;
   --color-success: #257157;
   --color-success-soft: #eaf6f1;
   --color-warning: #af5c2f;

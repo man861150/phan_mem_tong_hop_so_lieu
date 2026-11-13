@@ -53,37 +53,70 @@ class HoatDongForm(forms.ModelForm):
         )
         widgets = {
             "loai_hoat_dong": ActivityTypeSelect(
-                attrs={"x-ref": "loai", "@change": "syncAdHoc()"}
+                attrs={
+                    "class": "form-select",
+                    "x-ref": "loai",
+                    "@change": "syncAdHoc()",
+                }
+            ),
+            "ten": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Ví dụ: Ngày hội kết nối khởi nghiệp",
+                }
             ),
             "tu_ngay": forms.DateInput(
                 format="%Y-%m-%d",
-                attrs={"type": "date"},
+                attrs={"class": "form-control", "type": "date"},
             ),
             "den_ngay": forms.DateInput(
                 format="%Y-%m-%d",
-                attrs={"type": "date"},
+                attrs={"class": "form-control", "type": "date"},
             ),
-            "dia_diem": forms.TextInput(attrs={"placeholder": "Địa điểm tổ chức"}),
+            "dia_diem": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Nhập địa chỉ hoặc nền tảng tổ chức",
+                }
+            ),
+            "hinh_thuc": forms.Select(attrs={"class": "form-select"}),
             "doi_tuong_huong_toi": forms.CheckboxSelectMultiple,
-            "noi_dung": forms.Textarea(attrs={"rows": 4}),
-            "ket_qua": forms.Textarea(attrs={"rows": 4}),
+            "noi_dung": forms.Textarea(
+                attrs={"class": "form-control", "rows": 4}
+            ),
+            "ket_qua": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
         }
         labels = {
             "loai_hoat_dong": "Loại hoạt động",
             "ten": "Tên hoạt động",
             "tu_ngay": "Từ ngày",
             "den_ngay": "Đến ngày",
-            "dia_diem": "Địa điểm",
-            "hinh_thuc": "Hình thức",
+            "dia_diem": "Địa điểm tổ chức",
+            "hinh_thuc": "Hình thức tổ chức",
             "linh_vuc": "Lĩnh vực",
             "doi_tuong_huong_toi": "Đối tượng hướng tới",
             "noi_dung": "Nội dung",
             "ket_qua": "Kết quả",
         }
         error_messages = {
-            "loai_hoat_dong": {"required": "Chọn loại hoạt động."},
+            "loai_hoat_dong": {
+                "required": "Chọn loại hoạt động.",
+                "invalid_choice": "Loại hoạt động không hợp lệ.",
+            },
             "ten": {"required": "Nhập tên hoạt động."},
-            "tu_ngay": {"required": "Nhập ngày bắt đầu."},
+            "tu_ngay": {
+                "required": "Nhập ngày bắt đầu.",
+                "invalid": "Nhập ngày bắt đầu hợp lệ (dd/mm/yyyy).",
+            },
+            "den_ngay": {
+                "invalid": "Nhập ngày kết thúc hợp lệ (dd/mm/yyyy).",
+            },
+            "linh_vuc": {
+                "invalid_choice": "Lĩnh vực không hợp lệ.",
+            },
+            "doi_tuong_huong_toi": {
+                "invalid_choice": "Đối tượng hướng tới không hợp lệ.",
+            },
         }
 
     def __init__(self, *args, user=None, **kwargs):
@@ -95,6 +128,12 @@ class HoatDongForm(forms.ModelForm):
         self.fields["dia_diem"].required = False
         self.fields["noi_dung"].required = False
         self.fields["ket_qua"].required = False
+        self.fields["loai_hoat_dong"].empty_label = "Chọn loại hoạt động"
+        self.fields["linh_vuc"].empty_label = "Chọn lĩnh vực"
+        self.fields["don_vi_phoi_hop"].error_messages = {
+            "invalid_choice": "Đơn vị phối hợp không hợp lệ.",
+            "invalid_pk_value": "Đơn vị phối hợp không hợp lệ.",
+        }
         self.fields["noi_dung"].help_text = (
             "Bắt buộc với loại Nhiệm vụ phát sinh trước khi chuyển sang Đã tổ chức."
         )

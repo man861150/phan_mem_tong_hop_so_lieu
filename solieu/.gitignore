@@ -15,7 +15,8 @@ media/
 db.sqlite3
 *.sqlite3
 
+# Tailwind binary downloaded by scripts/build_css.sh
+.tools/
+
 # OS
 .DS_Store
-
-

@@ -1,0 +1,39 @@
+<div class="form-field{% if field.errors %} form-field--error{% endif %}">
+  <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required or show_required %}<span class="required-mark" aria-hidden="true">*</span><span class="sr-only"> (bắt buộc)</span>{% endif %}</label>
+  <div class="field-picker"
+       x-data="activityLinhVucPicker($el)"
+       data-endpoint="{% url 'entry:linh_vuc_search' %}"
+       data-selected-id="{{ selected_linh_vuc.pk|default:'' }}"
+       data-selected-label="{% if selected_linh_vuc %}{{ selected_linh_vuc.ma }} — {{ selected_linh_vuc.ten }}{% endif %}"
+       @click.outside="close()">
+    <input type="hidden" name="{{ field.html_name }}" value="{{ selected_linh_vuc.pk|default:'' }}" :value="selected.id">
+    <input class="form-control field-picker-input"
+           id="{{ field.id_for_label }}"
+           type="text"
+           autocomplete="off"
+           placeholder="Chọn lĩnh vực"
+           value="{% if selected_linh_vuc %}{{ selected_linh_vuc.ma }} — {{ selected_linh_vuc.ten }}{% endif %}"
+           :value="query"
+           role="combobox"
+           aria-autocomplete="list"
+           aria-controls="linh-vuc-results"
+           :aria-expanded="open ? 'true' : 'false'"
+           @input="onQuery($event.target.value)"
+           @focus="onFocus()"
+           @keydown.enter.prevent="chooseFirst()"
+           @keydown.escape="open = false">
+    <svg class="field-picker-chevron" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+    <div class="field-picker-menu" id="linh-vuc-results" x-show="open" x-cloak>
+      <p class="field-picker-note" x-show="loading">Đang tìm…</p>
+      <template x-for="item in results" :key="item.id">
+        <button type="button" class="field-picker-option" @click="choose(item)">
+          <span class="field-picker-option-name" x-text="item.ten"></span>
+          <span class="field-picker-option-meta"><span x-text="item.ma"></span> · <span x-text="item.he_thong"></span></span>
+        </button>
+      </template>
+      <p class="field-picker-note" x-show="!loading &amp;&amp; results.length === 0 &amp;&amp; query.length > 0">Không tìm thấy lĩnh vực phù hợp.</p>
+      <p class="field-picker-note" x-show="!loading &amp;&amp; results.length === 0 &amp;&amp; query.length === 0">Nhập mã hoặc tên lĩnh vực để tìm.</p>
+    </div>
+  </div>
+  {% for error in field.errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
+</div>

@@ -1,14 +1,18 @@
 {% if don_vi_error %}
-  <div class="text-red-700 mb-2">{{ don_vi_error }}</div>
+  <p class="form-error" role="alert">{{ don_vi_error }}</p>
 {% endif %}
 {% if don_vi_notice %}
-  <div class="text-slate-500 mb-2">{{ don_vi_notice }}</div>
+  <p class="form-notice" role="status">{{ don_vi_notice }}</p>
 {% endif %}
 {% for don_vi in don_vi_options %}
-  <label class="form-check mb-1">
-    <input class="form-check-input" type="checkbox" name="don_vi_phoi_hop" value="{{ don_vi.pk }}"{% if don_vi.pk in selected_don_vi_ids %} checked{% endif %}>
-    <span class="form-check-label">{{ don_vi.ten_don_vi }}</span>
+  <label class="choice-tile" for="don-vi-{{ don_vi.pk }}">
+    <input class="choice-tile-input"
+           id="don-vi-{{ don_vi.pk }}"
+           type="checkbox"
+           name="don_vi_phoi_hop"
+           value="{{ don_vi.pk }}"{% if don_vi.pk in selected_don_vi_ids %} checked{% endif %}>
+    <span class="choice-tile-label">{{ don_vi.ten_don_vi }}</span>
   </label>
 {% empty %}
-  <div class="text-slate-500">Chưa có đơn vị phối hợp.</div>
+  <p class="form-hint">Chưa có đơn vị phối hợp.</p>
 {% endfor %}

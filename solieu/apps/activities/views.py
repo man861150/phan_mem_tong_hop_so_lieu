@@ -20,7 +20,7 @@ from apps.activities.models import (
     HoatDong,
     TrangThaiHoatDong,
 )
-from apps.catalog.models import LoaiHoatDong, PhongBan
+from apps.catalog.models import DanhMucLinhVuc, LoaiHoatDong, PhongBan
 
 _UNSCOPED = frozenset({Role.CENTER_HEAD, Role.SYSTEM_ADMIN})
 _ACTIVITY_PHONG = "loai_hoat_dong__phong_id"
@@ -77,6 +77,18 @@ def _selected_don_vi_ids(request, form):
     return []
 
 
+def _selected_linh_vuc(form, activity):
+    """Return the field record to show in the searchable field picker."""
+    value = None
+    if form is not None:
+        value = form["linh_vuc"].value()
+    elif activity is not None:
+        value = activity.linh_vuc_id
+    if value is not None and str(value).isdigit():
+        return DanhMucLinhVuc.objects.filter(pk=value).first()
+    return None
+
+
 def _render_detail(
     request,
     form,
@@ -98,6 +110,7 @@ def _render_detail(
             "can_edit": can_edit,
             "don_vi_options": DonViPhoiHop.objects.order_by("ten_don_vi", "id"),
             "selected_don_vi_ids": selected_don_vi_ids,
+            "selected_linh_vuc": _selected_linh_vuc(form, activity),
             "transition_errors": transition_errors,
         },
     )

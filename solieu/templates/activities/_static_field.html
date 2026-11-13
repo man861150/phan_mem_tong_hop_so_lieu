@@ -1,0 +1,4 @@
+<div class="form-field{% if wide %} form-field--full{% endif %}">
+  <span class="form-label">{{ label }}</span>
+  <div class="form-static{% if multiline %} form-static--multiline{% endif %}">{{ value|default:"—" }}</div>
+</div>

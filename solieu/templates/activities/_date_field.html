@@ -1,0 +1,10 @@
+<div class="form-field{% if field.errors %} form-field--error{% endif %}">
+  <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="required-mark" aria-hidden="true">*</span><span class="sr-only"> (bắt buộc)</span>{% endif %}</label>
+  <div class="date-field" data-date-field>
+    <svg class="field-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg>
+    {{ field }}
+    <span class="date-field-display{% if not field.value %} is-placeholder{% endif %}" data-date-display aria-hidden="true">{{ field.value|date:"d/m/Y"|default:"dd/mm/yyyy" }}</span>
+  </div>
+  {% if hint %}<p class="form-hint">{{ hint }}</p>{% endif %}
+  {% for error in field.errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
+</div>
