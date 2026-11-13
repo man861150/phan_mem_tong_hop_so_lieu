@@ -4,10 +4,10 @@
 
 {% block content %}
   <div class="page-header d-print-none">
-    <div class="row align-items-center">
-      <div class="col">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
         <h2 class="page-title">Trang chủ</h2>
-        <div class="text-secondary">
+        <div class="text-slate-500">
           Trung tâm Khởi nghiệp sáng tạo Thành phố Hồ Chí Minh — năm {{ year }}
         </div>
       </div>
@@ -18,8 +18,8 @@
   </div>
 
   {% if is_scoped %}
-    <div class="row row-cards mb-3">
-      <div class="col-md-6">
+    <div class="grid grid-cols-12 row-cards mb-3">
+      <div class="md:col-span-6">
         <div class="card h-100">
           <div class="card-header">
             <h3 class="card-title">Phiếu nháp của tôi</h3>
@@ -29,18 +29,18 @@
           </div>
           <div class="list-group list-group-flush">
             {% for phieu in my_drafts %}
-              <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+              <a class="list-group-item list-group-item-action flex justify-between items-center"
                  href="{% url 'entry:phieu_detail' phieu.pk %}">
                 <span>{{ phieu }}</span>
                 <span class="badge bg-secondary-lt">Nháp</span>
               </a>
             {% empty %}
-              <div class="list-group-item text-secondary">Chưa có phiếu nháp.</div>
+              <div class="list-group-item text-slate-500">Chưa có phiếu nháp.</div>
             {% endfor %}
           </div>
         </div>
       </div>
-      <div class="col-md-6">
+      <div class="md:col-span-6">
         <div class="card h-100">
           <div class="card-header">
             <h3 class="card-title">Phiếu bị trả lại</h3>
@@ -50,24 +50,24 @@
           </div>
           <div class="list-group list-group-flush">
             {% for phieu in my_returned %}
-              <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+              <a class="list-group-item list-group-item-action flex justify-between items-center"
                  href="{% url 'entry:phieu_detail' phieu.pk %}">
                 <span>{{ phieu }}</span>
                 <span class="badge bg-warning-lt">Trả lại</span>
               </a>
             {% empty %}
-              <div class="list-group-item text-secondary">Chưa có phiếu bị trả lại.</div>
+              <div class="list-group-item text-slate-500">Chưa có phiếu bị trả lại.</div>
             {% endfor %}
           </div>
         </div>
       </div>
       {% if is_department_head %}
-        <div class="col-md-6">
+        <div class="md:col-span-6">
           <a class="card card-link h-100" href="{% url 'entry:duyet_list' %}">
             <div class="card-body">
-              <div class="text-secondary">Phiếu chờ duyệt</div>
+              <div class="text-slate-500">Phiếu chờ duyệt</div>
               <div class="h1 mb-0">{{ pending_count }}</div>
-              <div class="text-secondary small">Mở danh sách chờ duyệt của phòng ban</div>
+              <div class="text-slate-500 small">Mở danh sách chờ duyệt của phòng ban</div>
             </div>
           </a>
         </div>
@@ -75,12 +75,12 @@
     </div>
   {% endif %}
 
-  <div class="row row-cards mb-3">
+  <div class="grid grid-cols-12 row-cards mb-3">
     {% for item in completion_cards %}
-      <div class="col-md-4">
+      <div class="md:col-span-4">
         <div class="card h-100">
           <div class="card-body">
-            <div class="text-secondary">{{ item.ma_phong }} — {{ item.ten_phong }}</div>
+            <div class="text-slate-500">{{ item.ma_phong }} — {{ item.ten_phong }}</div>
             <div class="h1 mb-0">
               {% if item.percent is not None %}
                 {{ item.percent_display }}%
@@ -88,39 +88,39 @@
                 Chưa có số liệu
               {% endif %}
             </div>
-            <div class="text-secondary small">Bình quân % hoàn thành năm {{ year }}</div>
+            <div class="text-slate-500 small">Bình quân % hoàn thành năm {{ year }}</div>
           </div>
         </div>
       </div>
     {% empty %}
-      <div class="col-12">
+      <div class="col-span-12">
         <div class="card">
-          <div class="card-body text-secondary">Chưa có số liệu.</div>
+          <div class="card-body text-slate-500">Chưa có số liệu.</div>
         </div>
       </div>
     {% endfor %}
   </div>
 
-  <div class="row row-cards">
-    <div class="col-lg-6">
+  <div class="grid grid-cols-12 row-cards">
+    <div class="lg:col-span-6">
       <div class="card h-100">
         <div class="card-header">
           <h3 class="card-title">{{ chart1_title }}</h3>
         </div>
         <div class="card-body">
           <div id="chart1" style="height: 320px;"></div>
-          <div class="text-secondary small mt-2">
+          <div class="text-slate-500 small mt-2">
             Bình quân các chỉ tiêu có kế hoạch đã xác nhận; chỉ tiêu “chỉ theo dõi” không được tính.
           </div>
         </div>
       </div>
     </div>
-    <div class="col-lg-6">
+    <div class="lg:col-span-6">
       <div class="card h-100">
         <div class="card-header">
           <div>
             <h3 class="card-title mb-0">Lũy kế so với kế hoạch năm</h3>
-            <div class="text-secondary small">
+            <div class="text-slate-500 small">
               Phòng:
               <span id="chart2-department-label">{% if selected_department %}{{ selected_department.ma_phong }}{% else %}Chưa chọn{% endif %}</span>
             </div>
@@ -142,7 +142,7 @@
         </div>
         <div class="card-body">
           <div id="chart2" style="height: 320px;"></div>
-          <div class="text-secondary small mt-2">
+          <div class="text-slate-500 small mt-2">
             Chỉ hiển thị chỉ tiêu có kế hoạch năm đã xác nhận.
           </div>
         </div>

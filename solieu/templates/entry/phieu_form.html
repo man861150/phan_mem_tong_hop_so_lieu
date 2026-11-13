@@ -5,15 +5,15 @@
 
 {% block content %}
   <div class="page-header d-print-none">
-    <div class="row align-items-center">
-      <div class="col">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
         <h2 class="page-title">Phiếu kết quả hoạt động</h2>
-        <div class="text-secondary">
+        <div class="text-slate-500">
           {{ activity.ten }} — {{ activity.loai_hoat_dong.ten_loai }}
           ({{ activity.loai_hoat_dong.phong.ma_phong }})
         </div>
       </div>
-      <div class="col-auto d-flex align-items-center gap-2">
+      <div class="col-auto flex items-center gap-2">
         {% if phieu %}
           <span class="badge bg-blue-lt">{{ phieu.get_trang_thai_display }}</span>
           <a class="btn btn-outline-secondary" href="{% url 'entry:phieu_detail' phieu.pk %}">Xem chi tiết</a>
@@ -47,39 +47,39 @@
     {% if last_return %}
       <div class="alert alert-warning">
         <strong>Ý kiến trả lại:</strong> {{ last_return.y_kien|linebreaksbr }}
-        <div class="text-secondary small">{{ last_return.nguoi_xu_ly.ho_ten }} — {{ last_return.thoi_diem|date:"d/m/Y H:i" }}</div>
+        <div class="text-slate-500 small">{{ last_return.nguoi_xu_ly.ho_ten }} — {{ last_return.thoi_diem|date:"d/m/Y H:i" }}</div>
       </div>
     {% endif %}
 
     <div class="card mb-3">
-      <div class="card-body d-flex flex-wrap align-items-center gap-3">
+      <div class="card-body flex flex-wrap items-center gap-3">
         {% for badge in count_badges %}
           <div>
-            <div class="text-secondary small">Đã tổ chức/tổng số — {{ badge.chi_tieu.ten_chi_tieu }}</div>
+            <div class="text-slate-500 small">Đã tổ chức/tổng số — {{ badge.chi_tieu.ten_chi_tieu }}</div>
             <div class="h2 mb-0">
               {{ badge.official|vi_number }}
-              <span class="text-secondary">/</span>
+              <span class="text-slate-500">/</span>
               {{ badge.plan|vi_number }}
             </div>
-            <div class="text-secondary small">Số liệu chính thức từ rollup, kỳ {{ period_label }}</div>
+            <div class="text-slate-500 small">Số liệu chính thức từ rollup, kỳ {{ period_label }}</div>
           </div>
         {% endfor %}
-        <div class="ms-md-auto">
-          <div class="text-secondary small">Đã tổ chức/tổng số (trạng thái, kỳ {{ period_label }})</div>
+        <div class="md:ml-auto">
+          <div class="text-slate-500 small">Đã tổ chức/tổng số (trạng thái, kỳ {{ period_label }})</div>
           <div class="h2 mb-0">
             {{ status_count|vi_number }}
-            <span class="text-secondary">/</span>
+            <span class="text-slate-500">/</span>
             {{ status_total|vi_number }}
           </div>
-          <div class="text-secondary small">Số hoạt động đã tổ chức, bao gồm hoạt động hiện tại</div>
+          <div class="text-slate-500 small">Số hoạt động đã tổ chức, bao gồm hoạt động hiện tại</div>
         </div>
       </div>
     </div>
 
     {% if phieus %}
       <div class="card mb-3">
-        <div class="card-body d-flex flex-wrap align-items-center gap-2">
-          <span class="text-secondary">Phiếu:</span>
+        <div class="card-body flex flex-wrap items-center gap-2">
+          <span class="text-slate-500">Phiếu:</span>
           {% for item in phieus %}
             <a class="btn btn-sm {% if phieu and item.pk == phieu.pk %}btn-primary{% else %}btn-outline-secondary{% endif %}"
                href="{% url 'entry:phieu_hoat_dong' activity.pk %}?phieu={{ item.pk }}">
@@ -88,7 +88,7 @@
             </a>
           {% endfor %}
           {% if can_edit and not ad_hoc %}
-            <form class="ms-auto" method="post" action="{% url 'entry:phieu_hoat_dong_bo_sung' activity.pk %}">
+            <form class="ml-auto" method="post" action="{% url 'entry:phieu_hoat_dong_bo_sung' activity.pk %}">
               {% csrf_token %}
               <button class="btn btn-outline-primary btn-sm" type="submit">Tạo phiếu bổ sung</button>
             </form>
@@ -102,7 +102,7 @@
         {% csrf_token %}
         <div class="card-header">
           <h3 class="card-title">Nhiệm vụ phát sinh</h3>
-          <div class="text-secondary">Nội dung và kết quả không chuyển thành số liệu.</div>
+          <div class="text-slate-500">Nội dung và kết quả không chuyển thành số liệu.</div>
         </div>
         <div class="card-body">
           {% if form.non_field_errors %}
@@ -115,7 +115,7 @@
             {% else %}
               <div class="form-control-plaintext">{{ activity.noi_dung|linebreaksbr|default:"—" }}</div>
             {% endif %}
-            {% if form.noi_dung.errors %}<div class="text-danger">{{ form.noi_dung.errors }}</div>{% endif %}
+            {% if form.noi_dung.errors %}<div class="text-red-700">{{ form.noi_dung.errors }}</div>{% endif %}
           </div>
           <div>
             <label class="form-label" for="{{ form.ket_qua.id_for_label }}">{{ form.ket_qua.label }}</label>
@@ -124,11 +124,11 @@
             {% else %}
               <div class="form-control-plaintext">{{ activity.ket_qua|linebreaksbr|default:"—" }}</div>
             {% endif %}
-            {% if form.ket_qua.errors %}<div class="text-danger">{{ form.ket_qua.errors }}</div>{% endif %}
+            {% if form.ket_qua.errors %}<div class="text-red-700">{{ form.ket_qua.errors }}</div>{% endif %}
           </div>
         </div>
         {% if can_edit %}
-          <div class="card-footer d-flex justify-content-end gap-2">
+          <div class="card-footer flex justify-end gap-2">
             <button class="btn btn-outline-primary" type="submit" name="action" value="save">Lưu nháp</button>
             {% if can_submit %}
               <button class="btn btn-primary" type="submit" name="action" value="gui">Gửi duyệt</button>
@@ -141,7 +141,7 @@
         {% csrf_token %}
         {% include "entry/_indicator_form.html" with form=form rows=rows can_edit=can_edit show_month_info=False has_split_grids=has_split_grids %}
         {% if can_edit %}
-          <div class="d-flex justify-content-end gap-2">
+          <div class="flex justify-end gap-2">
             <button class="btn btn-outline-primary" type="submit" name="action" value="save">Lưu nháp</button>
             {% if can_submit %}
               <button class="btn btn-primary" type="submit" name="action" value="gui">Gửi duyệt</button>
@@ -153,7 +153,7 @@
 
     {% if can_delete %}
       <div class="card mt-3">
-        <div class="card-body d-flex justify-content-end">
+        <div class="card-body flex justify-end">
           <form method="post" action="{% url 'entry:phieu_xoa' phieu.pk %}"
                 onsubmit="return confirm('Xóa phiếu nháp này và toàn bộ số liệu đã nhập?');">
             {% csrf_token %}

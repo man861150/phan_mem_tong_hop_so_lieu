@@ -4,8 +4,8 @@
 
 {% block content %}
   <div class="page-header d-print-none">
-    <div class="row align-items-center">
-      <div class="col">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
         <h2 class="page-title">
           {% if project %}
             {{ project.ten_du_an }}
@@ -27,35 +27,35 @@
         {% if form.non_field_errors %}
           <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
-        <div class="row g-3">
-          <div class="col-md-6">
+        <div class="grid grid-cols-12 gap-3">
+          <div class="md:col-span-6">
             <label class="form-label" for="{{ form.phong.id_for_label }}">{{ form.phong.label }}</label>
             {{ form.phong }}
-            {% if form.phong.errors %}<div class="text-danger">{{ form.phong.errors }}</div>{% endif %}
+            {% if form.phong.errors %}<div class="text-red-700">{{ form.phong.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
+          <div class="md:col-span-6">
             <label class="form-label" for="{{ form.ten_du_an.id_for_label }}">{{ form.ten_du_an.label }}</label>
             {{ form.ten_du_an }}
-            {% if form.ten_du_an.errors %}<div class="text-danger">{{ form.ten_du_an.errors }}</div>{% endif %}
+            {% if form.ten_du_an.errors %}<div class="text-red-700">{{ form.ten_du_an.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
+          <div class="md:col-span-4">
             <label class="form-label" for="{{ form.chuong_trinh.id_for_label }}">{{ form.chuong_trinh.label }}</label>
             {{ form.chuong_trinh }}
-            {% if form.chuong_trinh.errors %}<div class="text-danger">{{ form.chuong_trinh.errors }}</div>{% endif %}
+            {% if form.chuong_trinh.errors %}<div class="text-red-700">{{ form.chuong_trinh.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
+          <div class="md:col-span-4">
             <label class="form-label" for="{{ form.hinh_thuc.id_for_label }}">{{ form.hinh_thuc.label }}</label>
             {{ form.hinh_thuc }}
-            {% if form.hinh_thuc.errors %}<div class="text-danger">{{ form.hinh_thuc.errors }}</div>{% endif %}
+            {% if form.hinh_thuc.errors %}<div class="text-red-700">{{ form.hinh_thuc.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
+          <div class="md:col-span-4">
             <label class="form-label" for="{{ form.nam.id_for_label }}">{{ form.nam.label }}</label>
             {{ form.nam }}
-            {% if form.nam.errors %}<div class="text-danger">{{ form.nam.errors }}</div>{% endif %}
+            {% if form.nam.errors %}<div class="text-red-700">{{ form.nam.errors }}</div>{% endif %}
           </div>
         </div>
       </div>
-      <div class="card-footer d-flex justify-content-between">
+      <div class="card-footer flex justify-between">
         <a class="btn btn-link" href="{% url 'activities:du_an_list' %}">Hủy</a>
         <button class="btn btn-primary" type="submit">Lưu dự án</button>
       </div>
@@ -63,15 +63,15 @@
   {% else %}
     <div class="card">
       <div class="card-body">
-        <dl class="row mb-0">
-          <dt class="col-sm-3">Phòng ban</dt>
-          <dd class="col-sm-9">{{ project.phong }}</dd>
-          <dt class="col-sm-3">Chương trình</dt>
-          <dd class="col-sm-9">{{ project.get_chuong_trinh_display }}</dd>
-          <dt class="col-sm-3">Hình thức</dt>
-          <dd class="col-sm-9">{{ project.get_hinh_thuc_display }}</dd>
-          <dt class="col-sm-3">Năm</dt>
-          <dd class="col-sm-9">{{ project.nam }}</dd>
+        <dl class="grid grid-cols-12 mb-0">
+          <dt class="sm:col-span-3">Phòng ban</dt>
+          <dd class="sm:col-span-9">{{ project.phong }}</dd>
+          <dt class="sm:col-span-3">Chương trình</dt>
+          <dd class="sm:col-span-9">{{ project.get_chuong_trinh_display }}</dd>
+          <dt class="sm:col-span-3">Hình thức</dt>
+          <dd class="sm:col-span-9">{{ project.get_hinh_thuc_display }}</dd>
+          <dt class="sm:col-span-3">Năm</dt>
+          <dd class="sm:col-span-9">{{ project.nam }}</dd>
         </dl>
       </div>
     </div>

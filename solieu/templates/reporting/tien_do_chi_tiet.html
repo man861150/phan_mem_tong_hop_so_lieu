@@ -4,14 +4,14 @@
 
 {% block content %}
   <div class="page-header d-print-none">
-    <div class="row align-items-center">
-      <div class="col">
-        <div class="text-secondary">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
+        <div class="text-slate-500">
           <a href="{% url 'reporting:tien_do' %}?year={{ year }}">Tiến độ thực hiện</a>
           / {{ indicator.ma_chi_tieu }}
         </div>
         <h2 class="page-title">{{ indicator.ten_chi_tieu }}</h2>
-        <div class="text-secondary">
+        <div class="text-slate-500">
           {{ indicator.nhom.phong.ma_phong }} — {{ indicator.nhom.phong.ten_phong }} — năm {{ year }}
         </div>
       </div>
@@ -31,28 +31,28 @@
   <div class="card mb-3">
     <div class="card-body">
       {% if summary %}
-        <div class="row g-3">
-          <div class="col-md-3">
-            <div class="text-secondary small">Kế hoạch năm</div>
+        <div class="grid grid-cols-12 gap-3">
+          <div class="md:col-span-3">
+            <div class="text-slate-500 small">Kế hoạch năm</div>
             <div class="h3 mb-0">{{ summary.plan }} {{ indicator.don_vi_tinh }}</div>
           </div>
-          <div class="col-md-3">
-            <div class="text-secondary small">Lũy kế đã duyệt</div>
+          <div class="md:col-span-3">
+            <div class="text-slate-500 small">Lũy kế đã duyệt</div>
             <div class="h3 mb-0">{{ summary.cumulative }} {{ indicator.don_vi_tinh }}</div>
           </div>
-          <div class="col-md-3">
-            <div class="text-secondary small">% hoàn thành</div>
+          <div class="md:col-span-3">
+            <div class="text-slate-500 small">% hoàn thành</div>
             <div class="h3 mb-0">
               {{ summary.percent }}{% if summary.percent != "—" %}%{% endif %}
             </div>
           </div>
-          <div class="col-md-3">
-            <div class="text-secondary small">Còn lại</div>
+          <div class="md:col-span-3">
+            <div class="text-slate-500 small">Còn lại</div>
             <div class="h3 mb-0">{{ summary.remainder }} {{ indicator.don_vi_tinh }}</div>
           </div>
         </div>
       {% else %}
-        <div class="text-secondary">Chưa có số liệu.</div>
+        <div class="text-slate-500">Chưa có số liệu.</div>
       {% endif %}
     </div>
   </div>

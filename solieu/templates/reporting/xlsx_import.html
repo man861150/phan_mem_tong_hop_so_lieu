@@ -4,10 +4,10 @@
 
 {% block content %}
   <div class="page-header d-print-none">
-    <div class="row align-items-center">
-      <div class="col">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
         <h2 class="page-title">Đọc file Excel báo cáo</h2>
-        <div class="text-secondary">
+        <div class="text-slate-500">
           Chỉ xem trước nội dung. Thao tác này không ghi số liệu và không duyệt phiếu.
         </div>
       </div>
@@ -30,13 +30,13 @@
     <div class="card-body">
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        <div class="row g-3 align-items-end">
-          <div class="col-md-8">
+        <div class="grid grid-cols-12 gap-3 items-end">
+          <div class="md:col-span-8">
             <label class="form-label" for="{{ form.file.id_for_label }}">{{ form.file.label }}</label>
             {{ form.file }}
-            {% if form.file.errors %}<div class="text-danger small">{{ form.file.errors }}</div>{% endif %}
+            {% if form.file.errors %}<div class="text-red-700 small">{{ form.file.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
+          <div class="md:col-span-4">
             <button class="btn btn-primary" type="submit">Xem trước</button>
           </div>
         </div>
@@ -48,7 +48,7 @@
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Xem trước {{ parsed_name }}</h3>
-        <div class="text-secondary small">Không có dữ liệu nào được lưu.</div>
+        <div class="text-slate-500 small">Không có dữ liệu nào được lưu.</div>
       </div>
       <div class="table-responsive">
         <table class="table table-vcenter card-table">
@@ -80,7 +80,7 @@
                 <td class="text-end">{{ item.thuc_hien }}</td>
                 <td class="text-end">{{ item.luy_ke }}</td>
                 <td class="text-end">{{ item.phan_tram }}{% if item.phan_tram != "—" %}%{% endif %}</td>
-                <td>{% if item.ghi_chu %}<span class="text-warning">{{ item.ghi_chu }}</span>{% endif %}</td>
+                <td>{% if item.ghi_chu %}<span class="text-amber-700">{{ item.ghi_chu }}</span>{% endif %}</td>
                 {% if column_count == 8 %}<td>{{ item.danh_gia }}</td>{% endif %}
               </tr>
             {% empty %}

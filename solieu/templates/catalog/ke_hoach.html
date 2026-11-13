@@ -4,8 +4,8 @@
 
 {% block content %}
   <div class="page-header d-print-none">
-    <div class="row align-items-center">
-      <div class="col">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
         <h2 class="page-title">Kế hoạch năm {{ nam }}</h2>
       </div>
       <div class="col-auto">
@@ -76,7 +76,7 @@
                 <td>{{ group.ten_mang }}</td>
                 <td style="padding-left: calc(0.75rem + {{ line.depth }}rem)">
                   {{ line.label }}
-                  <div class="text-secondary">{{ line.ma }}</div>
+                  <div class="text-slate-500">{{ line.ma }}</div>
                 </td>
                 <td>{{ line.nam_truoc }}</td>
                 <td>{{ line.nam_nay }}</td>
@@ -100,7 +100,7 @@
         <label class="form-label" for="{{ form.y_kien.id_for_label }}">Ý kiến</label>
         {{ form.y_kien }}
         {% if form.y_kien.errors %}
-          <div class="text-danger">{{ form.y_kien.errors }}</div>
+          <div class="text-red-700">{{ form.y_kien.errors }}</div>
         {% endif %}
       </div>
       <button class="btn btn-outline-secondary" type="submit" name="hanh_dong" value="tra_lai">Trả lại</button>

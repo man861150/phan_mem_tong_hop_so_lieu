@@ -4,10 +4,10 @@
 
 {% block content %}
   <div class="page-header d-print-none">
-    <div class="row align-items-center">
-      <div class="col">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
         <h2 class="page-title">Tiến độ thực hiện chỉ tiêu</h2>
-        <div class="text-secondary">
+        <div class="text-slate-500">
           Năm {{ year }}{% if selected_department %} — {{ selected_department.ma_phong }} — {{ selected_department.ten_phong }}{% else %} — Toàn trung tâm{% endif %}
         </div>
       </div>
@@ -20,14 +20,14 @@
   <div class="card mb-3">
     <div class="card-body">
       <form method="get">
-        <div class="row g-3 align-items-end">
-          <div class="col-md-2">
+        <div class="grid grid-cols-12 gap-3 items-end">
+          <div class="md:col-span-2">
             <label class="form-label" for="year">Năm</label>
             <input class="form-control" type="number" id="year" name="year"
                    min="2000" max="2100" value="{{ year }}">
           </div>
           {% if show_department_filter %}
-            <div class="col-md-4">
+            <div class="md:col-span-4">
               <label class="form-label" for="phong">Phòng ban</label>
               <select class="form-select" id="phong" name="phong">
                 <option value="">Tất cả phòng ban</option>
@@ -40,21 +40,21 @@
               </select>
             </div>
           {% else %}
-            <div class="col-md-4">
-              <div class="text-secondary small">Phạm vi</div>
+            <div class="md:col-span-4">
+              <div class="text-slate-500 small">Phạm vi</div>
               <div class="form-control-plaintext">
                 {% if selected_department %}{{ selected_department.ma_phong }} — {{ selected_department.ten_phong }}{% else %}Chưa có phòng ban{% endif %}
               </div>
             </div>
           {% endif %}
-          <div class="col-md-3">
+          <div class="md:col-span-3">
             <label class="form-check form-switch mb-0">
               <input class="form-check-input" type="checkbox" name="gom_cho_duyet"
                      value="1" {% if include_pending %}checked{% endif %}>
               <span class="form-check-label">Gồm số chờ duyệt</span>
             </label>
           </div>
-          <div class="col-md-2">
+          <div class="md:col-span-2">
             <button class="btn btn-primary w-100" type="submit">Xem</button>
           </div>
         </div>
@@ -103,7 +103,7 @@
                       <a href="{% url 'reporting:tien_do_chi_tiet' row.chi_tieu_id %}?year={{ year }}">
                         {{ row.ten_chi_tieu }}
                       </a>
-                      <div class="text-secondary small">{{ row.ma_chi_tieu }}</div>
+                      <div class="text-slate-500 small">{{ row.ma_chi_tieu }}</div>
                       {% if row.only_track %}
                         <span class="badge bg-secondary-lt">Chỉ theo dõi</span>
                       {% endif %}
@@ -128,12 +128,12 @@
           </div>
         {% endfor %}
       {% else %}
-        <div class="card-body text-secondary">Chưa có số liệu.</div>
+        <div class="card-body text-slate-500">Chưa có số liệu.</div>
       {% endif %}
     </div>
   {% empty %}
     <div class="card">
-      <div class="card-body text-secondary">Chưa có số liệu.</div>
+      <div class="card-body text-slate-500">Chưa có số liệu.</div>
     </div>
   {% endfor %}
 {% endblock %}

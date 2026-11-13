@@ -4,10 +4,10 @@
 
 {% block content %}
   <div class="page-header d-print-none">
-    <div class="row align-items-center">
-      <div class="col">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
         <h2 class="page-title">Báo cáo đã xuất</h2>
-        <div class="text-secondary">
+        <div class="text-slate-500">
           Danh sách tệp đã lập. Mỗi tệp được giữ nguyên tại thời điểm xuất.
         </div>
       </div>
@@ -53,16 +53,16 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="6" class="text-secondary">Chưa có báo cáo nào được xuất trong phạm vi của bạn.</td>
+              <td colspan="6" class="text-slate-500">Chưa có báo cáo nào được xuất trong phạm vi của bạn.</td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
     {% if page_obj.paginator.num_pages > 1 %}
-      <div class="card-footer d-flex align-items-center">
-        <span class="text-secondary">Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-        <div class="btn-list ms-auto">
+      <div class="card-footer flex items-center">
+        <span class="text-slate-500">Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        <div class="btn-list ml-auto">
           {% if page_obj.has_previous %}
             <a class="btn btn-sm btn-outline-secondary" href="?trang={{ page_obj.previous_page_number }}">Trước</a>
           {% endif %}

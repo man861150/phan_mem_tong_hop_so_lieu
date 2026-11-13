@@ -4,10 +4,10 @@
 
 {% block content %}
   <div class="page-header d-print-none">
-    <div class="row align-items-center">
-      <div class="col">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
         <h2 class="page-title">Tra cứu và so sánh số liệu</h2>
-        <div class="text-secondary">
+        <div class="text-slate-500">
           Tìm hoạt động, phiếu và số liệu trong phạm vi được phép xem.
         </div>
       </div>
@@ -41,8 +41,8 @@
       <div class="card-body">
         <form method="get">
           <input type="hidden" name="che_do" value="tra_cuu">
-          <div class="row g-3 align-items-end">
-            <div class="col-md-2">
+          <div class="grid grid-cols-12 gap-3 items-end">
+            <div class="md:col-span-2">
               <label class="form-label" for="year">Năm</label>
               <select class="form-select" id="year" name="year">
                 {% for year in year_options %}
@@ -50,7 +50,7 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="col-md-2">
+            <div class="md:col-span-2">
               <label class="form-label" for="ky">Kỳ</label>
               <select class="form-select" id="ky" name="ky">
                 {% for value, label in period_choices %}
@@ -58,7 +58,7 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="col-md-3">
+            <div class="md:col-span-3">
               <label class="form-label" for="phong">Phòng ban</label>
               <select class="form-select" id="phong" name="phong">
                 <option value="">Tất cả phòng ban trong phạm vi</option>
@@ -69,7 +69,7 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="col-md-3">
+            <div class="md:col-span-3">
               <label class="form-label" for="loai">Loại hoạt động</label>
               <select class="form-select" id="loai" name="loai">
                 <option value="">Tất cả loại hoạt động</option>
@@ -80,7 +80,7 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="col-md-3">
+            <div class="md:col-span-3">
               <label class="form-label" for="linh_vuc">Lĩnh vực</label>
               <select class="form-select" id="linh_vuc" name="linh_vuc">
                 <option value="">Tất cả lĩnh vực</option>
@@ -91,15 +91,15 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="col-md-4">
+            <div class="md:col-span-4">
               <label class="form-label" for="ten">Tên hoạt động, dự án hoặc chỉ tiêu</label>
               <input class="form-control" id="ten" name="ten" value="{{ filters.ten }}" placeholder="Nhập tên cần tìm">
             </div>
-            <div class="col-md-4">
+            <div class="md:col-span-4">
               <label class="form-label" for="don_vi">Đơn vị phối hợp</label>
               <input class="form-control" id="don_vi" name="don_vi" value="{{ filters.don_vi }}" placeholder="Nhập tên đơn vị">
             </div>
-            <div class="col-md-2">
+            <div class="md:col-span-2">
               <button class="btn btn-primary w-100" type="submit">Tìm kiếm</button>
             </div>
           </div>
@@ -110,7 +110,7 @@
     <div class="card mb-3">
       <div class="card-header">
         <h3 class="card-title">Hoạt động</h3>
-        <div class="card-actions text-secondary small">{{ activity_page.paginator.count }} kết quả</div>
+        <div class="card-actions text-slate-500 small">{{ activity_page.paginator.count }} kết quả</div>
       </div>
       <div class="table-responsive">
         <table class="table table-vcenter card-table">
@@ -135,7 +135,7 @@
                 </td>
                 <td>
                   <a href="{% url 'activities:hoat_dong_detail' activity.pk %}">{{ activity.ten }}</a>
-                  <div class="text-secondary small">{{ activity.get_trang_thai_display }}</div>
+                  <div class="text-slate-500 small">{{ activity.get_trang_thai_display }}</div>
                 </td>
                 <td>{{ activity.loai_hoat_dong.phong.ma_phong }}</td>
                 <td>{{ activity.loai_hoat_dong.ten_loai }}</td>
@@ -148,16 +148,16 @@
               </tr>
             {% empty %}
               <tr>
-                <td colspan="6" class="text-secondary">Không có hoạt động nào phù hợp.</td>
+                <td colspan="6" class="text-slate-500">Không có hoạt động nào phù hợp.</td>
               </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
       {% if activity_page.paginator.num_pages > 1 %}
-        <div class="card-footer d-flex align-items-center">
-          <span class="text-secondary">Trang {{ activity_page.number }} / {{ activity_page.paginator.num_pages }}</span>
-          <div class="btn-list ms-auto">
+        <div class="card-footer flex items-center">
+          <span class="text-slate-500">Trang {{ activity_page.number }} / {{ activity_page.paginator.num_pages }}</span>
+          <div class="btn-list ml-auto">
             {% if activity_page.has_previous %}
               <a class="btn btn-sm btn-outline-secondary" href="?{{ search_query }}&trang_hd={{ activity_page.previous_page_number }}">Trước</a>
             {% endif %}
@@ -172,7 +172,7 @@
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Phiếu nhập liệu và số liệu</h3>
-        <div class="card-actions text-secondary small">{{ phieu_page.paginator.count }} kết quả</div>
+        <div class="card-actions text-slate-500 small">{{ phieu_page.paginator.count }} kết quả</div>
       </div>
       <div class="table-responsive">
         <table class="table table-vcenter card-table">
@@ -192,7 +192,7 @@
               <tr>
                 <td>
                   #{{ phieu.pk }}
-                  <div class="text-secondary small">{{ phieu.get_loai_phieu_display }}</div>
+                  <div class="text-slate-500 small">{{ phieu.get_loai_phieu_display }}</div>
                 </td>
                 <td>
                   {% if phieu.hoat_dong %}
@@ -210,14 +210,14 @@
                   {% for line in phieu.so_lieu_hien_thi %}
                     <div>{{ line.ten }}: {{ line.gia_tri }} {{ line.don_vi }}</div>
                   {% empty %}
-                    <span class="text-secondary">Chưa có số liệu</span>
+                    <span class="text-slate-500">Chưa có số liệu</span>
                   {% endfor %}
                   {% if phieu.so_lieu_count > 3 %}
-                    <div class="text-secondary small">… và {{ phieu.so_lieu_count|add:"-3" }} chỉ tiêu khác</div>
+                    <div class="text-slate-500 small">… và {{ phieu.so_lieu_count|add:"-3" }} chỉ tiêu khác</div>
                   {% endif %}
                 </td>
                 <td class="text-end">
-                  <div class="btn-list justify-content-end">
+                  <div class="btn-list justify-end">
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'entry:phieu_detail' phieu.pk %}">Chi tiết</a>
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'entry:phieu_lich_su' phieu.pk %}">Lịch sử xử lý</a>
                   </div>
@@ -225,16 +225,16 @@
               </tr>
             {% empty %}
               <tr>
-                <td colspan="7" class="text-secondary">Không có phiếu nào phù hợp.</td>
+                <td colspan="7" class="text-slate-500">Không có phiếu nào phù hợp.</td>
               </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
       {% if phieu_page.paginator.num_pages > 1 %}
-        <div class="card-footer d-flex align-items-center">
-          <span class="text-secondary">Trang {{ phieu_page.number }} / {{ phieu_page.paginator.num_pages }}</span>
-          <div class="btn-list ms-auto">
+        <div class="card-footer flex items-center">
+          <span class="text-slate-500">Trang {{ phieu_page.number }} / {{ phieu_page.paginator.num_pages }}</span>
+          <div class="btn-list ml-auto">
             {% if phieu_page.has_previous %}
               <a class="btn btn-sm btn-outline-secondary" href="?{{ search_query }}&trang_phieu={{ phieu_page.previous_page_number }}">Trước</a>
             {% endif %}
@@ -249,20 +249,20 @@
     <div class="card mb-3">
       <div class="card-header">
         <h3 class="card-title">So sánh số liệu cùng kỳ giữa hai năm</h3>
-        <div class="card-actions text-secondary small">{{ comparison.scope_label }}</div>
+        <div class="card-actions text-slate-500 small">{{ comparison.scope_label }}</div>
       </div>
       <div class="card-body">
         <form method="get">
           <input type="hidden" name="che_do" value="so_sanh">
-          <div class="row g-3 align-items-end">
-            <div class="col-md-2">
+          <div class="grid grid-cols-12 gap-3 items-end">
+            <div class="md:col-span-2">
               <label class="form-label" for="kind">Loại kỳ</label>
               <select class="form-select" id="kind" name="kind">
                 <option value="month" {% if comparison.kind == 'month' %}selected{% endif %}>Tháng</option>
                 <option value="quarter" {% if comparison.kind == 'quarter' %}selected{% endif %}>Quý</option>
               </select>
             </div>
-            <div class="col-md-2">
+            <div class="md:col-span-2">
               <label class="form-label" for="month">Tháng</label>
               <select class="form-select" id="month" name="month">
                 {% for month in month_options %}
@@ -270,7 +270,7 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="col-md-2">
+            <div class="md:col-span-2">
               <label class="form-label" for="quarter">Quý</label>
               <select class="form-select" id="quarter" name="quarter">
                 {% for quarter in quarter_options %}
@@ -278,17 +278,17 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="col-md-2">
+            <div class="md:col-span-2">
               <label class="form-label" for="year_a">Năm A</label>
               <input class="form-control" type="number" id="year_a" name="year_a"
                      min="2000" max="2100" value="{{ comparison.year_a }}">
             </div>
-            <div class="col-md-2">
+            <div class="md:col-span-2">
               <label class="form-label" for="year_b">Năm B</label>
               <input class="form-control" type="number" id="year_b" name="year_b"
                      min="2000" max="2100" value="{{ comparison.year_b }}">
             </div>
-            <div class="col-md-2">
+            <div class="md:col-span-2">
               <label class="form-label" for="phong">Phạm vi</label>
               <select class="form-select" id="phong" name="phong">
                 {% if can_choose_center %}
@@ -301,12 +301,12 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="col-md-2">
+            <div class="md:col-span-2">
               <button class="btn btn-primary w-100" type="submit">So sánh</button>
             </div>
           </div>
         </form>
-        <div class="text-secondary small mt-3">
+        <div class="text-slate-500 small mt-3">
           {{ comparison.period_a_label }} so với {{ comparison.period_b_label }}. Chênh lệch = Năm B − Năm A.
         </div>
       </div>
@@ -331,7 +331,7 @@
               <tr>
                 <td>
                   {{ row.ten_chi_tieu }}
-                  <div class="text-secondary small">{{ row.ma_phong }} — {{ row.ma_chi_tieu }} — {{ row.don_vi_tinh }}</div>
+                  <div class="text-slate-500 small">{{ row.ma_phong }} — {{ row.ma_chi_tieu }} — {{ row.don_vi_tinh }}</div>
                 </td>
                 <td class="text-end">{{ row.value_a }}</td>
                 <td class="text-end">{{ row.value_b }}</td>
@@ -339,7 +339,7 @@
               </tr>
             {% empty %}
               <tr>
-                <td colspan="4" class="text-secondary">Chưa có số liệu trong kỳ đã chọn.</td>
+                <td colspan="4" class="text-slate-500">Chưa có số liệu trong kỳ đã chọn.</td>
               </tr>
             {% endfor %}
           </tbody>

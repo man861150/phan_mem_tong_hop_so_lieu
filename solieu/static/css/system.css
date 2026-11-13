@@ -1,0 +1,27 @@
+@import "tailwindcss";
+@import "./variables.css";
+
+@source "../../templates";
+@source "../../apps";
+@source inline("btn btn-primary btn-secondary btn-success btn-danger btn-warning btn-outline-primary btn-outline-secondary btn-outline-danger btn-outline-warning btn-link btn-sm badge bg-success-lt bg-warning-lt bg-danger-lt bg-info-lt bg-secondary-lt bg-green-lt bg-red-lt bg-blue-lt alert-info alert-warning alert-danger alert-success alert-error form-control form-select form-check-input table table-vcenter card-table list-group list-group-item list-group-item-action");
+
+@theme {
+  --font-sans: var(--font-sans);
+  --color-primary: var(--color-primary);
+  --color-surface: var(--color-surface);
+  --color-muted: var(--color-muted);
+}
+
+@layer base {
+  [x-cloak] { display: none !important; }
+  body {
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+  }
+  :focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+    outline-offset: 2px;
+  }
+}

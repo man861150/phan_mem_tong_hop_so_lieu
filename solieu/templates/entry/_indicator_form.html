@@ -22,39 +22,39 @@
 {% for row in rows %}
   <div class="card mb-3">
     <div class="card-header">
-      <div class="d-flex flex-wrap align-items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <h3 class="card-title mb-0">{{ row.chi_tieu.ten_chi_tieu }}</h3>
-        <span class="text-secondary">({{ row.chi_tieu.don_vi_tinh }})</span>
+        <span class="text-slate-500">({{ row.chi_tieu.don_vi_tinh }})</span>
         {% if row.bat_buoc %}<span class="badge bg-warning-lt">Bắt buộc</span>{% endif %}
-        <span class="text-secondary small">{{ row.chi_tieu.ma_chi_tieu }}</span>
+        <span class="text-slate-500 small">{{ row.chi_tieu.ma_chi_tieu }}</span>
       </div>
     </div>
     <div class="card-body">
-      <div class="row g-3">
-        <div class="col-md-4">
+      <div class="grid grid-cols-12 gap-3">
+        <div class="md:col-span-4">
           <label class="form-label" for="{{ row.total.id_for_label }}">Giá trị</label>
           {% if can_edit %}
             {{ row.total }}
           {% else %}
             <div class="form-control-plaintext">{{ row.total.value|vi_number }} {{ row.chi_tieu.don_vi_tinh }}</div>
           {% endif %}
-          {% if row.total.errors %}<div class="text-danger">{{ row.total.errors }}</div>{% endif %}
+          {% if row.total.errors %}<div class="text-red-700">{{ row.total.errors }}</div>{% endif %}
         </div>
-        <div class="col-md-4">
+        <div class="md:col-span-4">
           <label class="form-label" for="{{ row.nguon.id_for_label }}">Nguồn số liệu</label>
           {% if can_edit %}
             {{ row.nguon }}
           {% else %}
             <div class="form-control-plaintext">{{ row.nguon_display|default:"—" }}</div>
           {% endif %}
-          {% if row.nguon.errors %}<div class="text-danger">{{ row.nguon.errors }}</div>{% endif %}
+          {% if row.nguon.errors %}<div class="text-red-700">{{ row.nguon.errors }}</div>{% endif %}
         </div>
         {% if show_month_info %}
-          <div class="col-md-2">
+          <div class="md:col-span-2">
             <label class="form-label">Tháng trước</label>
             <div class="form-control-plaintext">{{ row.previous|vi_number }}</div>
           </div>
-          <div class="col-md-2">
+          <div class="md:col-span-2">
             <label class="form-label">Lũy kế năm</label>
             <div class="form-control-plaintext">{{ row.cumulative|vi_number }}</div>
           </div>

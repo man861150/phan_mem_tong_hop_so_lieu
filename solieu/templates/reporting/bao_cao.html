@@ -4,14 +4,14 @@
 
 {% block content %}
   <div class="page-header d-print-none">
-    <div class="row align-items-center">
-      <div class="col">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
         <h2 class="page-title">Báo cáo tổng hợp số liệu</h2>
-        <div class="text-secondary">
+        <div class="text-slate-500">
           {% if period_label %}{{ period_label }} — {{ scope.label }}{% else %}Chọn kỳ và phạm vi báo cáo.{% endif %}
         </div>
       </div>
-      <div class="col-auto d-flex gap-2">
+      <div class="col-auto flex gap-2">
         <a class="btn btn-outline-secondary" href="{% url 'reporting:da_xuat' %}">Báo cáo đã xuất</a>
         <a class="btn btn-outline-secondary" href="{% url 'reporting:nhap_xlsx' %}">Đọc file Excel</a>
       </div>
@@ -34,40 +34,40 @@
     </div>
     <div class="card-body">
       <form method="get">
-        <div class="row g-3 align-items-end">
-          <div class="col-md-2">
+        <div class="grid grid-cols-12 gap-3 items-end">
+          <div class="md:col-span-2">
             <label class="form-label" for="{{ form.kind.id_for_label }}">{{ form.kind.label }}</label>
             {{ form.kind }}
-            {% if form.kind.errors %}<div class="text-danger small">{{ form.kind.errors }}</div>{% endif %}
+            {% if form.kind.errors %}<div class="text-red-700 small">{{ form.kind.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-2">
+          <div class="md:col-span-2">
             <label class="form-label" for="{{ form.year.id_for_label }}">{{ form.year.label }}</label>
             {{ form.year }}
-            {% if form.year.errors %}<div class="text-danger small">{{ form.year.errors }}</div>{% endif %}
+            {% if form.year.errors %}<div class="text-red-700 small">{{ form.year.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-2">
+          <div class="md:col-span-2">
             <label class="form-label" for="{{ form.month.id_for_label }}">{{ form.month.label }}</label>
             {{ form.month }}
-            {% if form.month.errors %}<div class="text-danger small">{{ form.month.errors }}</div>{% endif %}
+            {% if form.month.errors %}<div class="text-red-700 small">{{ form.month.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-2">
+          <div class="md:col-span-2">
             <label class="form-label" for="{{ form.quarter.id_for_label }}">{{ form.quarter.label }}</label>
             {{ form.quarter }}
-            {% if form.quarter.errors %}<div class="text-danger small">{{ form.quarter.errors }}</div>{% endif %}
+            {% if form.quarter.errors %}<div class="text-red-700 small">{{ form.quarter.errors }}</div>{% endif %}
           </div>
           {% if not is_scoped %}
-            <div class="col-md-3">
+            <div class="md:col-span-3">
               <label class="form-label" for="{{ form.phong.id_for_label }}">{{ form.phong.label }}</label>
               {{ form.phong }}
-              {% if form.phong.errors %}<div class="text-danger small">{{ form.phong.errors }}</div>{% endif %}
+              {% if form.phong.errors %}<div class="text-red-700 small">{{ form.phong.errors }}</div>{% endif %}
             </div>
           {% else %}
-            <div class="col-md-3">
-              <div class="text-secondary small">Phạm vi</div>
+            <div class="md:col-span-3">
+              <div class="text-slate-500 small">Phạm vi</div>
               <div class="form-control-plaintext">{{ scope.label }}</div>
             </div>
           {% endif %}
-          <div class="col-md-1">
+          <div class="md:col-span-1">
             <button class="btn btn-primary w-100" type="submit">Xem</button>
           </div>
         </div>
@@ -82,7 +82,7 @@
     {% if has_gaps %}
       <div class="card mb-3 border-warning">
         <div class="card-header">
-          <h3 class="card-title text-warning">Số liệu chưa đầy đủ</h3>
+          <h3 class="card-title text-amber-700">Số liệu chưa đầy đủ</h3>
           {% if not accepted %}
             <div class="card-actions">
               <a class="btn btn-warning" href="{{ continue_url }}">Vẫn lập báo cáo</a>
@@ -103,7 +103,7 @@
             {% endif %}
           {% endfor %}
           {% if accepted %}
-            <div class="text-secondary mt-2">Báo cáo sẽ được xuất kèm ghi chú “Số liệu chưa đầy đủ”.</div>
+            <div class="text-slate-500 mt-2">Báo cáo sẽ được xuất kèm ghi chú “Số liệu chưa đầy đủ”.</div>
           {% endif %}
         </div>
       </div>
@@ -148,7 +148,7 @@
                     <td class="text-end">{{ item.luy_ke }}</td>
                     <td class="text-end">{{ item.phan_tram }}{% if item.phan_tram != "—" %}%{% endif %}</td>
                     <td>
-                      {% if item.ghi_chu %}<div class="text-warning">{{ item.ghi_chu }}</div>{% endif %}
+                      {% if item.ghi_chu %}<div class="text-amber-700">{{ item.ghi_chu }}</div>{% endif %}
                       {% if block.co_danh_gia %}
                         <label class="form-label small mb-1" for="danh_gia_{{ block.report.phong.pk }}_{{ item.chi_tieu_id }}">Đánh giá hiệu quả</label>
                         <textarea class="form-control form-control-sm" rows="2"
@@ -174,11 +174,11 @@
             </div>
             <div class="card-body">
               {% for breakdown in block.report.breakdowns %}
-                <h4 class="mb-2">{{ breakdown.chi_tieu }} <span class="text-secondary small">({{ breakdown.ma_chi_tieu }})</span></h4>
-                <div class="row g-3 mb-3">
+                <h4 class="mb-2">{{ breakdown.chi_tieu }} <span class="text-slate-500 small">({{ breakdown.ma_chi_tieu }})</span></h4>
+                <div class="grid grid-cols-12 gap-3 mb-3">
                   {% for dimension in breakdown.dimensions %}
-                    <div class="col-md-4">
-                      <div class="text-secondary small mb-1">{{ dimension.ten }}</div>
+                    <div class="md:col-span-4">
+                      <div class="text-slate-500 small mb-1">{{ dimension.ten }}</div>
                       <table class="table table-sm table-bordered mb-0">
                         <tbody>
                           {% for item in dimension.items %}
@@ -224,7 +224,7 @@
                           <td>{{ activity.ten }}</td>
                           <td>{{ activity.thoi_gian }}</td>
                           <td>{{ activity.trang_thai }}</td>
-                          <td>{% if activity.phieu %}Đã có{% else %}<span class="text-warning">Chưa có</span>{% endif %}</td>
+                          <td>{% if activity.phieu %}Đã có{% else %}<span class="text-amber-700">Chưa có</span>{% endif %}</td>
                           <td>{{ activity.noi_dung }}</td>
                           <td>{{ activity.ket_qua }}</td>
                         </tr>
@@ -263,7 +263,7 @@
       {% endfor %}
 
       <div class="card mb-3">
-        <div class="card-body d-flex flex-wrap gap-2">
+        <div class="card-body flex flex-wrap gap-2">
           <button class="btn btn-outline-secondary" type="submit">Lưu đánh giá</button>
           {% if not has_gaps or accepted %}
             <button class="btn btn-success" type="submit"
@@ -271,7 +271,7 @@
             <button class="btn btn-primary" type="submit"
                     formaction="{{ export_docx_url }}" formmethod="post">Xuất Word</button>
           {% else %}
-            <span class="text-secondary align-self-center">Chọn “Vẫn lập báo cáo” để xuất tệp khi còn số liệu chưa đầy đủ.</span>
+            <span class="text-slate-500 align-self-center">Chọn “Vẫn lập báo cáo” để xuất tệp khi còn số liệu chưa đầy đủ.</span>
           {% endif %}
         </div>
       </div>

@@ -4,14 +4,14 @@
 
 {% block content %}
   <div class="page-header d-print-none">
-    <div class="row align-items-center">
-      <div class="col">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
         <h2 class="page-title">Lịch sử thay đổi số liệu</h2>
-        <div class="text-secondary">
+        <div class="text-slate-500">
           Phiếu #{{ phieu.pk }} — {{ phieu.get_loai_phieu_display }} — {{ phieu.phong.ma_phong }}
         </div>
       </div>
-      <div class="col-auto d-flex align-items-center gap-2">
+      <div class="col-auto flex items-center gap-2">
         <a class="btn btn-outline-secondary" href="{% url 'entry:phieu_detail' phieu.pk %}">Về phiếu</a>
       </div>
     </div>
@@ -25,7 +25,7 @@
   <div class="card">
     <div class="card-header">
       <h3 class="card-title">Các thay đổi theo thời gian</h3>
-      <div class="card-actions text-secondary small">Mới nhất hiển thị trước</div>
+      <div class="card-actions text-slate-500 small">Mới nhất hiển thị trước</div>
     </div>
     <div class="table-responsive">
       <table class="table table-vcenter card-table">
@@ -57,16 +57,16 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="7" class="text-secondary">Chưa có thay đổi số liệu nào.</td>
+              <td colspan="7" class="text-slate-500">Chưa có thay đổi số liệu nào.</td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
     {% if page_obj.paginator.num_pages > 1 %}
-      <div class="card-footer d-flex align-items-center">
-        <span class="text-secondary">Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-        <div class="btn-list ms-auto">
+      <div class="card-footer flex items-center">
+        <span class="text-slate-500">Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        <div class="btn-list ml-auto">
           {% if page_obj.has_previous %}
             <a class="btn btn-sm btn-outline-secondary" href="?trang={{ page_obj.previous_page_number }}">Trước</a>
           {% endif %}

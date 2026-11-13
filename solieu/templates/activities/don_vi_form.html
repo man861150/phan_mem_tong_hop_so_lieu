@@ -1,8 +1,8 @@
 {% if don_vi_error %}
-  <div class="text-danger mb-2">{{ don_vi_error }}</div>
+  <div class="text-red-700 mb-2">{{ don_vi_error }}</div>
 {% endif %}
 {% if don_vi_notice %}
-  <div class="text-secondary mb-2">{{ don_vi_notice }}</div>
+  <div class="text-slate-500 mb-2">{{ don_vi_notice }}</div>
 {% endif %}
 {% for don_vi in don_vi_options %}
   <label class="form-check mb-1">
@@ -10,5 +10,5 @@
     <span class="form-check-label">{{ don_vi.ten_don_vi }}</span>
   </label>
 {% empty %}
-  <div class="text-secondary">Chưa có đơn vị phối hợp.</div>
+  <div class="text-slate-500">Chưa có đơn vị phối hợp.</div>
 {% endfor %}

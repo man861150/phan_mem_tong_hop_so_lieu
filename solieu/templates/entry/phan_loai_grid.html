@@ -5,11 +5,11 @@
       <h4 class="mb-2">Phân loại đối tượng</h4>
       <div x-ref="rows">
         {% for object_row in row.object_rows %}
-          <div class="row g-2 align-items-end mb-2" data-split-row>
-            <div class="col-md-8">
+          <div class="grid grid-cols-12 gap-2 items-end mb-2" data-split-row>
+            <div class="md:col-span-8">
               <label class="form-label" for="{{ object_row.field.id_for_label }}">{{ object_row.doi_tuong.ten_doi_tuong }}</label>
               {{ object_row.field }}
-              {% if object_row.field.errors %}<div class="text-danger">{{ object_row.field.errors }}</div>{% endif %}
+              {% if object_row.field.errors %}<div class="text-red-700">{{ object_row.field.errors }}</div>{% endif %}
             </div>
           </div>
         {% endfor %}
@@ -24,24 +24,24 @@
     <div class="mt-3" x-data="splitGrid({{ row.chi_tieu.pk }})" @input="update()">
       <h4 class="mb-2">Phân loại lĩnh vực</h4>
       {{ row.grid_error }}
-      {% if row.grid_error.errors %}<div class="text-danger">{{ row.grid_error.errors }}</div>{% endif %}
+      {% if row.grid_error.errors %}<div class="text-red-700">{{ row.grid_error.errors }}</div>{% endif %}
       <div x-ref="rows">
         {% if row.linh_vuc_available.qd36 %}
           {% for item in row.linh_vuc_groups.qd36 %}
-            <div class="row g-2 align-items-end mb-2" data-split-row>
-              <div class="col-md-7">
+            <div class="grid grid-cols-12 gap-2 items-end mb-2" data-split-row>
+              <div class="md:col-span-7">
                 <label class="form-label" for="lv_qd36_display_{{ row.chi_tieu.pk }}_{{ forloop.counter0 }}">Lĩnh vực QĐ 36</label>
                 <input class="form-control" id="lv_qd36_display_{{ row.chi_tieu.pk }}_{{ forloop.counter0 }}" type="text" value="{{ item.linh_vuc.ma }} — {{ item.linh_vuc.ten }}" readonly>
                 <input type="hidden" name="linh_vuc_{{ row.chi_tieu.pk }}" value="{{ item.linh_vuc_id }}">
               </div>
-              <div class="col-md-3">
+              <div class="md:col-span-3">
                 <label class="form-label" for="lv_qd36_value_{{ row.chi_tieu.pk }}_{{ forloop.counter0 }}">Giá trị</label>
                 <input class="form-control" id="lv_qd36_value_{{ row.chi_tieu.pk }}_{{ forloop.counter0 }}" type="number" step="0.0001" min="0" name="gia_tri_lv_{{ row.chi_tieu.pk }}" value="{{ item.raw_value|default_if_none:'' }}" data-split-part="{{ row.chi_tieu.pk }}">
               </div>
-              <div class="col-md-2">
-                <button class="btn btn-link text-danger" type="button" @click="$el.closest('[data-split-row]').remove(); $dispatch('input')">Xóa</button>
+              <div class="md:col-span-2">
+                <button class="btn btn-link text-red-700" type="button" @click="$el.closest('[data-split-row]').remove(); $dispatch('input')">Xóa</button>
               </div>
-              {% if item.error %}<div class="col-12 text-danger">{{ item.error }}</div>{% endif %}
+              {% if item.error %}<div class="col-span-12 text-red-700">{{ item.error }}</div>{% endif %}
             </div>
           {% endfor %}
         {% else %}
@@ -49,27 +49,27 @@
         {% endif %}
         {% if row.linh_vuc_available.tt24 %}
           {% for item in row.linh_vuc_groups.tt24 %}
-            <div class="row g-2 align-items-end mb-2" data-split-row>
-              <div class="col-md-7">
+            <div class="grid grid-cols-12 gap-2 items-end mb-2" data-split-row>
+              <div class="md:col-span-7">
                 <label class="form-label" for="lv_tt24_display_{{ row.chi_tieu.pk }}_{{ forloop.counter0 }}">Lĩnh vực TT 24</label>
                 <input class="form-control" id="lv_tt24_display_{{ row.chi_tieu.pk }}_{{ forloop.counter0 }}" type="text" value="{{ item.linh_vuc.ma }} — {{ item.linh_vuc.ten }}" readonly>
                 <input type="hidden" name="linh_vuc_{{ row.chi_tieu.pk }}" value="{{ item.linh_vuc_id }}">
               </div>
-              <div class="col-md-3">
+              <div class="md:col-span-3">
                 <label class="form-label" for="lv_tt24_value_{{ row.chi_tieu.pk }}_{{ forloop.counter0 }}">Giá trị</label>
                 <input class="form-control" id="lv_tt24_value_{{ row.chi_tieu.pk }}_{{ forloop.counter0 }}" type="number" step="0.0001" min="0" name="gia_tri_lv_{{ row.chi_tieu.pk }}" value="{{ item.raw_value|default_if_none:'' }}" data-split-part="{{ row.chi_tieu.pk }}">
               </div>
-              <div class="col-md-2">
-                <button class="btn btn-link text-danger" type="button" @click="$el.closest('[data-split-row]').remove(); $dispatch('input')">Xóa</button>
+              <div class="md:col-span-2">
+                <button class="btn btn-link text-red-700" type="button" @click="$el.closest('[data-split-row]').remove(); $dispatch('input')">Xóa</button>
               </div>
-              {% if item.error %}<div class="col-12 text-danger">{{ item.error }}</div>{% endif %}
+              {% if item.error %}<div class="col-span-12 text-red-700">{{ item.error }}</div>{% endif %}
             </div>
           {% endfor %}
         {% else %}
           <div class="alert alert-info mb-2">Chưa có mã lĩnh vực TT 24. Quản trị hệ thống nạp file tại Danh mục lĩnh vực.</div>
         {% endif %}
       </div>
-      <div class="d-flex flex-wrap gap-2 mt-2">
+      <div class="flex flex-wrap gap-2 mt-2">
         {% if row.linh_vuc_available.qd36 %}
           <button class="btn btn-outline-secondary btn-sm" type="button" @click="addRow('lv-row-qd36-{{ row.chi_tieu.pk }}')">Thêm dòng QĐ 36</button>
         {% endif %}
@@ -84,8 +84,8 @@
 
     {% if row.linh_vuc_available.qd36 %}
       <template id="lv-row-qd36-{{ row.chi_tieu.pk }}">
-        <div class="row g-2 align-items-end mb-2" data-split-row x-data="linhVucPicker('{% url 'entry:linh_vuc_search' %}', 'qd36')">
-          <div class="col-md-7">
+        <div class="grid grid-cols-12 gap-2 items-end mb-2" data-split-row x-data="linhVucPicker('{% url 'entry:linh_vuc_search' %}', 'qd36')">
+          <div class="md:col-span-7">
             <label class="form-label">Mã lĩnh vực QĐ 36</label>
             <input class="form-control" type="search" x-model="query" @input.debounce.300ms="search()" placeholder="Tìm mã lĩnh vực QĐ 36" aria-label="Tìm mã lĩnh vực QĐ 36">
             <input type="hidden" name="linh_vuc_{{ row.chi_tieu.pk }}" :value="selected.id">
@@ -96,17 +96,17 @@
                 </button>
               </template>
             </div>
-            <div class="text-danger small" x-show="searched && results.length === 0">Không tìm thấy mã lĩnh vực.</div>
+            <div class="text-red-700 small" x-show="searched && results.length === 0">Không tìm thấy mã lĩnh vực.</div>
             <div class="form-hint" x-show="selected.id">
               <span x-text="selected.ma"></span> — <span x-text="selected.ten"></span>
             </div>
           </div>
-          <div class="col-md-3">
+          <div class="md:col-span-3">
             <label class="form-label">Giá trị</label>
             <input class="form-control" type="number" step="0.0001" min="0" name="gia_tri_lv_{{ row.chi_tieu.pk }}" data-split-part="{{ row.chi_tieu.pk }}" aria-label="Giá trị lĩnh vực QĐ 36">
           </div>
-          <div class="col-md-2">
-            <button class="btn btn-link text-danger" type="button" @click="$el.closest('[data-split-row]').remove(); $dispatch('input')">Xóa</button>
+          <div class="md:col-span-2">
+            <button class="btn btn-link text-red-700" type="button" @click="$el.closest('[data-split-row]').remove(); $dispatch('input')">Xóa</button>
           </div>
         </div>
       </template>
@@ -114,8 +114,8 @@
 
     {% if row.linh_vuc_available.tt24 %}
       <template id="lv-row-tt24-{{ row.chi_tieu.pk }}">
-        <div class="row g-2 align-items-end mb-2" data-split-row x-data="linhVucPicker('{% url 'entry:linh_vuc_search' %}', 'tt24')">
-          <div class="col-md-7">
+        <div class="grid grid-cols-12 gap-2 items-end mb-2" data-split-row x-data="linhVucPicker('{% url 'entry:linh_vuc_search' %}', 'tt24')">
+          <div class="md:col-span-7">
             <label class="form-label">Mã lĩnh vực TT 24</label>
             <input class="form-control" type="search" x-model="query" @input.debounce.300ms="search()" placeholder="Tìm mã lĩnh vực TT 24" aria-label="Tìm mã lĩnh vực TT 24">
             <input type="hidden" name="linh_vuc_{{ row.chi_tieu.pk }}" :value="selected.id">
@@ -126,17 +126,17 @@
                 </button>
               </template>
             </div>
-            <div class="text-danger small" x-show="searched && results.length === 0">Không tìm thấy mã lĩnh vực.</div>
+            <div class="text-red-700 small" x-show="searched && results.length === 0">Không tìm thấy mã lĩnh vực.</div>
             <div class="form-hint" x-show="selected.id">
               <span x-text="selected.ma"></span> — <span x-text="selected.ten"></span>
             </div>
           </div>
-          <div class="col-md-3">
+          <div class="md:col-span-3">
             <label class="form-label">Giá trị</label>
             <input class="form-control" type="number" step="0.0001" min="0" name="gia_tri_lv_{{ row.chi_tieu.pk }}" data-split-part="{{ row.chi_tieu.pk }}" aria-label="Giá trị lĩnh vực TT 24">
           </div>
-          <div class="col-md-2">
-            <button class="btn btn-link text-danger" type="button" @click="$el.closest('[data-split-row]').remove(); $dispatch('input')">Xóa</button>
+          <div class="md:col-span-2">
+            <button class="btn btn-link text-red-700" type="button" @click="$el.closest('[data-split-row]').remove(); $dispatch('input')">Xóa</button>
           </div>
         </div>
       </template>

@@ -4,10 +4,10 @@
 
 {% block content %}
   <div class="page-header d-print-none">
-    <div class="row align-items-center">
-      <div class="col">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
         <h2 class="page-title">Phiếu chờ duyệt</h2>
-        <div class="text-secondary">Các phiếu đã gửi trong phòng ban của bạn.</div>
+        <div class="text-slate-500">Các phiếu đã gửi trong phòng ban của bạn.</div>
       </div>
     </div>
   </div>
@@ -55,7 +55,7 @@
                 <td>
                   {% if item.blockers %}
                     <span class="badge bg-danger-lt">Bị chặn</span>
-                    <div class="text-danger small">{{ item.blockers|join:"; " }}</div>
+                    <div class="text-red-700 small">{{ item.blockers|join:"; " }}</div>
                   {% else %}
                     <span class="badge bg-success-lt">Hợp lệ</span>
                   {% endif %}

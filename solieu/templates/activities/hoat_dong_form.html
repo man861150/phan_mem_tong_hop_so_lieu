@@ -13,8 +13,8 @@
   </style>
 
   <div class="page-header d-print-none">
-    <div class="row align-items-center">
-      <div class="col">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
         <h2 class="page-title">
           {% if activity %}
             {{ activity.ten }}
@@ -23,7 +23,7 @@
           {% endif %}
         </h2>
         {% if activity %}
-          <div class="text-secondary">
+          <div class="text-slate-500">
             {{ activity.loai_hoat_dong.phong.ma_phong }} — {{ activity.loai_hoat_dong.ten_loai }}
           </div>
         {% endif %}
@@ -52,47 +52,47 @@
           <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
 
-        <div class="row g-3">
-          <div class="col-md-6">
+        <div class="grid grid-cols-12 gap-3">
+          <div class="md:col-span-6">
             <label class="form-label" for="{{ form.loai_hoat_dong.id_for_label }}">{{ form.loai_hoat_dong.label }}</label>
             {{ form.loai_hoat_dong }}
-            {% if form.loai_hoat_dong.errors %}<div class="text-danger">{{ form.loai_hoat_dong.errors }}</div>{% endif %}
+            {% if form.loai_hoat_dong.errors %}<div class="text-red-700">{{ form.loai_hoat_dong.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
+          <div class="md:col-span-6">
             <label class="form-label" for="{{ form.ten.id_for_label }}">{{ form.ten.label }}</label>
             {{ form.ten }}
-            {% if form.ten.errors %}<div class="text-danger">{{ form.ten.errors }}</div>{% endif %}
+            {% if form.ten.errors %}<div class="text-red-700">{{ form.ten.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
+          <div class="md:col-span-6">
             <label class="form-label" for="{{ form.tu_ngay.id_for_label }}">{{ form.tu_ngay.label }}</label>
             {{ form.tu_ngay }}
-            {% if form.tu_ngay.errors %}<div class="text-danger">{{ form.tu_ngay.errors }}</div>{% endif %}
+            {% if form.tu_ngay.errors %}<div class="text-red-700">{{ form.tu_ngay.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
+          <div class="md:col-span-6">
             <label class="form-label" for="{{ form.den_ngay.id_for_label }}">{{ form.den_ngay.label }}</label>
             {{ form.den_ngay }}
             <div class="form-hint">Để trống, hệ thống dùng ngày bắt đầu.</div>
-            {% if form.den_ngay.errors %}<div class="text-danger">{{ form.den_ngay.errors }}</div>{% endif %}
+            {% if form.den_ngay.errors %}<div class="text-red-700">{{ form.den_ngay.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
+          <div class="md:col-span-6">
             <label class="form-label" for="{{ form.dia_diem.id_for_label }}">{{ form.dia_diem.label }}</label>
             {{ form.dia_diem }}
-            {% if form.dia_diem.errors %}<div class="text-danger">{{ form.dia_diem.errors }}</div>{% endif %}
+            {% if form.dia_diem.errors %}<div class="text-red-700">{{ form.dia_diem.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
+          <div class="md:col-span-6">
             <label class="form-label" for="{{ form.hinh_thuc.id_for_label }}">{{ form.hinh_thuc.label }}</label>
             {{ form.hinh_thuc }}
-            {% if form.hinh_thuc.errors %}<div class="text-danger">{{ form.hinh_thuc.errors }}</div>{% endif %}
+            {% if form.hinh_thuc.errors %}<div class="text-red-700">{{ form.hinh_thuc.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
+          <div class="md:col-span-6">
             <label class="form-label" for="{{ form.linh_vuc.id_for_label }}">{{ form.linh_vuc.label }}</label>
             {{ form.linh_vuc }}
-            {% if form.linh_vuc.errors %}<div class="text-danger">{{ form.linh_vuc.errors }}</div>{% endif %}
+            {% if form.linh_vuc.errors %}<div class="text-red-700">{{ form.linh_vuc.errors }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
+          <div class="md:col-span-6">
             <label class="form-label" for="{{ form.doi_tuong_huong_toi.id_for_label }}">{{ form.doi_tuong_huong_toi.label }}</label>
             {{ form.doi_tuong_huong_toi }}
-            {% if form.doi_tuong_huong_toi.errors %}<div class="text-danger">{{ form.doi_tuong_huong_toi.errors }}</div>{% endif %}
+            {% if form.doi_tuong_huong_toi.errors %}<div class="text-red-700">{{ form.doi_tuong_huong_toi.errors }}</div>{% endif %}
           </div>
         </div>
 
@@ -110,7 +110,7 @@
               <button class="btn btn-outline-secondary" type="button" hx-post="{% url 'activities:don_vi_them' %}" hx-target="#don-vi-options" hx-swap="innerHTML" hx-include="#don-vi-add" hx-indicator="#don-vi-spinner">Thêm đơn vị</button>
             </div>
             <div class="mt-2">
-              <span id="don-vi-spinner" class="htmx-indicator text-secondary small" role="status" aria-live="polite">
+              <span id="don-vi-spinner" class="htmx-indicator text-slate-500 small" role="status" aria-live="polite">
                 <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
                 Đang lưu đơn vị…
               </span>
@@ -120,18 +120,18 @@
         </div>
 
         <div class="mt-4" x-show="adHoc" x-cloak>
-          <div class="row g-3">
-            <div class="col-md-6">
+          <div class="grid grid-cols-12 gap-3">
+            <div class="md:col-span-6">
               <label class="form-label" for="{{ form.noi_dung.id_for_label }}">{{ form.noi_dung.label }}</label>
               {{ form.noi_dung }}
               <div class="form-hint">{{ form.noi_dung.help_text }}</div>
-              {% if form.noi_dung.errors %}<div class="text-danger">{{ form.noi_dung.errors }}</div>{% endif %}
+              {% if form.noi_dung.errors %}<div class="text-red-700">{{ form.noi_dung.errors }}</div>{% endif %}
             </div>
-            <div class="col-md-6">
+            <div class="md:col-span-6">
               <label class="form-label" for="{{ form.ket_qua.id_for_label }}">{{ form.ket_qua.label }}</label>
               {{ form.ket_qua }}
               <div class="form-hint">{{ form.ket_qua.help_text }}</div>
-              {% if form.ket_qua.errors %}<div class="text-danger">{{ form.ket_qua.errors }}</div>{% endif %}
+              {% if form.ket_qua.errors %}<div class="text-red-700">{{ form.ket_qua.errors }}</div>{% endif %}
             </div>
           </div>
         </div>
@@ -139,7 +139,7 @@
           Các chỉ tiêu định lượng được nhập trong phiếu kết quả sau khi hoạt động chuyển sang Đã tổ chức.
         </div>
       </div>
-      <div class="card-footer d-flex justify-content-between">
+      <div class="card-footer flex justify-between">
         <a class="btn btn-link" href="{% url 'activities:hoat_dong_list' %}">Hủy</a>
         <button class="btn btn-primary" type="submit">Lưu hoạt động</button>
       </div>
@@ -150,42 +150,42 @@
         <h3 class="card-title">Thông tin hoạt động</h3>
       </div>
       <div class="card-body">
-        <dl class="row mb-0">
-          <dt class="col-sm-3">Loại hoạt động</dt>
-          <dd class="col-sm-9">{{ activity.loai_hoat_dong.ten_loai }}</dd>
-          <dt class="col-sm-3">Thời gian</dt>
-          <dd class="col-sm-9">
+        <dl class="grid grid-cols-12 mb-0">
+          <dt class="sm:col-span-3">Loại hoạt động</dt>
+          <dd class="sm:col-span-9">{{ activity.loai_hoat_dong.ten_loai }}</dd>
+          <dt class="sm:col-span-3">Thời gian</dt>
+          <dd class="sm:col-span-9">
             {{ activity.tu_ngay|date:"d/m/Y" }}
             {% if activity.den_ngay and activity.den_ngay != activity.tu_ngay %}
               – {{ activity.den_ngay|date:"d/m/Y" }}
             {% endif %}
           </dd>
-          <dt class="col-sm-3">Địa điểm</dt>
-          <dd class="col-sm-9">{{ activity.dia_diem|default:"—" }}</dd>
-          <dt class="col-sm-3">Hình thức</dt>
-          <dd class="col-sm-9">{{ activity.get_hinh_thuc_display }}</dd>
-          <dt class="col-sm-3">Lĩnh vực</dt>
-          <dd class="col-sm-9">{{ activity.linh_vuc|default:"—" }}</dd>
-          <dt class="col-sm-3">Đối tượng hướng tới</dt>
-          <dd class="col-sm-9">
+          <dt class="sm:col-span-3">Địa điểm</dt>
+          <dd class="sm:col-span-9">{{ activity.dia_diem|default:"—" }}</dd>
+          <dt class="sm:col-span-3">Hình thức</dt>
+          <dd class="sm:col-span-9">{{ activity.get_hinh_thuc_display }}</dd>
+          <dt class="sm:col-span-3">Lĩnh vực</dt>
+          <dd class="sm:col-span-9">{{ activity.linh_vuc|default:"—" }}</dd>
+          <dt class="sm:col-span-3">Đối tượng hướng tới</dt>
+          <dd class="sm:col-span-9">
             {% for doi_tuong in activity.doi_tuong_huong_toi.all %}
               {{ doi_tuong.ten_doi_tuong }}{% if not forloop.last %}, {% endif %}
             {% empty %}
               —
             {% endfor %}
           </dd>
-          <dt class="col-sm-3">Đơn vị phối hợp</dt>
-          <dd class="col-sm-9">
+          <dt class="sm:col-span-3">Đơn vị phối hợp</dt>
+          <dd class="sm:col-span-9">
             {% for tham_gia in activity.don_vi_tham_gia.all %}
               {{ tham_gia.don_vi.ten_don_vi }}{% if tham_gia.vai_tro %} ({{ tham_gia.vai_tro }}){% endif %}{% if not forloop.last %}, {% endif %}
             {% empty %}
               —
             {% endfor %}
           </dd>
-          <dt class="col-sm-3">Nội dung</dt>
-          <dd class="col-sm-9">{{ activity.noi_dung|linebreaksbr|default:"—" }}</dd>
-          <dt class="col-sm-3">Kết quả</dt>
-          <dd class="col-sm-9">{{ activity.ket_qua|linebreaksbr|default:"—" }}</dd>
+          <dt class="sm:col-span-3">Nội dung</dt>
+          <dd class="sm:col-span-9">{{ activity.noi_dung|linebreaksbr|default:"—" }}</dd>
+          <dt class="sm:col-span-3">Kết quả</dt>
+          <dd class="sm:col-span-9">{{ activity.ket_qua|linebreaksbr|default:"—" }}</dd>
         </dl>
       </div>
     </div>
@@ -193,15 +193,15 @@
 
   {% if activity %}
     <div class="card mt-3">
-      <div class="card-body d-flex flex-wrap align-items-center gap-2">
-        <span class="text-secondary">Trạng thái:</span>
+      <div class="card-body flex flex-wrap items-center gap-2">
+        <span class="text-slate-500">Trạng thái:</span>
         {% if activity.trang_thai == "da_to_chuc" %}
           <span class="badge bg-success-lt">Đã tổ chức</span>
-          <a class="btn btn-primary ms-auto" href="/phieu/hoat-dong/{{ activity.pk }}/">Nhập phiếu kết quả</a>
+          <a class="btn btn-primary ml-auto" href="/phieu/hoat-dong/{{ activity.pk }}/">Nhập phiếu kết quả</a>
         {% else %}
           <span class="badge bg-warning-lt">Kế hoạch</span>
           {% if can_edit %}
-            <form class="ms-auto" method="post" action="{% url 'activities:hoat_dong_da_to_chuc' activity.pk %}">
+            <form class="ml-auto" method="post" action="{% url 'activities:hoat_dong_da_to_chuc' activity.pk %}">
               {% csrf_token %}
               <button class="btn btn-success" type="submit">Chuyển sang Đã tổ chức</button>
             </form>
