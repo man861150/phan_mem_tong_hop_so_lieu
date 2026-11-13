@@ -14,6 +14,7 @@ from django.views.decorators.http import (
 )
 
 from apps.accounts.permissions import can
+from apps.accounts.roles import SCOPED_ROLES
 from apps.accounts.scoping import scoped
 from apps.activities.models import DuAn, HoatDong, TrangThaiHoatDong
 from apps.catalog.models import (
@@ -532,6 +533,41 @@ def _month_rollup_values(phong, ky):
 
 
 @login_required
+@require_http_methods(["GET"])
+def phieu_thang_chon(request):
+    """List reporting periods, open months first, then open one month."""
+    _require_view(request.user)
+    is_scoped = request.user.role in SCOPED_ROLES
+    phong = getattr(request.user, "phong", None) if is_scoped else None
+    periods = sorted(
+        KyBaoCao.objects.all(),
+        key=lambda ky: (
+            ky.trang_thai != TrangThaiKy.MO,
+            -ky.nam,
+            -ky.so_ky,
+        ),
+    )
+    rows = []
+    for ky in periods:
+        phieu = _month_phieu(phong, ky) if phong is not None else None
+        rows.append(
+            {
+                "ky": ky,
+                "is_open": ky.trang_thai == TrangThaiKy.MO,
+                "phieu": phieu,
+            }
+        )
+    return render(
+        request,
+        "entry/phieu_thang_chon.html",
+        {
+            "periods": rows,
+            "is_scoped": is_scoped,
+        },
+    )
+
+
+@login_required
 @require_http_methods(["GET", "POST"])
 def phieu_thang(request, ky_id):
     _require_view(request.user)
@@ -543,7 +579,7 @@ def phieu_thang(request, ky_id):
     ).order_by("ma_phong")
 
     phong = None
-    if request.user.phong_id:
+    if request.user.role in SCOPED_ROLES and request.user.phong_id:
         phong = visible_phong.filter(pk=request.user.phong_id).first()
     else:
         phong_value = request.GET.get("phong", "")

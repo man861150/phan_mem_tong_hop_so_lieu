@@ -438,6 +438,7 @@ def activities_for_department(
 ) -> list[dict]:
     activities = []
     for activity in _activities_in_period(period, phong):
+        ad_hoc = activity.la_nhiem_vu_phat_sinh
         activities.append(
             {
                 "id": activity.pk,
@@ -448,6 +449,8 @@ def activities_for_department(
                     f"{_format_date(activity.den_ngay or activity.tu_ngay)}"
                 ),
                 "trang_thai": activity.get_trang_thai_display(),
+                "noi_dung": (activity.noi_dung or "") if ad_hoc else "",
+                "ket_qua": (activity.ket_qua or "") if ad_hoc else "",
                 "phieu": PhieuNhapLieu.objects.filter(
                     loai_phieu=LoaiPhieu.HOAT_DONG,
                     hoat_dong=activity,
@@ -494,7 +497,11 @@ def breakdown_rows(rows: list[RollupRow]) -> list[dict]:
                 {
                     "ten": "Đối tượng",
                     "items": [
-                        {"ten": item.ten, "value": format_vi_number(item.value)}
+                        {
+                            "ten": item.ten,
+                            "value": format_vi_number(item.value),
+                            "raw": item.value,
+                        }
                         for item in row.doi_tuong
                     ],
                 }
@@ -512,6 +519,7 @@ def breakdown_rows(rows: list[RollupRow]) -> list[dict]:
                             {
                                 "ten": f"{item.ma} — {item.ten}",
                                 "value": format_vi_number(item.value),
+                                "raw": item.value,
                             }
                             for item in items
                         ],
@@ -522,7 +530,11 @@ def breakdown_rows(rows: list[RollupRow]) -> list[dict]:
                 {
                     "ten": "Nguồn số liệu",
                     "items": [
-                        {"ten": item.ten, "value": format_vi_number(item.value)}
+                        {
+                            "ten": item.ten,
+                            "value": format_vi_number(item.value),
+                            "raw": item.value,
+                        }
                         for item in row.nguon
                     ],
                 }

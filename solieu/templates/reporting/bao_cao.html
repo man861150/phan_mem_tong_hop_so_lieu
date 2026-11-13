@@ -213,6 +213,8 @@
                         <th>Thời gian</th>
                         <th>Trạng thái</th>
                         <th>Phiếu kết quả</th>
+                        <th>Nội dung</th>
+                        <th>Kết quả</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -223,6 +225,8 @@
                           <td>{{ activity.thoi_gian }}</td>
                           <td>{{ activity.trang_thai }}</td>
                           <td>{% if activity.phieu %}Đã có{% else %}<span class="text-warning">Chưa có</span>{% endif %}</td>
+                          <td>{{ activity.noi_dung }}</td>
+                          <td>{{ activity.ket_qua }}</td>
                         </tr>
                       {% endfor %}
                     </tbody>

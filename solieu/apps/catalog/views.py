@@ -1,7 +1,9 @@
 """Departments, indicators, annual plans, lookup tables, and form templates."""
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_GET, require_http_methods
 
@@ -129,6 +131,46 @@ def _plans_by_indicator(departments, nam):
     return grouped
 
 
+def _copy_previous_plan(phong_id, nam):
+    """Copy non-empty plan rows into this year's drafts.
+
+    Returns ``(created, skipped)`` or ``None`` when the previous year has no
+    numbers.  Existing draft or confirmed rows are never overwritten.
+    """
+    previous = list(
+        ChiTieuKeHoach.objects.filter(
+            nam=nam - 1,
+            chi_tieu__nhom__phong_id=phong_id,
+            gia_tri_ke_hoach__isnull=False,
+        ).select_related("chi_tieu")
+    )
+    if not previous:
+        return None
+    existing = set(
+        ChiTieuKeHoach.objects.filter(
+            nam=nam,
+            chi_tieu__nhom__phong_id=phong_id,
+        ).values_list("chi_tieu_id", "doi_tuong_id")
+    )
+    created = 0
+    skipped = 0
+    for plan in previous:
+        key = (plan.chi_tieu_id, plan.doi_tuong_id)
+        if key in existing:
+            skipped += 1
+            continue
+        ChiTieuKeHoach.objects.create(
+            chi_tieu_id=plan.chi_tieu_id,
+            nam=nam,
+            doi_tuong_id=plan.doi_tuong_id,
+            gia_tri_ke_hoach=plan.gia_tri_ke_hoach,
+            trang_thai=TrangThaiKeHoach.DU_THAO,
+        )
+        existing.add(key)
+        created += 1
+    return created, skipped
+
+
 @login_required
 @require_http_methods(["GET", "POST"])
 def ke_hoach(request, nam):
@@ -146,6 +188,21 @@ def ke_hoach(request, nam):
             chi_tieu__nhom__phong_id=request.user.phong_id,
         )
         action = request.POST.get("hanh_dong")
+        if action == "sao_chep":
+            with transaction.atomic():
+                result = _copy_previous_plan(request.user.phong_id, nam)
+            if result is None:
+                messages.warning(
+                    request,
+                    "Năm trước chưa có số kế hoạch để sao chép.",
+                )
+            else:
+                created, skipped = result
+                messages.success(
+                    request,
+                    f"Đã sao chép {created} dòng, bỏ qua {skipped} dòng đã có.",
+                )
+            return redirect("catalog:ke_hoach", nam=nam)
         if action == "xac_nhan":
             for plan in plans:
                 if plan.trang_thai != TrangThaiKeHoach.DA_XAC_NHAN:
@@ -183,6 +240,7 @@ def ke_hoach(request, nam):
             "phong_options": visible,
             "selected": selected,
             "can_confirm": can_confirm,
+            "can_copy": can_confirm,
             "form": form,
             "read_only_admin": request.user.role == Role.SYSTEM_ADMIN,
         },

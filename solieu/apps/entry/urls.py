@@ -13,6 +13,7 @@ from apps.entry.views import (
     phieu_lich_su,
     phieu_mo_lai,
     phieu_thang,
+    phieu_thang_chon,
     phieu_tra_lai,
     phieu_xoa,
 )
@@ -30,6 +31,7 @@ urlpatterns = [
         phieu_hoat_dong_bo_sung,
         name="phieu_hoat_dong_bo_sung",
     ),
+    path("phieu/thang/", phieu_thang_chon, name="phieu_thang_chon"),
     path("phieu/thang/<int:ky_id>/", phieu_thang, name="phieu_thang"),
     path("phieu/du-an/<int:du_an_id>/", phieu_du_an, name="phieu_du_an"),
     path("duyet/", duyet_list, name="duyet_list"),

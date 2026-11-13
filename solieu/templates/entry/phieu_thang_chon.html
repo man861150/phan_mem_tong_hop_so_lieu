@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Phiếu tháng — Tổng hợp số liệu{% endblock %}
+
+{% block content %}
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Phiếu tháng</h2>
+        <div class="text-secondary">Chọn kỳ báo cáo để mở phiếu tháng.</div>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if not periods %}
+    <div class="card">
+      <div class="card-body">
+        Chưa có kỳ báo cáo. Quản trị hệ thống mở kỳ trong trang quản trị.
+      </div>
+    </div>
+  {% else %}
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr>
+              <th>Kỳ báo cáo</th>
+              <th>Trạng thái</th>
+              {% if is_scoped %}<th>Phiếu của phòng</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in periods %}
+              <tr>
+                <td>
+                  <a href="{% url 'entry:phieu_thang' item.ky.pk %}">
+                    Tháng {{ item.ky.so_ky }}/{{ item.ky.nam }}
+                  </a>
+                </td>
+                <td>
+                  {% if item.is_open %}
+                    <span class="badge bg-success-lt">Kỳ đang mở</span>
+                  {% else %}
+                    <span class="badge bg-secondary-lt">Kỳ đã đóng</span>
+                  {% endif %}
+                </td>
+                {% if is_scoped %}
+                  <td>
+                    {% if item.phieu %}
+                      {{ item.phieu.get_trang_thai_display }}
+                    {% else %}
+                      Chưa có phiếu
+                    {% endif %}
+                  </td>
+                {% endif %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

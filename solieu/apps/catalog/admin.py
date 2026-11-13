@@ -1,11 +1,21 @@
 """Departments, indicators, annual plans, lookup tables, and form templates."""
 
-from django.contrib import admin
+from django.conf import settings
+from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
+from django.core.management.base import CommandError
 from django.db import transaction
+from django.http import HttpResponseRedirect
+from django.urls import path, reverse
 from simple_history.admin import SimpleHistoryAdmin
 
 from apps.accounts.permissions import can
 from apps.accounts.scoping import scoped
+from apps.catalog.management.commands.load_linh_vuc import (
+    CONFIRMATION,
+    INSTRUCTION,
+    load_linh_vuc,
+)
 from apps.catalog.models import (
     BieuMauChiTieu,
     ChiTieu,
@@ -157,6 +167,42 @@ class DanhMucLinhVucAdmin(CatalogPermissionMixin, SimpleHistoryAdmin):
     search_fields = ("ma", "ten")
     ordering = ("he_thong", "ma")
     list_select_related = ("cha",)
+    change_list_template = "admin/catalog/danhmuc_linh_vuc/change_list.html"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                "nap-fixtures/",
+                self.admin_site.admin_view(self.load_fixtures),
+                name="catalog_danhmuc_linh_vuc_load",
+            ),
+        ]
+        return custom + urls
+
+    def load_fixtures(self, request):
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+        csv_path = settings.BASE_DIR / "fixtures" / "linh_vuc.csv"
+        if not csv_path.is_file():
+            messages.warning(request, INSTRUCTION)
+        else:
+            try:
+                counts = load_linh_vuc(csv_path)
+            except CommandError as exc:
+                messages.error(request, str(exc))
+            else:
+                messages.success(
+                    request,
+                    "Đã nạp fixtures/linh_vuc.csv: "
+                    f"tạo mới {counts['created']}, "
+                    f"cập nhật {counts['updated']}, "
+                    f"giữ nguyên {counts['unchanged']}. "
+                    + CONFIRMATION,
+                )
+        return HttpResponseRedirect(
+            reverse("admin:catalog_danhmuclinhvuc_changelist")
+        )
 
 
 @admin.register(NguonSoLieu)

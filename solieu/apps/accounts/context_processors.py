@@ -25,6 +25,12 @@ def navigation(request):
             "visible": can(user, "view_progress"),
         },
         {
+            "label": "Phiếu tháng",
+            "url": reverse("entry:phieu_thang_chon"),
+            "active": path.startswith("/phieu/thang/"),
+            "visible": _can_any(user, "edit_entry", "view_progress"),
+        },
+        {
             "label": "Hoạt động",
             "url": reverse("activities:hoat_dong_list"),
             "active": path.startswith("/hoat-dong/")

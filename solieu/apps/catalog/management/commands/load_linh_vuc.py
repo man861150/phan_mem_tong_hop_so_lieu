@@ -4,6 +4,7 @@ import csv
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 
 from apps.catalog.models import DanhMucLinhVuc, HeThongLinhVuc
 
@@ -11,6 +12,9 @@ INSTRUCTION = (
     "Chưa có file fixtures/linh_vuc.csv. Đặt file UTF-8 với các cột "
     "he_thong,ma,ten,cap,ma_cha (ma_cha để trống nếu là nút gốc) rồi chạy lại lệnh. "
     "Các mã lĩnh vực đã có được giữ nguyên."
+)
+CONFIRMATION = (
+    "Kiểm tra lại với danh mục đã được ký trước khi nhập số liệu chính thức."
 )
 COLUMNS = ["he_thong", "ma", "ten", "cap", "ma_cha"]
 ALLOWED = {HeThongLinhVuc.QD36, HeThongLinhVuc.TT24}
@@ -27,10 +31,18 @@ class Command(BaseCommand):
         if not path.is_file():
             self.stdout.write(INSTRUCTION)
             return
-        load_linh_vuc(path, self.stdout)
+        counts = load_linh_vuc(path, self.stdout)
+        self.stdout.write(
+            "Đã nạp fixtures/linh_vuc.csv: "
+            f"tạo mới {counts['created']}, "
+            f"cập nhật {counts['updated']}, "
+            f"giữ nguyên {counts['unchanged']}. "
+            + CONFIRMATION
+        )
 
 
-def load_linh_vuc(path, stdout):
+@transaction.atomic
+def load_linh_vuc(path, stdout=None):
     with path.open(encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
         if reader.fieldnames != COLUMNS:
@@ -44,11 +56,18 @@ def load_linh_vuc(path, stdout):
                 continue
             rows.append((line_no, {column: (raw.get(column) or "").strip() for column in COLUMNS}))
 
+    counts = {"created": 0, "updated": 0, "unchanged": 0}
     saved = []
     for line_no, row in rows:
-        saved.append(_upsert_row(line_no, row))
-    for line_no, row, obj in saved:
-        _link_parent(line_no, row, obj, stdout)
+        line_no, row, obj, status = _upsert_row(line_no, row)
+        counts[status] += 1
+        saved.append((line_no, row, obj, status))
+    for line_no, row, obj, status in saved:
+        changed = _link_parent(line_no, row, obj, stdout)
+        if changed and status == "unchanged":
+            counts["unchanged"] -= 1
+            counts["updated"] += 1
+    return counts
 
 
 def _upsert_row(line_no, row):
@@ -71,7 +90,7 @@ def _upsert_row(line_no, row):
     if obj is None:
         obj = DanhMucLinhVuc(he_thong=he_thong, ma=ma, ten=ten, cap=cap)
         obj.save()
-        return line_no, row, obj
+        return line_no, row, obj, "created"
     changed = False
     if obj.ten != ten:
         obj.ten = ten
@@ -81,7 +100,8 @@ def _upsert_row(line_no, row):
         changed = True
     if changed:
         obj.save()
-    return line_no, row, obj
+        return line_no, row, obj, "updated"
+    return line_no, row, obj, "unchanged"
 
 
 def _link_parent(line_no, row, obj, stdout):
@@ -94,10 +114,11 @@ def _link_parent(line_no, row, obj, stdout):
         ).first()
         if parent is None:
             text = ",".join(row[column] for column in COLUMNS)
-            stdout.write(
-                f"Dòng {line_no}: không tìm thấy mã cha {parent_code} "
-                f"cùng hệ thống {row['he_thong']} cho mã {row['ma']}. {text}"
-            )
+            if stdout is not None:
+                stdout.write(
+                    f"Dòng {line_no}: không tìm thấy mã cha {parent_code} "
+                    f"cùng hệ thống {row['he_thong']} cho mã {row['ma']}. {text}"
+                )
             raise CommandError(
                 f"Dòng {line_no}: không tìm thấy mã cha {parent_code}."
             )
@@ -105,3 +126,5 @@ def _link_parent(line_no, row, obj, stdout):
     if obj.cha_id != parent_id:
         obj.cha = parent
         obj.save()
+        return True
+    return False

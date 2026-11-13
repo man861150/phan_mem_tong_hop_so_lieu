@@ -25,8 +25,15 @@
       <h4 class="mb-2">Phân loại lĩnh vực</h4>
       {{ row.grid_error }}
       {% if row.grid_error.errors %}<div class="text-danger">{{ row.grid_error.errors }}</div>{% endif %}
+      {% if not row.linh_vuc_options.qd36 %}
+        <div class="alert alert-info mb-2">Chưa có mã lĩnh vực QĐ 36. Quản trị hệ thống nạp file tại Danh mục lĩnh vực.</div>
+      {% endif %}
+      {% if not row.linh_vuc_options.tt24 %}
+        <div class="alert alert-info mb-2">Chưa có mã lĩnh vực TT 24. Quản trị hệ thống nạp file tại Danh mục lĩnh vực.</div>
+      {% endif %}
       <div x-ref="rows">
-        {% for item in row.linh_vuc_groups.qd36 %}
+        {% if row.linh_vuc_options.qd36 %}
+          {% for item in row.linh_vuc_groups.qd36 %}
           <div class="row g-2 align-items-end mb-2" data-split-row>
             <div class="col-md-7">
               <select class="form-select" name="linh_vuc_{{ row.chi_tieu.pk }}">
@@ -45,7 +52,9 @@
             {% if item.error %}<div class="col-12 text-danger">{{ item.error }}</div>{% endif %}
           </div>
         {% endfor %}
-        {% for item in row.linh_vuc_groups.tt24 %}
+        {% endif %}
+        {% if row.linh_vuc_options.tt24 %}
+          {% for item in row.linh_vuc_groups.tt24 %}
           <div class="row g-2 align-items-end mb-2" data-split-row>
             <div class="col-md-7">
               <select class="form-select" name="linh_vuc_{{ row.chi_tieu.pk }}">
@@ -64,53 +73,62 @@
             {% if item.error %}<div class="col-12 text-danger">{{ item.error }}</div>{% endif %}
           </div>
         {% endfor %}
+        {% endif %}
       </div>
       <div class="d-flex flex-wrap gap-2 mt-2">
-        <button class="btn btn-outline-secondary btn-sm" type="button" @click="addRow('lv-row-qd36-{{ row.chi_tieu.pk }}')">Thêm dòng QĐ 36</button>
-        <button class="btn btn-outline-secondary btn-sm" type="button" @click="addRow('lv-row-tt24-{{ row.chi_tieu.pk }}')">Thêm dòng TT 24</button>
+        {% if row.linh_vuc_options.qd36 %}
+          <button class="btn btn-outline-secondary btn-sm" type="button" @click="addRow('lv-row-qd36-{{ row.chi_tieu.pk }}')">Thêm dòng QĐ 36</button>
+        {% endif %}
+        {% if row.linh_vuc_options.tt24 %}
+          <button class="btn btn-outline-secondary btn-sm" type="button" @click="addRow('lv-row-tt24-{{ row.chi_tieu.pk }}')">Thêm dòng TT 24</button>
+        {% endif %}
       </div>
       <div class="form-hint mt-2">
         Tổng đang nhập: <strong x-text="sum"></strong> {{ row.chi_tieu.don_vi_tinh }}
       </div>
     </div>
 
-    <template id="lv-row-qd36-{{ row.chi_tieu.pk }}">
-      <div class="row g-2 align-items-end mb-2" data-split-row>
-        <div class="col-md-7">
-          <select class="form-select" name="linh_vuc_{{ row.chi_tieu.pk }}">
-            <option value="">— Chọn lĩnh vực QĐ 36 —</option>
-            {% for linh_vuc in row.linh_vuc_options.qd36 %}
-              <option value="{{ linh_vuc.pk }}">{{ linh_vuc.ma }} — {{ linh_vuc.ten }}</option>
-            {% endfor %}
-          </select>
+    {% if row.linh_vuc_options.qd36 %}
+      <template id="lv-row-qd36-{{ row.chi_tieu.pk }}">
+        <div class="row g-2 align-items-end mb-2" data-split-row>
+          <div class="col-md-7">
+            <select class="form-select" name="linh_vuc_{{ row.chi_tieu.pk }}">
+              <option value="">— Chọn lĩnh vực QĐ 36 —</option>
+              {% for linh_vuc in row.linh_vuc_options.qd36 %}
+                <option value="{{ linh_vuc.pk }}">{{ linh_vuc.ma }} — {{ linh_vuc.ten }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <input class="form-control" type="number" step="0.0001" min="0" name="gia_tri_lv_{{ row.chi_tieu.pk }}" data-split-part="{{ row.chi_tieu.pk }}">
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-link text-danger" type="button" @click="removeRow($el)">Xóa</button>
+          </div>
         </div>
-        <div class="col-md-3">
-          <input class="form-control" type="number" step="0.0001" min="0" name="gia_tri_lv_{{ row.chi_tieu.pk }}" data-split-part="{{ row.chi_tieu.pk }}">
-        </div>
-        <div class="col-md-2">
-          <button class="btn btn-link text-danger" type="button" @click="removeRow($el)">Xóa</button>
-        </div>
-      </div>
-    </template>
+      </template>
+    {% endif %}
 
-    <template id="lv-row-tt24-{{ row.chi_tieu.pk }}">
-      <div class="row g-2 align-items-end mb-2" data-split-row>
-        <div class="col-md-7">
-          <select class="form-select" name="linh_vuc_{{ row.chi_tieu.pk }}">
-            <option value="">— Chọn lĩnh vực TT 24 —</option>
-            {% for linh_vuc in row.linh_vuc_options.tt24 %}
-              <option value="{{ linh_vuc.pk }}">{{ linh_vuc.ma }} — {{ linh_vuc.ten }}</option>
-            {% endfor %}
-          </select>
+    {% if row.linh_vuc_options.tt24 %}
+      <template id="lv-row-tt24-{{ row.chi_tieu.pk }}">
+        <div class="row g-2 align-items-end mb-2" data-split-row>
+          <div class="col-md-7">
+            <select class="form-select" name="linh_vuc_{{ row.chi_tieu.pk }}">
+              <option value="">— Chọn lĩnh vực TT 24 —</option>
+              {% for linh_vuc in row.linh_vuc_options.tt24 %}
+                <option value="{{ linh_vuc.pk }}">{{ linh_vuc.ma }} — {{ linh_vuc.ten }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <input class="form-control" type="number" step="0.0001" min="0" name="gia_tri_lv_{{ row.chi_tieu.pk }}" data-split-part="{{ row.chi_tieu.pk }}">
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-link text-danger" type="button" @click="removeRow($el)">Xóa</button>
+          </div>
         </div>
-        <div class="col-md-3">
-          <input class="form-control" type="number" step="0.0001" min="0" name="gia_tri_lv_{{ row.chi_tieu.pk }}" data-split-part="{{ row.chi_tieu.pk }}">
-        </div>
-        <div class="col-md-2">
-          <button class="btn btn-link text-danger" type="button" @click="removeRow($el)">Xóa</button>
-        </div>
-      </div>
-    </template>
+      </template>
+    {% endif %}
   {% endif %}
 {% else %}
   {% if row.has_object %}

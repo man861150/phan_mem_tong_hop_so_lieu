@@ -137,7 +137,7 @@ These review sentences are stale against the current code. They do not get a tas
 
 ## P1 — Missing features
 
-- [ ] **IMP-06 — Put the preview's TTTK breakdown and HTKN lists into Excel and Word**
+- [x] **IMP-06 — Put the preview's TTTK breakdown and HTKN lists into Excel and Word**
   - **Priority:** P1
   - **Why:** the on-screen report shows TTTK object and field breakdowns, and HTKN activities and supported projects. Excel writes only indicator rows. Word renders breakdowns nowhere, and the center document stops after the indicator tables. Ad-hoc `noi_dung` and `ket_qua` are stored on the activity and never reach the list.
   - **Evidence:** `templates/reporting/bao_cao.html` (TTTK breakdown card, HTKN activity and project tables); `apps/reporting/report_data.py` `breakdown_rows`, `activities_for_department` (no `noi_dung` or `ket_qua`); `apps/reporting/xlsx_export.py` (indicator rows only); `apps/reporting/docx_export.py` `_danh_sach`; `report_templates/tttk.docx`, `htkn.docx`, `trung_tam.docx`. Review §4 item 4. Indicator stacking itself is already in place; see **Already addressed**.
@@ -152,7 +152,7 @@ These review sentences are stale against the current code. They do not get a tas
   - **Verify (localhost):** approve one TTTK hội thảo phiếu with an object split, and one HTKN "Nhiệm vụ phát sinh" with nội dung and kết quả. Preview TTTK and HTKN, export `.xlsx` and `.docx`, and confirm the same names and figures, including the two ad-hoc texts. Export the center and confirm three department headings plus the TTTK breakdown and the HTKN list. Upload the workbook on the import screen and confirm the preview is still the indicator table. `ruff check .` exits 0.
   - **Estimate:** L
 
-- [ ] **IMP-07 — Let the user pick an open month**
+- [x] **IMP-07 — Let the user pick an open month**
   - **Priority:** P1
   - **Why:** monthly entry exists only at `/phieu/thang/<ky_id>/`. Nothing in the navbar links there, so an officer needs a hand-built URL.
   - **Evidence:** `apps/entry/urls.py` (only the `ky_id` route); `apps/accounts/context_processors.py` `navigation` (no month item); `TASKS.md` M4-T09. Review §4 item 5.
@@ -166,7 +166,7 @@ These review sentences are stale against the current code. They do not get a tas
   - **Verify (localhost):** as `cb.htkn`, open "Phiếu tháng" from the navbar, open the current month, and save a draft. As `ld.tt`, open the same list and reach a read-only phiếu after choosing a phòng. Close the month in admin and confirm the list says "Kỳ đã đóng" and the form does not save.
   - **Estimate:** M
 
-- [ ] **IMP-08 — Copy last year's plan into this year's draft**
+- [x] **IMP-08 — Copy last year's plan into this year's draft**
   - **Priority:** P1
   - **Why:** the confirmation screen shows last year's number and has no action that creates this year's draft from it. The head would retype every line.
   - **Evidence:** `apps/catalog/views.py` `_plan_lines` and `ke_hoach` (actions are only `xac_nhan` and `tra_lai`); `templates/catalog/ke_hoach.html`. `TASKS.md` M2-T07 checked the display and the confirm/return actions. Review §4 item 6. Unique key is already (`chi_tieu`, `nam`, `doi_tuong`) with `nulls_distinct=False`.
@@ -180,7 +180,7 @@ These review sentences are stale against the current code. They do not get a tas
   - **Verify (localhost):** as `admin`, set one confirmed HTKN number for năm N−1. As `ld.htkn`, open `/ke-hoach/N/`, copy, and confirm the line is "Dự thảo" with the same number. Copy again and confirm the count does not grow. Confirm the year, then copy again and confirm the confirmed value is unchanged.
   - **Estimate:** M
 
-- [ ] **IMP-09 — Make field-tree loading visible, and show an empty state**
+- [x] **IMP-09 — Make field-tree loading visible, and show an empty state**
   - **Priority:** P1
   - **Why:** the loader and the admin changelist exist, the sample CSV has three QĐ 36 rows, and the database has zero `DanhMucLinhVuc` rows. An entry form with `phan_loai_linh_vuc` renders an empty select and does not say why. Official codes are a human decision; loading whatever file is present should still be obvious and safe to repeat.
   - **Evidence:** `fixtures/linh_vuc.csv` (header plus `MAU`, `MAU-01`, `MAU-02`); `apps/catalog/management/commands/load_linh_vuc.py` (upsert by hệ thống + mã, no delete); `apps/catalog/admin.py` `DanhMucLinhVucAdmin` (no load control). Count on 13 November 2026 is 0. M2-T03 added the model only; it does not seed nodes. Review §4 item 1, Q1.

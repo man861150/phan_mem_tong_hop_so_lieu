@@ -101,6 +101,10 @@ def _check_report_numbers(reports: list[DepartmentReport]) -> None:
                 row.percent,
             ):
                 check_number_precision(value, row.ten_chi_tieu)
+        for breakdown in report.breakdowns:
+            for dimension in breakdown["dimensions"]:
+                for item in dimension["items"]:
+                    check_number_precision(item.get("raw"), breakdown["chi_tieu"])
 
 
 def _number(value):
@@ -114,6 +118,152 @@ def _headers_for(reports: list[DepartmentReport]) -> tuple[str, ...]:
     if any(report.phong.ma_phong == "TTTK" for report in reports):
         return (*HEADERS, DANH_GIA_HEADER)
     return HEADERS
+
+
+def _write_header(sheet, headers) -> None:
+    sheet.append(headers)
+    for index in range(1, len(headers) + 1):
+        cell = sheet.cell(row=1, column=index)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = HEADER_FILL
+        cell.alignment = Alignment(
+            horizontal="center",
+            vertical="center",
+            wrap_text=True,
+        )
+        cell.border = BORDER
+    sheet.row_dimensions[1].height = 32
+
+
+def _write_section(sheet, text, column_count) -> None:
+    row = sheet.max_row + 1
+    sheet.cell(row=row, column=1, value=text)
+    sheet.merge_cells(
+        start_row=row,
+        start_column=1,
+        end_row=row,
+        end_column=column_count,
+    )
+    cell = sheet.cell(row=row, column=1)
+    cell.font = Font(bold=True)
+    cell.fill = SECTION_FILL
+    cell.border = BORDER
+    sheet.row_dimensions[row].height = 22
+
+
+def _write_breakdown_sheet(workbook, reports) -> None:
+    active = [
+        report
+        for report in reports
+        if report.ma_phong == "TTTK" and report.breakdowns
+    ]
+    if not active:
+        return
+    sheet = workbook.create_sheet("Phân tích")
+    sheet.freeze_panes = "A2"
+    headers = (
+        "Phòng",
+        "Chỉ tiêu",
+        "Mã chỉ tiêu",
+        "Phân loại",
+        "Tên",
+        "Giá trị",
+    )
+    _write_header(sheet, headers)
+    for report in active:
+        _write_section(
+            sheet,
+            f"PHÒNG {report.ma_phong} — {report.ten}",
+            len(headers),
+        )
+        for breakdown in report.breakdowns:
+            for dimension in breakdown["dimensions"]:
+                for item in dimension["items"]:
+                    sheet.append(
+                        [
+                            report.ma_phong,
+                            breakdown["chi_tieu"],
+                            breakdown["ma_chi_tieu"],
+                            dimension["ten"],
+                            item["ten"],
+                            _number(item.get("raw")),
+                        ]
+                    )
+                    current = sheet.max_row
+                    value_cell = sheet.cell(row=current, column=6)
+                    value_cell.number_format = NUMBER_FORMAT
+                    value_cell.alignment = Alignment(horizontal="right")
+                    for column in range(1, len(headers) + 1):
+                        sheet.cell(row=current, column=column).border = BORDER
+    widths = (12, 42, 18, 24, 42, 16)
+    for index, width in enumerate(widths, start=1):
+        sheet.column_dimensions[get_column_letter(index)].width = width
+
+
+def _write_activity_sheet(workbook, reports) -> None:
+    active = [
+        report
+        for report in reports
+        if report.ma_phong == "HTKN"
+        and (report.activities or report.projects)
+    ]
+    if not active:
+        return
+    sheet = workbook.create_sheet("Hoạt động - dự án")
+    sheet.freeze_panes = "A2"
+    headers = (
+        "Phòng",
+        "Loại",
+        "Tên",
+        "Thời gian",
+        "Trạng thái",
+        "Nội dung",
+        "Kết quả",
+    )
+    _write_header(sheet, headers)
+    for report in active:
+        _write_section(
+            sheet,
+            f"PHÒNG {report.ma_phong} — {report.ten}",
+            len(headers),
+        )
+        for activity in report.activities:
+            sheet.append(
+                [
+                    report.ma_phong,
+                    f"Hoạt động — {activity['loai']}",
+                    activity["ten"],
+                    activity["thoi_gian"],
+                    activity["trang_thai"],
+                    activity.get("noi_dung", ""),
+                    activity.get("ket_qua", ""),
+                ]
+            )
+            current = sheet.max_row
+            for column in range(1, len(headers) + 1):
+                cell = sheet.cell(row=current, column=column)
+                cell.border = BORDER
+                cell.alignment = Alignment(wrap_text=True, vertical="top")
+        for project in report.projects:
+            sheet.append(
+                [
+                    report.ma_phong,
+                    f"Hỗ trợ dự án — {project['loai_ho_tro']}",
+                    project["du_an"],
+                    project["ngay"],
+                    project["trang_thai"],
+                    "",
+                    "",
+                ]
+            )
+            current = sheet.max_row
+            for column in range(1, len(headers) + 1):
+                cell = sheet.cell(row=current, column=column)
+                cell.border = BORDER
+                cell.alignment = Alignment(wrap_text=True, vertical="top")
+    widths = (12, 32, 42, 24, 18, 48, 48)
+    for index, width in enumerate(widths, start=1):
+        sheet.column_dimensions[get_column_letter(index)].width = width
 
 
 def build_workbook(
@@ -200,6 +350,9 @@ def build_workbook(
         sheet.column_dimensions[get_column_letter(index)].width = width
     if column_count == 8:
         sheet.column_dimensions[get_column_letter(8)].width = 36
+
+    _write_breakdown_sheet(workbook, reports)
+    _write_activity_sheet(workbook, reports)
 
     output = BytesIO()
     workbook.save(output)
