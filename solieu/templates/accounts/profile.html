@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Thông tin tài khoản — Tổng hợp số liệu{% endblock %}
+
+{% block content %}
+  <div class="profile-page"
+       x-data="{ editing: {% if form.errors %}true{% else %}false{% endif %} }">
+    <header class="profile-page-header d-print-none">
+      <div class="profile-page-heading">
+        <p class="eyebrow">Tài khoản</p>
+        <h1 class="profile-page-title">Thông tin tài khoản</h1>
+        <p class="profile-page-subtitle">Quản lý thông tin cá nhân và thông tin đơn vị của bạn.</p>
+      </div>
+      <button type="button"
+              x-ref="editButton"
+              class="profile-edit-button"
+              x-show="!editing"
+              @click="editing = true">
+        <svg class="size-5" aria-hidden="true"><use href="#icon-edit"></use></svg>
+        Chỉnh sửa thông tin
+      </button>
+    </header>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }}" role="status">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="profile-layout">
+      <aside class="card profile-summary" aria-labelledby="profile-name">
+        <div class="profile-cover" aria-hidden="true">
+          <span class="profile-cover-brand">iHUB</span>
+        </div>
+
+        <div class="profile-summary-body">
+          <div class="profile-avatar-wrap">
+            <span class="avatar avatar-2xl" aria-hidden="true">{{ user.initials }}</span>
+            <span class="profile-avatar-badge" aria-hidden="true">
+              <svg class="size-4"><use href="#icon-user"></use></svg>
+            </span>
+          </div>
+          <h2 class="profile-display-name" id="profile-name">{{ user.ho_ten|default:user.username }}</h2>
+          <p class="profile-org">
+            {% if user.phong %}{{ user.phong.ten_phong }}{% else %}Chưa phân phòng{% endif %}
+          </p>
+          <p class="profile-role">{{ user.get_role_display|default:"Người dùng" }}</p>
+          <p class="profile-status{% if not user.is_active %} profile-status--inactive{% endif %}">
+            <span class="profile-status-dot" aria-hidden="true"></span>
+            {% if user.is_active %}Tài khoản đang hoạt động{% else %}Tài khoản đã khóa{% endif %}
+          </p>
+        </div>
+
+        <dl class="profile-contact-list">
+          <div class="profile-contact-row">
+            <span class="profile-contact-icon" aria-hidden="true">
+              <svg class="size-5"><use href="#icon-mail"></use></svg>
+            </span>
+            <div class="profile-contact-copy">
+              <dt class="profile-contact-label">Email</dt>
+              <dd class="profile-contact-value">{{ user.email|default:"Chưa cập nhật" }}</dd>
+            </div>
+          </div>
+
+          <div class="profile-contact-row">
+            <span class="profile-contact-icon" aria-hidden="true">
+              <svg class="size-5"><use href="#icon-building"></use></svg>
+            </span>
+            <div class="profile-contact-copy">
+              <dt class="profile-contact-label">Phòng ban</dt>
+              <dd class="profile-contact-value">
+                {% if user.phong %}{{ user.phong.ten_phong }}{% else %}Chưa phân phòng{% endif %}
+              </dd>
+            </div>
+          </div>
+
+          <div class="profile-contact-row">
+            <span class="profile-contact-icon" aria-hidden="true">
+              <svg class="size-5"><use href="#icon-shield"></use></svg>
+            </span>
+            <div class="profile-contact-copy">
+              <dt class="profile-contact-label">Vai trò</dt>
+              <dd class="profile-contact-value">{{ user.get_role_display|default:"Người dùng" }}</dd>
+            </div>
+          </div>
+        </dl>
+      </aside>
+
+      <div class="profile-main">
+        <section class="card profile-info-card">
+          <div class="card-header profile-card-header">
+            <span class="profile-card-icon" aria-hidden="true">
+              <svg class="size-5"><use href="#icon-user"></use></svg>
+            </span>
+            <div class="profile-card-heading">
+              <h2 class="profile-card-title">Thông tin hồ sơ</h2>
+              <p class="profile-card-subtitle">Thông tin hiển thị và liên hệ của tài khoản.</p>
+            </div>
+            <span class="badge bg-warning-lt profile-card-badge" x-show="editing" x-cloak>
+              Đang chỉnh sửa
+            </span>
+          </div>
+
+          <form class="profile-form"
+                method="post"
+                novalidate
+                x-effect="if (editing) { $nextTick(() => { const input = $el.querySelector('input:not([type=hidden])'); if (input) { input.focus(); input.scrollIntoView({ block: 'nearest' }); } }); }">
+            {% csrf_token %}
+            <div class="card-body">
+              {% if form.non_field_errors %}
+                <div class="alert alert-danger" role="alert">
+                  {% for error in form.non_field_errors %}<p class="form-alert-line">{{ error }}</p>{% endfor %}
+                </div>
+              {% endif %}
+
+              <div class="profile-fields">
+                <div class="profile-field">
+                  <span class="profile-field-label" x-show="!editing">{{ form.ho_ten.label }}</span>
+                  <div class="profile-field-value" x-show="!editing">
+                    {{ user.ho_ten|default:user.username }}
+                  </div>
+                  <div x-show="editing" x-cloak>
+                    <label class="profile-field-label" for="{{ form.ho_ten.id_for_label }}">{{ form.ho_ten.label }}</label>
+                    {{ form.ho_ten }}
+                    {% for error in form.ho_ten.errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
+                  </div>
+                </div>
+
+                <div class="profile-field">
+                  <span class="profile-field-label" x-show="!editing">{{ form.email.label }}</span>
+                  <div class="profile-field-value profile-field-value--icon" x-show="!editing">
+                    <svg class="size-4" aria-hidden="true"><use href="#icon-mail"></use></svg>
+                    <span>{{ user.email|default:"Chưa cập nhật" }}</span>
+                  </div>
+                  <div x-show="editing" x-cloak>
+                    <label class="profile-field-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                    {{ form.email }}
+                    {% for error in form.email.errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
+                  </div>
+                </div>
+
+                <div class="profile-field">
+                  <span class="profile-field-label">Phòng ban</span>
+                  <div class="profile-field-value">
+                    {% if user.phong %}{{ user.phong.ten_phong }}{% else %}Chưa phân phòng{% endif %}
+                  </div>
+                  <p class="profile-field-note">Thông tin này do quản trị viên quản lý.</p>
+                </div>
+
+                <div class="profile-field">
+                  <span class="profile-field-label">Chức vụ</span>
+                  <div class="profile-field-value">{{ user.get_role_display|default:"Người dùng" }}</div>
+                  <p class="profile-field-note">Thông tin này do quản trị viên quản lý.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-footer profile-form-actions" x-show="editing" x-cloak>
+              <button class="btn btn-outline-secondary"
+                      type="reset"
+                      @click="editing = false; $nextTick(() => $refs.editButton.focus())">
+                Hủy
+              </button>
+              <button class="btn btn-primary" type="submit">Lưu thay đổi</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card profile-system-card">
+          <div class="card-header profile-card-header">
+            <span class="profile-card-icon" aria-hidden="true">
+              <svg class="size-5"><use href="#icon-shield"></use></svg>
+            </span>
+            <div class="profile-card-heading">
+              <h2 class="profile-card-title">Thông tin hệ thống</h2>
+              <p class="profile-card-subtitle">Thông tin định danh và trạng thái tài khoản.</p>
+            </div>
+          </div>
+
+          <dl class="card-body profile-system-grid">
+            <div class="profile-system-item">
+              <dt class="profile-system-label">Mã tài khoản</dt>
+              <dd class="profile-system-value">{{ user.username }}</dd>
+            </div>
+            <div class="profile-system-item">
+              <dt class="profile-system-label">Ngày tham gia</dt>
+              <dd class="profile-system-value">{{ user.date_joined|date:"d/m/Y" }}</dd>
+            </div>
+            <div class="profile-system-item">
+              <dt class="profile-system-label">Đăng nhập gần nhất</dt>
+              <dd class="profile-system-value">{{ user.last_login|date:"d/m/Y H:i"|default:"Chưa đăng nhập" }}</dd>
+            </div>
+            <div class="profile-system-item">
+              <dt class="profile-system-label">Phiên bản hệ thống</dt>
+              <dd class="profile-system-value">v{{ system_version }}</dd>
+            </div>
+          </dl>
+        </section>
+      </div>
+    </div>
+  </div>
+{% endblock %}

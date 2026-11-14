@@ -1,8 +1,10 @@
 """Users, roles, and department scope."""
 
+from django import forms
 from django.contrib.auth.forms import (
     AdminUserCreationForm,
     AuthenticationForm,
+    PasswordChangeForm,
     UserChangeForm,
 )
 
@@ -52,6 +54,56 @@ class UserAdminChangeForm(DepartmentRequiredMixin, UserChangeForm):
             "phong",
             "is_active",
         )
+
+
+class ProfileForm(forms.ModelForm):
+    """Only the two personal fields a user may change themselves."""
+
+    class Meta:
+        model = User
+        fields = ("ho_ten", "email")
+        widgets = {
+            "ho_ten": forms.TextInput(
+                attrs={"class": "form-control", "autocomplete": "name"}
+            ),
+            "email": forms.EmailInput(
+                attrs={"class": "form-control", "autocomplete": "email"}
+            ),
+        }
+        error_messages = {
+            "ho_ten": {"required": "Vui lòng nhập họ và tên."},
+            "email": {"invalid": "Email không hợp lệ."},
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["ho_ten"].label = "Tên hiển thị"
+        self.fields["email"].label = "Địa chỉ email"
+
+    def clean_ho_ten(self):
+        value = self.cleaned_data["ho_ten"].strip()
+        if not value:
+            raise forms.ValidationError("Vui lòng nhập họ và tên.")
+        return value
+
+
+class AccountPasswordChangeForm(PasswordChangeForm):
+    error_messages = {
+        **PasswordChangeForm.error_messages,
+        "password_incorrect": "Mật khẩu hiện tại không đúng.",
+        "password_mismatch": "Hai mật khẩu mới không khớp.",
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        labels = {
+            "old_password": "Mật khẩu hiện tại",
+            "new_password1": "Mật khẩu mới",
+            "new_password2": "Xác nhận mật khẩu mới",
+        }
+        for name, label in labels.items():
+            self.fields[name].label = label
+            self.fields[name].widget.attrs["class"] = "form-control"
 
 
 class LoginForm(AuthenticationForm):

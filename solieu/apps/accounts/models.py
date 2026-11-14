@@ -44,6 +44,17 @@ class User(AbstractUser):
     def __str__(self):
         return self.ho_ten or self.username
 
+    @property
+    def initials(self) -> str:
+        """Up to two initials for the header avatar, with a safe fallback."""
+        name = (self.ho_ten or "").strip() or (self.username or "").strip()
+        words = name.split()
+        if not words:
+            return "?"
+        if len(words) == 1:
+            return words[0][:2].upper()
+        return f"{words[0][0]}{words[-1][0]}".upper()
+
     def clean(self):
         super().clean()
         if self.role in SCOPED_ROLES and self.phong_id is None:

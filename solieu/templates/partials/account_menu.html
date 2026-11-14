@@ -1,0 +1,92 @@
+<div class="account-menu d-print-none"
+     x-data="{
+       open: false,
+       toggle() { this.open = !this.open; },
+       openMenu() {
+         this.open = true;
+         this.$nextTick(() => this.focusFirst());
+       },
+       closeMenu() {
+         this.open = false;
+         this.$nextTick(() => this.$refs.trigger.focus());
+       },
+       items() {
+         return Array.from(this.$refs.panel.querySelectorAll('.account-menu-item'));
+       },
+       focusFirst() {
+         const items = this.items();
+         if (items.length) items[0].focus();
+       },
+       focusLast() {
+         const items = this.items();
+         if (items.length) items[items.length - 1].focus();
+       },
+       move(step) {
+         const items = this.items();
+         const index = items.indexOf(document.activeElement);
+         if (index === -1) {
+           if (items.length) items[0].focus();
+           return;
+         }
+         items[(index + step + items.length) % items.length].focus();
+       }
+     }"
+     @click.outside="open = false"
+     @focusout="if (!$el.contains($event.relatedTarget)) open = false"
+     @keydown.escape="if (open) { $event.stopPropagation(); closeMenu(); }">
+  <button type="button"
+          x-ref="trigger"
+          class="account-trigger"
+          :aria-expanded="open ? 'true' : 'false'"
+          aria-controls="account-menu-panel"
+          aria-label="Mở menu tài khoản của {{ user.ho_ten|default:user.username }}"
+          @click="toggle()"
+          @keydown.arrow-down.prevent="openMenu()">
+    <span class="avatar account-trigger-avatar" aria-hidden="true">{{ user.initials }}</span>
+    <span class="account-trigger-copy" aria-hidden="true">
+      <strong>{{ user.ho_ten|default:user.username }}</strong>
+      <span>{{ user.get_role_display|default:"Người dùng" }}</span>
+    </span>
+  </button>
+
+  <div id="account-menu-panel"
+       x-ref="panel"
+       class="account-panel"
+       x-show="open"
+       x-cloak
+       x-transition.opacity.duration.150ms
+       @keydown.arrow-down.prevent="move(1)"
+       @keydown.arrow-up.prevent="move(-1)"
+       @keydown.home.prevent="focusFirst()"
+       @keydown.end.prevent="focusLast()">
+    <div class="account-panel-head">
+      <span class="avatar" aria-hidden="true">{{ user.initials }}</span>
+      <div class="account-panel-copy">
+        <strong>{{ user.ho_ten|default:user.username }}</strong>
+        <span>
+          {{ user.get_role_display|default:"Người dùng" }}
+          {% if user.phong %} · {{ user.phong.ten_phong }}{% endif %}
+        </span>
+      </div>
+    </div>
+
+    <div class="account-panel-links">
+      <a class="account-menu-item" href="{% url 'accounts:profile' %}">
+        <svg class="size-4" aria-hidden="true"><use href="#icon-user"></use></svg>
+        <span>Thông tin tài khoản</span>
+      </a>
+      <a class="account-menu-item" href="{% url 'accounts:settings' %}">
+        <svg class="size-4" aria-hidden="true"><use href="#icon-settings"></use></svg>
+        <span>Cài đặt</span>
+      </a>
+    </div>
+
+    <form class="account-panel-logout" method="post" action="{% url 'accounts:logout' %}">
+      {% csrf_token %}
+      <button class="account-menu-item account-menu-item--danger" type="submit">
+        <svg class="size-4" aria-hidden="true"><use href="#icon-logout"></use></svg>
+        <span>Đăng xuất</span>
+      </button>
+    </form>
+  </div>
+</div>

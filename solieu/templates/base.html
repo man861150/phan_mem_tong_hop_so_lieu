@@ -36,12 +36,13 @@
             <svg class="size-5" aria-hidden="true"><use href="#icon-menu"></use></svg>
           </button>
           <a class="topbar-brand lg:hidden" href="{% url 'home' %}">iHUB</a>
+          {% block topbar_breadcrumb %}{% endblock %}
           <div class="topbar-actions">
             {% block topbar_actions %}{% endblock %}
             <button type="button" class="topbar-icon" aria-label="Thông báo" title="Thông báo">
               <svg class="size-5" aria-hidden="true"><use href="#icon-bell"></use></svg>
             </button>
-            <span class="avatar avatar-sm" aria-label="Tài khoản {{ user.ho_ten }}">{{ user.phong.ma_phong|default:user.ho_ten|slice:":2"|upper }}</span>
+            {% include "partials/account_menu.html" %}
           </div>
         {% else %}
           <a class="topbar-brand" href="{% url 'home' %}">Tổng hợp số liệu</a>
@@ -60,7 +61,7 @@
       <footer class="page-footer d-print-none">
         <div class="container-app page-footer-inner">
           <span>© {% now "Y" %} Trung tâm Khởi nghiệp sáng tạo Thành phố Hồ Chí Minh</span>
-          <span>Hệ thống tổng hợp số liệu - v2.0</span>
+          <span>Hệ thống tổng hợp số liệu - v{{ system_version }}</span>
         </div>
       </footer>
     </div>
