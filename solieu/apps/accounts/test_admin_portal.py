@@ -1,8 +1,11 @@
 """Administration portal: grouping, dashboard, and preserved actions."""
 
+import re
+
 from axes.models import AccessAttempt
 from django.conf import settings
 from django.contrib import admin
+from django.template.loader import render_to_string
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -110,25 +113,34 @@ class AdminPortalTests(TestCase):
             "Danh mục dùng chung",
             "Tra cứu &amp; Kiểm tra dữ liệu nghiệp vụ",
         ]
-        positions = []
-        for title in titles:
-            self.assertIn(title, body)
-            positions.append(body.index(title))
-        self.assertEqual(positions, sorted(positions))
+        headings = [
+            match.strip()
+            for match in re.findall(
+                r'class="portal-domain-head".*?<h2>\s*([^<]+)',
+                body,
+                flags=re.S,
+            )
+        ]
+        self.assertEqual(headings, titles)
         self.assertIn("Chỉ xem / Tra cứu đối soát", body)
         self.assertIn("Tài khoản bị khóa tạm", body)
         self.assertIn("Lĩnh vực", body)
-        self.assertIn("Thêm người dùng mới", body)
+        self.assertIn("Thêm người dùng", body)
+        self.assertIn(reverse("admin:accounts_user_add"), body)
         self.assertIn("Mở / Khóa kỳ báo cáo", body)
         self.assertIn("Cập nhật kế hoạch năm", body)
         self.assertIn("Gộp đơn vị phối hợp trùng", body)
-        self.assertIn("Quay về ứng dụng chính", body)
+        self.assertIn("Về trang chính", body)
+        self.assertRegex(body, r"Chào buổi (sáng|chiều|tối), Quản trị viên\.")
         self.assertIn('data-kpi="users-total">4<', body)
         self.assertIn('data-kpi="users-system-admin">Quản trị hệ thống: 1<', body)
         self.assertIn('data-kpi="users-center-head">Lãnh đạo Trung tâm: 1<', body)
         self.assertIn('data-kpi="users-department-head">Lãnh đạo phòng: 1<', body)
         self.assertIn('data-kpi="users-entry-officer">Cán bộ nhập liệu: 1<', body)
-        self.assertIn('data-kpi="periods-open">1 đang mở<', body)
+        self.assertIn(
+            'data-kpi="periods-open"><span class="kpi-num">1</span> đang mở',
+            body,
+        )
         self.assertIn('data-kpi="periods-locked">1 đã khóa<', body)
         self.assertIn('data-kpi="departments">1<', body)
         self.assertIn('data-kpi="indicators">1<', body)
@@ -165,6 +177,41 @@ class AdminPortalTests(TestCase):
             cleared,
             "Có tài khoản đang bị khóa vì đăng nhập sai.",
         )
+
+    def test_empty_app_list_shows_the_permission_message(self):
+        request = RequestFactory().get("/admin/")
+        request.user = self.admin
+        html = render_to_string(
+            "admin/index.html",
+            {
+                "app_list": [],
+                "portal_kpis": {
+                    "year": 2026,
+                    "users": {
+                        "total": 0,
+                        "system_admin": 0,
+                        "center_head": 0,
+                        "department_head": 0,
+                        "entry_officer": 0,
+                    },
+                    "periods": {"mo": 0, "khoa": 0},
+                    "departments": 0,
+                    "indicators": 0,
+                },
+                "portal_greeting": "Chào buổi sáng",
+                "portal_full_name": "Quản trị viên",
+                "portal_email": "admin@example.com",
+                "portal_initials": "QT",
+                "portal_role_label": "Quản trị hệ thống",
+                "lockout": {"count": 0, "url": "/admin/axes/accessattempt/"},
+                "title": "Trung tâm điều hành",
+            },
+            request=request,
+        )
+        self.assertIn("Bạn không có quyền xem hoặc chỉnh sửa bất cứ gì.", html)
+        self.assertNotIn('class="portal-domain', html)
+        self.assertIn("Tổng quan", html)
+        self.assertIn('data-kpi="users-total">0<', html)
 
     def test_other_roles_are_sent_to_the_admin_login(self):
         for username in ("cb.htkn", "ld.htkn", "ld.tt"):

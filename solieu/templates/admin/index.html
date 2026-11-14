@@ -3,94 +3,400 @@
 
 {% block bodyclass %}{{ block.super }} portal-index{% endblock %}
 
+{% block header %}{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block messages %}{% endblock %}
 {% block content_title %}{% endblock %}
 {% block content_subtitle %}{% endblock %}
+{% block footer %}{% endblock %}
 
 {% block content %}
-  <header class="portal-intro">
-    <h1>Trung tâm điều hành</h1>
-    <p>
-      Chọn nhóm việc bên dưới. Số liệu nghiệp vụ được nhập và duyệt trong ứng dụng chính.
-      Cổng này dùng để cấu hình và tra cứu.
-    </p>
-  </header>
+  <div class="portal-shell">
+    <button type="button" class="portal-scrim" hidden aria-label="Đóng menu"></button>
 
-  <section class="portal-kpis" aria-label="Tình hình hệ thống">
-    <article class="portal-card">
-      <h2>Người dùng đang hoạt động</h2>
-      <p class="kpi-value" data-kpi="users-total">{{ portal_kpis.users.total }}</p>
-      <ul class="kpi-roles">
-        <li data-kpi="users-system-admin">Quản trị hệ thống: {{ portal_kpis.users.system_admin }}</li>
-        <li data-kpi="users-center-head">Lãnh đạo Trung tâm: {{ portal_kpis.users.center_head }}</li>
-        <li data-kpi="users-department-head">Lãnh đạo phòng: {{ portal_kpis.users.department_head }}</li>
-        <li data-kpi="users-entry-officer">Cán bộ nhập liệu: {{ portal_kpis.users.entry_officer }}</li>
-      </ul>
-    </article>
-    <article class="portal-card">
-      <h2>Kỳ báo cáo năm {{ portal_kpis.year }}</h2>
-      <p class="kpi-value">
-        <span data-kpi="periods-open">{{ portal_kpis.periods.mo }} đang mở</span>
-      </p>
-      <p class="kpi-meta" data-kpi="periods-locked">{{ portal_kpis.periods.khoa }} đã khóa</p>
-    </article>
-    <article class="portal-card">
-      <h2>Phòng ban đang dùng</h2>
-      <p class="kpi-value" data-kpi="departments">{{ portal_kpis.departments }}</p>
-    </article>
-    <article class="portal-card">
-      <h2>Chỉ tiêu đang dùng</h2>
-      <p class="kpi-value" data-kpi="indicators">{{ portal_kpis.indicators }}</p>
-    </article>
-  </section>
+    <aside class="portal-sidebar" id="portal-sidebar" aria-label="Cổng quản trị">
+      <div class="portal-brand">
+        <span class="portal-brand-mark">
+          {% include "admin/includes/icon.html" with name="chart" size=22 %}
+        </span>
+        <span class="portal-brand-copy">
+          <strong>Cổng quản trị</strong>
+          <span>Hệ thống điều hành</span>
+        </span>
+        <button type="button" class="portal-sidebar-close" aria-label="Đóng menu">
+          {% include "admin/includes/icon.html" with name="x" %}
+        </button>
+      </div>
 
-  {% if lockout.count %}
-    <a class="portal-lockout" href="{{ lockout.url }}">
-      Có tài khoản đang bị khóa vì đăng nhập sai.
-      {{ lockout.count }} tên đăng nhập cần mở khóa.
-    </a>
-  {% endif %}
+      <div class="portal-search">
+        {% include "admin/includes/icon.html" with name="search" size=17 %}
+        <input class="portal-search-input" type="search" placeholder="Tìm chức năng..." aria-label="Tìm chức năng" autocomplete="off">
+      </div>
 
-  <nav class="portal-actions" aria-label="Việc thường làm">
-    <a href="{% url 'admin:accounts_user_add' %}">Thêm người dùng mới</a>
-    <a href="{% url 'admin:catalog_kybaocao_changelist' %}">Mở / Khóa kỳ báo cáo</a>
-    <a href="{% url 'admin:catalog_chitieukehoach_changelist' %}">Cập nhật kế hoạch năm</a>
-    <a href="{% url 'admin:activities_donviphoihop_changelist' %}">Gộp đơn vị phối hợp trùng</a>
-    <a href="{% url 'home' %}">Quay về ứng dụng chính</a>
-  </nav>
+      <nav class="portal-nav" aria-label="Khu vực quản trị">
+        <p class="portal-nav-label">Khu vực quản trị</p>
+        <a class="portal-nav-link" href="{% url 'admin:index' %}" data-overview>
+          {% include "admin/includes/icon.html" with name="grid" size=17 %}
+          <span>Tổng quan</span>
+        </a>
+        {% for app in app_list %}
+          <a class="portal-nav-link" href="{{ app.app_url }}" data-nav-label="{{ app.nav_label }}" data-domain="{{ app.app_label }}">
+            {% include "admin/includes/icon.html" with name=app.icon size=17 %}
+            <span>{{ app.nav_label }}</span>
+            {% include "admin/includes/icon.html" with name="chevron" size=14 %}
+          </a>
+        {% endfor %}
+      </nav>
 
-  {% if app_list %}
-    {% for app in app_list %}
-      <section class="portal-domain" id="{{ app.app_label }}">
-        <header class="portal-domain-head">
-          <h2>{{ app.name }}</h2>
-          {% if app.read_only %}
-            <span class="pill pill-locked">Chỉ xem / Tra cứu đối soát</span>
+      <details class="portal-user-card">
+        <summary>
+          <span class="portal-avatar" aria-hidden="true">{{ portal_initials }}</span>
+          <span class="portal-user-copy">
+            <strong>{{ portal_full_name|default:user.get_username }}</strong>
+            <span>{{ portal_email|default:portal_role_label }}</span>
+          </span>
+          {% include "admin/includes/icon.html" with name="chevron" size=16 %}
+        </summary>
+        <div class="portal-user-menu">
+          <a href="{% url 'accounts:profile' %}">Hồ sơ</a>
+          {% if user.has_usable_password %}
+            <a href="{% url 'admin:password_change' %}">Đổi mật khẩu</a>
+          {% endif %}
+          <form method="post" action="{% url 'admin:logout' %}">
+            {% csrf_token %}
+            <button type="submit">Đăng xuất</button>
+          </form>
+        </div>
+      </details>
+    </aside>
+
+    <div class="portal-main">
+      <header class="portal-topbar">
+        <div class="portal-topbar-start">
+          <button type="button" class="portal-menu" aria-label="Mở menu" aria-expanded="false" aria-controls="portal-sidebar">
+            {% include "admin/includes/icon.html" with name="menu" %}
+          </button>
+          <nav class="portal-crumbs" aria-label="Đường dẫn">
+            <a class="portal-crumb-home" href="{% url 'home' %}">
+              {% include "admin/includes/icon.html" with name="home" size=15 %}
+              <span>Trang chủ</span>
+            </a>
+            {% include "admin/includes/icon.html" with name="chevron" size=13 %}
+            <span aria-current="page">Trung tâm điều hành</span>
+          </nav>
+        </div>
+        <div class="portal-topbar-actions">
+          <a class="portal-home-btn" href="{% url 'home' %}" aria-label="Về trang chính">
+            {% include "admin/includes/icon.html" with name="arrow" size=16 %}
+            <span>Về trang chính</span>
+          </a>
+          {% if lockout.count %}
+            <a class="portal-icon-btn" href="{{ lockout.url }}" aria-label="Thông báo: {{ lockout.count }} tài khoản đang bị khóa">
+              {% include "admin/includes/icon.html" with name="bell" size=19 %}
+            </a>
+          {% else %}
+            <button type="button" class="portal-icon-btn" aria-disabled="true" aria-label="Không có thông báo mới">
+              {% include "admin/includes/icon.html" with name="bell" size=19 %}
+            </button>
+          {% endif %}
+          <a class="portal-avatar portal-avatar-top" href="{% url 'accounts:profile' %}" aria-label="Hồ sơ của {{ portal_full_name|default:user.get_username }}">{{ portal_initials }}</a>
+        </div>
+      </header>
+
+      <div class="portal-page">
+        {% if messages %}
+          <ul class="messagelist">
+            {% for message in messages %}
+              <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|capfirst }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        <header class="portal-intro">
+          <div>
+            <p class="portal-eyebrow">Tổng quan hệ thống</p>
+            <h1>Trung tâm điều hành</h1>
+            <p>{{ portal_greeting }}, {{ portal_full_name|default:user.get_username }}.</p>
+          </div>
+          {% if perms.accounts.add_user %}
+            <a class="portal-primary" href="{% url 'admin:accounts_user_add' %}">
+              {% include "admin/includes/icon.html" with name="plus" size=18 %}
+              Thêm người dùng
+            </a>
           {% endif %}
         </header>
-        <p class="portal-domain-desc">{{ app.description }}</p>
-        <div class="portal-models">
-          {% for model in app.models %}
-            <article class="portal-card portal-model">
-              <h3>{{ model.name }}</h3>
-              <p class="portal-model-count">{{ model.count }} bản ghi</p>
-              <p class="portal-model-desc">{{ model.description }}</p>
-              <p class="portal-model-actions">
-                {% if model.admin_url %}
-                  <a class="portal-btn" href="{{ model.admin_url }}">Xem danh sách</a>
-                {% endif %}
-                {% if model.add_url %}
-                  <a class="portal-btn portal-btn-primary" href="{{ model.add_url }}">+ Thêm mới</a>
-                {% endif %}
-                {% if model.view_only %}
-                  <span class="pill pill-locked">Chỉ xem</span>
-                {% endif %}
-              </p>
-            </article>
+
+        <section class="portal-kpis" aria-label="Tình hình hệ thống">
+          <article class="portal-card portal-kpi portal-kpi-users">
+            <span class="portal-kpi-icon">{% include "admin/includes/icon.html" with name="users" %}</span>
+            <h2>Người dùng hoạt động</h2>
+            <p class="kpi-value" data-kpi="users-total">{{ portal_kpis.users.total }}</p>
+            <ul class="kpi-roles">
+              <li data-kpi="users-system-admin">Quản trị hệ thống: {{ portal_kpis.users.system_admin }}</li>
+              <li data-kpi="users-center-head">Lãnh đạo Trung tâm: {{ portal_kpis.users.center_head }}</li>
+              <li data-kpi="users-department-head">Lãnh đạo phòng: {{ portal_kpis.users.department_head }}</li>
+              <li data-kpi="users-entry-officer">Cán bộ nhập liệu: {{ portal_kpis.users.entry_officer }}</li>
+            </ul>
+          </article>
+          <article class="portal-card portal-kpi portal-kpi-periods">
+            <span class="portal-kpi-icon">{% include "admin/includes/icon.html" with name="calendar" %}</span>
+            <h2>Kỳ báo cáo năm {{ portal_kpis.year }}</h2>
+            <p class="kpi-value"><span data-kpi="periods-open"><span class="kpi-num">{{ portal_kpis.periods.mo }}</span> đang mở</span></p>
+            <p class="kpi-meta" data-kpi="periods-locked">{{ portal_kpis.periods.khoa }} đã khóa</p>
+          </article>
+          <article class="portal-card portal-kpi portal-kpi-departments">
+            <span class="portal-kpi-icon">{% include "admin/includes/icon.html" with name="building" %}</span>
+            <h2>Phòng ban đang dùng</h2>
+            <p class="kpi-value" data-kpi="departments">{{ portal_kpis.departments }}</p>
+            <p class="kpi-meta">Đã cấu hình</p>
+          </article>
+          <article class="portal-card portal-kpi portal-kpi-indicators">
+            <span class="portal-kpi-icon">{% include "admin/includes/icon.html" with name="target" %}</span>
+            <h2>Chỉ tiêu đang dùng</h2>
+            <p class="kpi-value" data-kpi="indicators">{{ portal_kpis.indicators }}</p>
+            <p class="kpi-meta">Đang sử dụng</p>
+          </article>
+        </section>
+
+        {% if lockout.count %}
+          <a class="portal-lockout" href="{{ lockout.url }}">
+            Có tài khoản đang bị khóa vì đăng nhập sai.
+            {{ lockout.count }} tên đăng nhập cần mở khóa.
+          </a>
+        {% endif %}
+
+        <nav class="portal-actions" aria-label="Việc thường làm">
+          <a href="{% url 'admin:catalog_kybaocao_changelist' %}">
+            {% include "admin/includes/icon.html" with name="lock" size=16 %}
+            Mở / Khóa kỳ báo cáo
+          </a>
+          <a href="{% url 'admin:catalog_chitieukehoach_changelist' %}">
+            {% include "admin/includes/icon.html" with name="calendar" size=16 %}
+            Cập nhật kế hoạch năm
+          </a>
+          <a href="{% url 'admin:activities_donviphoihop_changelist' %}">
+            {% include "admin/includes/icon.html" with name="layers" size=16 %}
+            Gộp đơn vị phối hợp trùng
+          </a>
+        </nav>
+
+        {% if app_list %}
+          <div class="portal-tabs" role="tablist" aria-label="Nhóm chức năng">
+            {% for app in app_list %}
+              <a role="tab" href="#{{ app.app_label }}" data-tab="{{ app.app_label }}">
+                {% include "admin/includes/icon.html" with name=app.icon size=16 %}
+                <span>{{ app.tab_label }}</span>
+              </a>
+            {% endfor %}
+          </div>
+
+          {% for app in app_list %}
+            <section class="portal-domain{% if app.read_only %} portal-domain-read-only{% endif %}" id="{{ app.app_label }}" data-nav-label="{{ app.nav_label }}">
+              <header class="portal-domain-head">
+                <span class="portal-domain-icon">
+                  {% include "admin/includes/icon.html" with name=app.icon %}
+                </span>
+                <div>
+                  <h2>
+                    {{ app.name }}
+                    {% if app.read_only %}
+                      <span class="pill pill-locked">Chỉ xem / Tra cứu đối soát</span>
+                    {% endif %}
+                  </h2>
+                  <p class="portal-domain-desc">{{ app.description }}</p>
+                </div>
+              </header>
+              <div class="portal-models">
+                {% for model in app.models %}
+                  <article class="portal-card portal-model" data-search="{{ model.name }} {{ model.description }}">
+                    <div class="portal-model-top">
+                      <span class="portal-model-icon">
+                        {% include "admin/includes/icon.html" with name=model.icon size=19 %}
+                      </span>
+                      {% if model.admin_url %}
+                        <a class="portal-card-arrow" href="{{ model.admin_url }}" aria-label="Mở {{ model.name }}">
+                          {% include "admin/includes/icon.html" with name="arrow" size=17 %}
+                        </a>
+                      {% endif %}
+                    </div>
+                    <h3>{{ model.name }}</h3>
+                    <p class="portal-model-count"><strong>{{ model.count }}</strong> BẢN GHI</p>
+                    <p class="portal-model-desc">{{ model.description }}</p>
+                    <p class="portal-model-actions">
+                      {% if model.admin_url %}
+                        <a class="portal-btn" href="{{ model.admin_url }}">
+                          Xem danh sách
+                          {% include "admin/includes/icon.html" with name="arrow" size=15 %}
+                        </a>
+                      {% endif %}
+                      {% if model.add_url %}
+                        <a class="portal-btn portal-btn-primary" href="{{ model.add_url }}">
+                          {% include "admin/includes/icon.html" with name="plus" size=15 %}
+                          Thêm mới
+                        </a>
+                      {% endif %}
+                      {% if model.view_only %}
+                        <span class="pill pill-locked">Chỉ xem</span>
+                      {% endif %}
+                    </p>
+                  </article>
+                {% endfor %}
+              </div>
+            </section>
           {% endfor %}
-        </div>
-      </section>
-    {% endfor %}
-  {% else %}
-    <p>{% translate "You don’t have permission to view or edit anything." %}</p>
-  {% endif %}
+          <p class="portal-empty-search" hidden>Không tìm thấy chức năng</p>
+        {% else %}
+          <p class="portal-permission">{% translate "You don’t have permission to view or edit anything." %}</p>
+        {% endif %}
+
+        <footer class="portal-footer">© {{ portal_kpis.year }} Trung tâm điều hành · Phiên bản {{ system_version }}</footer>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extrabody %}
+  <script>
+    (function () {
+      var body = document.body;
+      var sections = Array.prototype.slice.call(document.querySelectorAll(".portal-domain"));
+      var tabs = Array.prototype.slice.call(document.querySelectorAll("[data-tab]"));
+      var navLinks = Array.prototype.slice.call(document.querySelectorAll(".portal-nav-link[data-nav-label]"));
+      var search = document.querySelector(".portal-search-input");
+      var tablist = document.querySelector(".portal-tabs");
+      var empty = document.querySelector(".portal-empty-search");
+      var sidebar = document.getElementById("portal-sidebar");
+      var scrim = document.querySelector(".portal-scrim");
+      var menuBtn = document.querySelector(".portal-menu");
+      var closeBtn = document.querySelector(".portal-sidebar-close");
+      var overview = document.querySelector("[data-overview]");
+      var mobileQuery = window.matchMedia("(max-width: 1023px)");
+
+      body.classList.add("portal-enhanced");
+
+      function domainFromHash() {
+        var hash = (location.hash || "").replace(/^#/, "");
+        for (var i = 0; i < sections.length; i += 1) {
+          if (sections[i].id === hash) return hash;
+        }
+        return sections.length ? sections[0].id : "";
+      }
+
+      function markCurrent(nodes, attr, id) {
+        nodes.forEach(function (node) {
+          if (node.getAttribute(attr) === id) node.setAttribute("aria-current", "true");
+          else node.removeAttribute("aria-current");
+        });
+      }
+
+      function setCurrent(id) {
+        sections.forEach(function (section) {
+          section.hidden = section.id !== id;
+        });
+        markCurrent(tabs, "data-tab", id);
+        markCurrent(navLinks, "data-domain", id);
+      }
+
+      function applySearch() {
+        var query = (search && search.value ? search.value : "").trim().toLocaleLowerCase("vi");
+        if (!query) {
+          if (empty) empty.hidden = true;
+          if (tablist) tablist.hidden = false;
+          sections.forEach(function (section) {
+            section.querySelectorAll(".portal-model").forEach(function (card) {
+              card.hidden = false;
+            });
+          });
+          navLinks.forEach(function (link) { link.hidden = false; });
+          setCurrent(domainFromHash());
+          return;
+        }
+        if (tablist) tablist.hidden = true;
+        var any = false;
+        sections.forEach(function (section) {
+          var label = (section.getAttribute("data-nav-label") || "").toLocaleLowerCase("vi");
+          var labelMatch = label.indexOf(query) !== -1;
+          var visible = 0;
+          section.querySelectorAll(".portal-model").forEach(function (card) {
+            var hay = (card.getAttribute("data-search") || "").toLocaleLowerCase("vi");
+            var show = labelMatch || hay.indexOf(query) !== -1;
+            card.hidden = !show;
+            if (show) visible += 1;
+          });
+          section.hidden = visible === 0;
+          if (visible) any = true;
+        });
+        navLinks.forEach(function (link) {
+          var section = document.getElementById(link.getAttribute("data-domain"));
+          link.hidden = !(section && !section.hidden);
+        });
+        if (empty) empty.hidden = any;
+      }
+
+      function drawerOpen() {
+        return body.classList.contains("portal-drawer-open");
+      }
+
+      function syncDrawer(returnFocus) {
+        var mobile = mobileQuery.matches;
+        if (!mobile && drawerOpen()) body.classList.remove("portal-drawer-open");
+        var conceal = mobile && !drawerOpen();
+        if (sidebar) {
+          sidebar.inert = conceal;
+          sidebar.setAttribute("aria-hidden", conceal ? "true" : "false");
+        }
+        if (scrim) scrim.hidden = !(mobile && drawerOpen());
+        if (menuBtn) menuBtn.setAttribute("aria-expanded", drawerOpen() ? "true" : "false");
+        if (returnFocus && !drawerOpen() && menuBtn) menuBtn.focus();
+      }
+
+      function setDrawer(open, returnFocus) {
+        body.classList.toggle("portal-drawer-open", open);
+        syncDrawer(returnFocus);
+        if (open && closeBtn) closeBtn.focus();
+      }
+
+      function followHashLink(event) {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+        // Restore cards before the hash changes. Otherwise a search leaves them hidden.
+        if (search) search.value = "";
+        applySearch();
+        setDrawer(false, false);
+      }
+
+      if (overview) {
+        overview.addEventListener("click", function (event) {
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+          event.preventDefault();
+          if (search) search.value = "";
+          history.pushState(null, "", overview.getAttribute("href"));
+          applySearch();
+          var page = document.querySelector(".portal-page");
+          if (page) page.scrollIntoView();
+          setDrawer(false, false);
+        });
+      }
+
+      tabs.forEach(function (tab) { tab.addEventListener("click", followHashLink); });
+      navLinks.forEach(function (link) { link.addEventListener("click", followHashLink); });
+      window.addEventListener("hashchange", function () {
+        if (search && search.value.trim()) return;
+        setCurrent(domainFromHash());
+      });
+      if (search) search.addEventListener("input", applySearch);
+      if (menuBtn) {
+        menuBtn.addEventListener("click", function () { setDrawer(!drawerOpen(), false); });
+      }
+      if (closeBtn) closeBtn.addEventListener("click", function () { setDrawer(false, true); });
+      if (scrim) scrim.addEventListener("click", function () { setDrawer(false, true); });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && drawerOpen()) setDrawer(false, true);
+      });
+      mobileQuery.addEventListener("change", function () { syncDrawer(false); });
+
+      applySearch();
+      syncDrawer(false);
+    })();
+  </script>
 {% endblock %}

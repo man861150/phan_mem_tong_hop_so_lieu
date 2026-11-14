@@ -202,6 +202,58 @@ DOMAINS = (
     },
 )
 
+# Chrome only. Domain names and descriptions stay in DOMAINS.
+PRESENTATION = {
+    "users": {
+        "icon": "users",
+        "nav_label": "Người dùng & phân quyền",
+        "tab_label": "Người dùng",
+    },
+    "periods": {
+        "icon": "calendar",
+        "nav_label": "Kỳ báo cáo & kế hoạch",
+        "tab_label": "Kỳ báo cáo",
+    },
+    "catalog": {
+        "icon": "layers",
+        "nav_label": "Danh mục & chỉ tiêu",
+        "tab_label": "Cấu hình Danh mục",
+    },
+    "lookups": {
+        "icon": "database",
+        "nav_label": "Danh mục dùng chung",
+        "tab_label": "Danh mục dùng chung",
+    },
+    "audit": {
+        "icon": "search",
+        "nav_label": "Tra cứu nghiệp vụ",
+        "tab_label": "Tra cứu",
+    },
+}
+
+MODEL_ICONS = {
+    ("accounts", "user"): "users",
+    ("axes", "accessattempt"): "lock",
+    ("catalog", "kybaocao"): "calendar",
+    ("catalog", "chitieukehoach"): "target",
+    ("catalog", "phongban"): "building",
+    ("catalog", "nhomchitieu"): "folder",
+    ("catalog", "chitieu"): "target",
+    ("catalog", "loaihoatdong"): "activity",
+    ("catalog", "bieumauchitieu"): "file",
+    ("catalog", "danhmucdoituong"): "users",
+    ("catalog", "danhmuclinhvuc"): "layers",
+    ("catalog", "nguonsolieu"): "database",
+    ("activities", "donviphoihop"): "building",
+    ("entry", "phieunhaplieu"): "file",
+    ("entry", "solieu"): "database",
+    ("activities", "hoatdong"): "activity",
+    ("activities", "duan"): "folder",
+    ("entry", "hotroduan"): "users",
+    ("entry", "lichsuxuly"): "clock",
+    ("reporting", "baocaodaxuat"): "chart",
+}
+
 
 class GuidanceMixin:
     """Show a fixed explanation above a changelist and a change form."""
@@ -238,6 +290,8 @@ class SolieuAdminSite(AdminSite):
             context["portal_full_name"] = (
                 getattr(user, "ho_ten", "") or user.get_username()
             )
+            context["portal_email"] = getattr(user, "email", "") or ""
+            context["portal_initials"] = getattr(user, "initials", "") or ""
             role = getattr(user, "role", "")
             context["portal_role_label"] = dict(Role.choices).get(role, "")
             context["portal_role_tone"] = ROLE_TONE.get(role, "inactive")
@@ -263,10 +317,12 @@ class SolieuAdminSite(AdminSite):
                         **model,
                         "name": title,
                         "description": description,
+                        "icon": MODEL_ICONS.get((app_label_key, model_name), "file"),
                     }
                 )
             if not models:
                 continue
+            presentation = PRESENTATION[spec["key"]]
             domains.append(
                 {
                     "name": spec["name"],
@@ -275,6 +331,9 @@ class SolieuAdminSite(AdminSite):
                     "has_module_perms": True,
                     "description": spec["description"],
                     "read_only": spec["read_only"],
+                    "icon": presentation["icon"],
+                    "nav_label": presentation["nav_label"],
+                    "tab_label": presentation["tab_label"],
                     "models": models,
                 }
             )
@@ -292,6 +351,7 @@ class SolieuAdminSite(AdminSite):
             "subtitle": None,
             "app_list": app_list,
             "portal_kpis": build_kpis(),
+            "portal_greeting": greeting_for(),
             "lockout": lockout_summary(),
             **(extra_context or {}),
         }
@@ -299,6 +359,19 @@ class SolieuAdminSite(AdminSite):
         return TemplateResponse(
             request, self.index_template or "admin/index.html", context
         )
+
+
+def greeting_for(moment=None):
+    """Time-of-day greeting in the project timezone."""
+    from django.utils import timezone
+
+    when = timezone.localtime(moment or timezone.now())
+    hour = when.hour
+    if 5 <= hour < 12:
+        return "Chào buổi sáng"
+    if 12 <= hour < 18:
+        return "Chào buổi chiều"
+    return "Chào buổi tối"
 
 
 def build_kpis():
