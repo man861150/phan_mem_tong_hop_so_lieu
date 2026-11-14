@@ -13,7 +13,8 @@
           ({{ activity.loai_hoat_dong.phong.ma_phong }})
         </div>
       </div>
-      <div class="col-auto flex items-center gap-2">
+      <div class="col-auto flex flex-wrap items-center gap-2">
+        {% include "partials/guide_link.html" %}
         {% if phieu %}
           <span class="badge bg-blue-lt">{{ phieu.get_trang_thai_display }}</span>
           <a class="btn btn-outline-secondary" href="{% url 'entry:phieu_detail' phieu.pk %}">Xem chi tiết</a>

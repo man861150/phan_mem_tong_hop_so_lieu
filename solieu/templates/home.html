@@ -16,10 +16,15 @@
       <h1 class="welcome-title">Xin chào, {% if user.phong %}{{ user.phong.ten_phong }}{% else %}{{ user.ho_ten }}{% endif %}</h1>
       <p class="welcome-copy">Theo dõi tiến độ và cập nhật số liệu hoạt động của đơn vị.</p>
     </div>
-    <a class="btn btn-primary btn-lg w-full sm:w-auto" href="{{ progress_url }}">
-      Xem bảng tiến độ
-      <svg class="size-5" aria-hidden="true"><use href="#icon-arrow"></use></svg>
-    </a>
+    <div class="flex w-full flex-wrap gap-2 sm:w-auto">
+      {% if show_workflow_guide %}
+        <a class="btn btn-outline-secondary btn-lg w-full sm:w-auto" href="{% url 'entry:quy_trinh' %}">Quy trình công việc</a>
+      {% endif %}
+      <a class="btn btn-primary btn-lg w-full sm:w-auto" href="{{ progress_url }}">
+        Xem bảng tiến độ
+        <svg class="size-5" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+      </a>
+    </div>
   </section>
 
   <section class="stats-grid" aria-label="Số liệu tổng quan">

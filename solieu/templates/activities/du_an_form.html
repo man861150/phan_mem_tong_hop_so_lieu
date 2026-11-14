@@ -14,7 +14,8 @@
           {% endif %}
         </h2>
       </div>
-      <div class="col-auto">
+      <div class="col-auto flex flex-wrap items-center gap-2">
+        {% include "partials/guide_link.html" %}
         <a class="btn btn-outline-secondary" href="{% url 'activities:du_an_list' %}">Danh sách</a>
       </div>
     </div>

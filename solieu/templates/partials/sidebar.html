@@ -25,25 +25,20 @@
         </a>
       {% endif %}
     {% endfor %}
-
-    <p class="sidebar-label sidebar-label--account">Tài khoản</p>
-    <div class="nav-item nav-item--static" aria-label="Vai trò: {{ user.get_role_display }}">
-      <svg class="nav-icon" aria-hidden="true"><use href="#icon-user"></use></svg>
-      <span>{{ user.get_role_display }}</span>
-    </div>
   </nav>
 
-  <div class="sidebar-user">
-    <span class="avatar" aria-hidden="true">{{ user.phong.ma_phong|default:user.ho_ten|slice:":2"|upper }}</span>
-    <div class="sidebar-user-copy">
-      <strong>{% if user.phong %}{{ user.phong.ten_phong }}{% else %}{{ user.ho_ten }}{% endif %}</strong>
-      <span>{{ user.get_role_display }}</span>
+  {% if show_workflow_guide %}
+    <div class="sidebar-footer">
+      <a class="sidebar-help" href="{% url 'entry:quy_trinh' %}">
+        <span class="sidebar-help-icon" aria-hidden="true">
+          <svg class="size-5"><use href="#icon-guide"></use></svg>
+        </span>
+        <span class="sidebar-help-copy">
+          <strong>Cần hỗ trợ?</strong>
+          <span>Xem hướng dẫn sử dụng</span>
+        </span>
+        <svg class="sidebar-help-arrow" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+      </a>
     </div>
-    <form method="post" action="{% url 'accounts:logout' %}">
-      {% csrf_token %}
-      <button class="logout-button" type="submit" aria-label="Đăng xuất" title="Đăng xuất">
-        <svg class="size-5" aria-hidden="true"><use href="#icon-logout"></use></svg>
-      </button>
-    </form>
-  </div>
+  {% endif %}
 </aside>

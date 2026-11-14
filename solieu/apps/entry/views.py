@@ -38,6 +38,7 @@ from apps.entry.forms import (
     MonthlyEntryForm,
     WorkflowCommentForm,
 )
+from apps.entry.guide import build_guide
 from apps.entry.models import (
     HanhDongXuLy,
     HoTroDuAn,
@@ -1258,3 +1259,13 @@ def duyet_list(request):
             "queue": queue,
         },
     )
+
+
+@login_required
+@require_http_methods(["GET"])
+def quy_trinh(request):
+    """Show the signed-in user's next step in each existing workflow."""
+    user = request.user
+    if not (can(user, "edit_entry") or can(user, "approve_entry")):
+        raise PermissionDenied
+    return render(request, "entry/quy_trinh.html", build_guide(user))

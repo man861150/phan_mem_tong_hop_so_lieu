@@ -32,11 +32,16 @@
       <h1 class="page-hero-title">Hoạt động</h1>
       <p class="page-hero-copy">Quản lý các sự kiện, hội thảo và chương trình huấn luyện của đơn vị.</p>
     </div>
-    {% if can_create %}
-      <a class="btn btn-primary btn-lg" href="{% url 'activities:hoat_dong_create' %}">
-        <svg class="size-5" aria-hidden="true"><use href="#icon-plus"></use></svg>
-        Thêm hoạt động
-      </a>
+    {% if show_workflow_guide or can_create %}
+      <div class="page-hero-actions">
+        {% include "partials/guide_link.html" %}
+        {% if can_create %}
+          <a class="btn btn-primary btn-lg" href="{% url 'activities:hoat_dong_create' %}">
+            <svg class="size-5" aria-hidden="true"><use href="#icon-plus"></use></svg>
+            Thêm hoạt động
+          </a>
+        {% endif %}
+      </div>
     {% endif %}
   </section>
 

@@ -17,11 +17,13 @@ from apps.entry.views import (
     phieu_thang_chon,
     phieu_tra_lai,
     phieu_xoa,
+    quy_trinh,
 )
 
 app_name = "entry"
 
 urlpatterns = [
+    path("quy-trinh/", quy_trinh, name="quy_trinh"),
     path(
         "linh-vuc/tim-kiem/",
         linh_vuc_search,

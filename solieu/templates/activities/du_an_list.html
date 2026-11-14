@@ -8,11 +8,12 @@
       <div class="col-span-12">
         <h2 class="page-title">Dự án/startup</h2>
       </div>
-      {% if can_create %}
-        <div class="col-auto">
+      <div class="col-auto flex flex-wrap items-center gap-2">
+        {% include "partials/guide_link.html" %}
+        {% if can_create %}
           <a class="btn btn-primary" href="{% url 'activities:du_an_create' %}">Thêm dự án</a>
-        </div>
-      {% endif %}
+        {% endif %}
+      </div>
     </div>
   </div>
 

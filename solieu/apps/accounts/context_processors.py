@@ -1,5 +1,6 @@
 """Navigation entries derived from the permission matrix."""
 
+from django.conf import settings
 from django.urls import reverse
 
 from apps.accounts.permissions import can
@@ -22,13 +23,20 @@ def _editable_phieu_count(user):
 
 def navigation(request):
     """Return links the signed-in role may use, in display order."""
+    context = {
+        "system_version": settings.SYSTEM_VERSION,
+        "show_workflow_guide": False,
+    }
     user = getattr(request, "user", None)
     if not getattr(user, "is_authenticated", False):
-        return {"navigation": []}
+        context["navigation"] = []
+        return context
 
     path = request.path
     home_url = reverse("home")
     editable_phieu_count = _editable_phieu_count(user)
+    show_workflow_guide = can(user, "edit_entry") or can(user, "approve_entry")
+    context["show_workflow_guide"] = show_workflow_guide
     items = [
         {
             "label": "Trang chủ",
@@ -36,6 +44,13 @@ def navigation(request):
             "url": home_url,
             "active": path == home_url,
             "visible": can(user, "view_progress"),
+        },
+        {
+            "label": "Quy trình",
+            "icon": "guide",
+            "url": reverse("entry:quy_trinh"),
+            "active": path.startswith("/quy-trinh/"),
+            "visible": show_workflow_guide,
         },
         {
             "label": "Phiếu tháng",
@@ -117,4 +132,5 @@ def navigation(request):
             and user.is_staff,
         },
     ]
-    return {"navigation": items}
+    context["navigation"] = items
+    return context

@@ -4,12 +4,15 @@
 
 {% block content %}
   <header class="activity-page-header">
-    <a class="back-link" href="{% url 'activities:hoat_dong_list' %}">
-      <span class="back-link-icon" aria-hidden="true">
-        <svg class="size-4"><use href="#icon-arrow"></use></svg>
-      </span>
-      Quay lại danh sách
-    </a>
+    <div class="activity-page-toolbar">
+      <a class="back-link" href="{% url 'activities:hoat_dong_list' %}">
+        <span class="back-link-icon" aria-hidden="true">
+          <svg class="size-4"><use href="#icon-arrow"></use></svg>
+        </span>
+        Quay lại danh sách
+      </a>
+      {% include "partials/guide_link.html" %}
+    </div>
     <div class="activity-page-heading">
       <div class="activity-page-heading-copy">
         <p class="eyebrow">Quản lý hoạt động</p>
