@@ -3,6 +3,7 @@
 from django.contrib import admin
 
 from apps.reporting.models import BaoCaoDaXuat, BaoCaoDaXuatDong
+from config.admin_portal import READONLY_GUIDANCE, GuidanceMixin
 
 
 class BaoCaoDaXuatDongInline(admin.TabularInline):
@@ -28,9 +29,11 @@ class BaoCaoDaXuatDongInline(admin.TabularInline):
 
 
 @admin.register(BaoCaoDaXuat)
-class BaoCaoDaXuatAdmin(admin.ModelAdmin):
+class BaoCaoDaXuatAdmin(GuidanceMixin, admin.ModelAdmin):
     """Reports are inserted by the export views; admin is read-only."""
 
+    guidance = READONLY_GUIDANCE
+    list_per_page = 50
     list_display = (
         "id",
         "ky",
@@ -42,6 +45,7 @@ class BaoCaoDaXuatAdmin(admin.ModelAdmin):
     )
     list_filter = ("dinh_dang", "phong")
     search_fields = ("ky", "nguoi_lap__username", "file")
+    search_help_text = "Tìm theo kỳ, tên đăng nhập người lập hoặc tên tệp."
     date_hierarchy = "ngay_lap"
     ordering = ("-ngay_lap", "-id")
     list_select_related = ("phong", "nguoi_lap")
@@ -59,7 +63,10 @@ class BaoCaoDaXuatAdmin(admin.ModelAdmin):
         return False
 
     def has_change_permission(self, request, obj=None):
-        return True
+        return False
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_staff
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -68,9 +75,13 @@ class BaoCaoDaXuatAdmin(admin.ModelAdmin):
         return self.readonly_fields
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related(
-            "phong",
-            "nguoi_lap",
+        return (
+            super()
+            .get_queryset(request)
+            .select_related(
+                "phong",
+                "nguoi_lap",
+            )
         )
 
     def has_module_permission(self, request):

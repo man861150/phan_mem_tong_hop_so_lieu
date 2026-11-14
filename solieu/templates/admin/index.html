@@ -1,0 +1,96 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block bodyclass %}{{ block.super }} portal-index{% endblock %}
+
+{% block content_title %}{% endblock %}
+{% block content_subtitle %}{% endblock %}
+
+{% block content %}
+  <header class="portal-intro">
+    <h1>Trung tâm điều hành</h1>
+    <p>
+      Chọn nhóm việc bên dưới. Số liệu nghiệp vụ được nhập và duyệt trong ứng dụng chính.
+      Cổng này dùng để cấu hình và tra cứu.
+    </p>
+  </header>
+
+  <section class="portal-kpis" aria-label="Tình hình hệ thống">
+    <article class="portal-card">
+      <h2>Người dùng đang hoạt động</h2>
+      <p class="kpi-value" data-kpi="users-total">{{ portal_kpis.users.total }}</p>
+      <ul class="kpi-roles">
+        <li data-kpi="users-system-admin">Quản trị hệ thống: {{ portal_kpis.users.system_admin }}</li>
+        <li data-kpi="users-center-head">Lãnh đạo Trung tâm: {{ portal_kpis.users.center_head }}</li>
+        <li data-kpi="users-department-head">Lãnh đạo phòng: {{ portal_kpis.users.department_head }}</li>
+        <li data-kpi="users-entry-officer">Cán bộ nhập liệu: {{ portal_kpis.users.entry_officer }}</li>
+      </ul>
+    </article>
+    <article class="portal-card">
+      <h2>Kỳ báo cáo năm {{ portal_kpis.year }}</h2>
+      <p class="kpi-value">
+        <span data-kpi="periods-open">{{ portal_kpis.periods.mo }} đang mở</span>
+      </p>
+      <p class="kpi-meta" data-kpi="periods-locked">{{ portal_kpis.periods.khoa }} đã khóa</p>
+    </article>
+    <article class="portal-card">
+      <h2>Phòng ban đang dùng</h2>
+      <p class="kpi-value" data-kpi="departments">{{ portal_kpis.departments }}</p>
+    </article>
+    <article class="portal-card">
+      <h2>Chỉ tiêu đang dùng</h2>
+      <p class="kpi-value" data-kpi="indicators">{{ portal_kpis.indicators }}</p>
+    </article>
+  </section>
+
+  {% if lockout.count %}
+    <a class="portal-lockout" href="{{ lockout.url }}">
+      Có tài khoản đang bị khóa vì đăng nhập sai.
+      {{ lockout.count }} tên đăng nhập cần mở khóa.
+    </a>
+  {% endif %}
+
+  <nav class="portal-actions" aria-label="Việc thường làm">
+    <a href="{% url 'admin:accounts_user_add' %}">Thêm người dùng mới</a>
+    <a href="{% url 'admin:catalog_kybaocao_changelist' %}">Mở / Khóa kỳ báo cáo</a>
+    <a href="{% url 'admin:catalog_chitieukehoach_changelist' %}">Cập nhật kế hoạch năm</a>
+    <a href="{% url 'admin:activities_donviphoihop_changelist' %}">Gộp đơn vị phối hợp trùng</a>
+    <a href="{% url 'home' %}">Quay về ứng dụng chính</a>
+  </nav>
+
+  {% if app_list %}
+    {% for app in app_list %}
+      <section class="portal-domain" id="{{ app.app_label }}">
+        <header class="portal-domain-head">
+          <h2>{{ app.name }}</h2>
+          {% if app.read_only %}
+            <span class="pill pill-locked">Chỉ xem / Tra cứu đối soát</span>
+          {% endif %}
+        </header>
+        <p class="portal-domain-desc">{{ app.description }}</p>
+        <div class="portal-models">
+          {% for model in app.models %}
+            <article class="portal-card portal-model">
+              <h3>{{ model.name }}</h3>
+              <p class="portal-model-count">{{ model.count }} bản ghi</p>
+              <p class="portal-model-desc">{{ model.description }}</p>
+              <p class="portal-model-actions">
+                {% if model.admin_url %}
+                  <a class="portal-btn" href="{{ model.admin_url }}">Xem danh sách</a>
+                {% endif %}
+                {% if model.add_url %}
+                  <a class="portal-btn portal-btn-primary" href="{{ model.add_url }}">+ Thêm mới</a>
+                {% endif %}
+                {% if model.view_only %}
+                  <span class="pill pill-locked">Chỉ xem</span>
+                {% endif %}
+              </p>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+  {% else %}
+    <p>{% translate "You don’t have permission to view or edit anything." %}</p>
+  {% endif %}
+{% endblock %}

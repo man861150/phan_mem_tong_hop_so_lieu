@@ -3,16 +3,33 @@
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
-from apps.entry.models import HoTroDuAn, LichSuXuLy, PhieuNhapLieu, SoLieu
+from apps.entry.models import (
+    HoTroDuAn,
+    LichSuXuLy,
+    PhieuNhapLieu,
+    SoLieu,
+    TrangThaiPhieu,
+)
+from config.admin_display import pill
+from config.admin_portal import READONLY_GUIDANCE, GuidanceMixin
+
+PHIEU_TONE = {
+    TrangThaiPhieu.NHAP: "draft",
+    TrangThaiPhieu.CHO_DUYET: "waiting",
+    TrangThaiPhieu.DA_DUYET: "confirmed",
+    TrangThaiPhieu.TRA_LAI: "returned",
+}
 
 
-class BusinessReadOnlyAdminMixin:
+class BusinessReadOnlyAdminMixin(GuidanceMixin):
     """Business data is written through the app, never through /admin/.
 
     Do not call ``super()``: ``ModelAdmin`` returns true for superusers, and
     the seeded ``admin`` account is a superuser.  View permission is left to
     ``SimpleHistoryAdmin`` so changelists and history pages stay readable.
     """
+
+    guidance = READONLY_GUIDANCE
 
     def has_add_permission(self, request):
         return False
@@ -31,18 +48,22 @@ class PhieuNhapLieuAdmin(BusinessReadOnlyAdminMixin, SimpleHistoryAdmin):
         "phong",
         "loai_phieu",
         "doi_tuong",
-        "trang_thai",
+        "trang_thai_phieu",
         "la_phieu_bo_sung",
         "nguoi_nhap",
         "ngay_gui",
     )
     list_filter = ("loai_phieu", "trang_thai", "phong", "la_phieu_bo_sung")
+    list_per_page = 50
     search_fields = (
         "phong__ma_phong",
         "phong__ten_phong",
         "nguoi_nhap__username",
         "hoat_dong__ten",
         "du_an__ten_du_an",
+    )
+    search_help_text = (
+        "Tìm theo mã phòng, tên phòng, tên đăng nhập, tên hoạt động hoặc tên dự án."
     )
     autocomplete_fields = ("phong", "hoat_dong", "du_an", "nguoi_nhap")
     date_hierarchy = "ngay_gui"
@@ -72,9 +93,16 @@ class PhieuNhapLieuAdmin(BusinessReadOnlyAdminMixin, SimpleHistoryAdmin):
     def doi_tuong(self, obj):
         return obj.hoat_dong or obj.ky or obj.du_an
 
+    @admin.display(description="Trạng thái", ordering="trang_thai")
+    def trang_thai_phieu(self, obj):
+        return pill(
+            obj.get_trang_thai_display(), PHIEU_TONE.get(obj.trang_thai, "draft")
+        )
+
 
 @admin.register(LichSuXuLy)
-class LichSuXuLyAdmin(admin.ModelAdmin):
+class LichSuXuLyAdmin(GuidanceMixin, admin.ModelAdmin):
+    guidance = READONLY_GUIDANCE
     list_display = (
         "phieu",
         "nguoi_xu_ly",
@@ -89,6 +117,10 @@ class LichSuXuLyAdmin(admin.ModelAdmin):
         "y_kien",
         "=phieu__id",
     )
+    search_help_text = (
+        "Tìm theo tên hoạt động, tên dự án, tên đăng nhập, ý kiến hoặc mã phiếu."
+    )
+    list_per_page = 50
     autocomplete_fields = ("phieu", "nguoi_xu_ly")
     date_hierarchy = "thoi_diem"
     ordering = ("-thoi_diem", "-id")
@@ -128,6 +160,8 @@ class SoLieuAdmin(BusinessReadOnlyAdminMixin, SimpleHistoryAdmin):
         "ghi_chu",
         "=phieu__id",
     )
+    search_help_text = "Tìm theo mã chỉ tiêu, tên chỉ tiêu, ghi chú hoặc mã phiếu."
+    list_per_page = 50
     autocomplete_fields = ("phieu", "chi_tieu", "doi_tuong", "linh_vuc", "nguon")
     ordering = ("phieu", "chi_tieu", "id")
     list_select_related = ("phieu", "chi_tieu", "doi_tuong", "linh_vuc", "nguon")
@@ -165,6 +199,7 @@ class HoTroDuAnAdmin(BusinessReadOnlyAdminMixin, SimpleHistoryAdmin):
     )
     list_filter = ("loai_ho_tro", "du_an__phong", "ngay_ho_tro")
     search_fields = ("du_an__ten_du_an", "noi_dung", "=phieu__id")
+    search_help_text = "Tìm theo tên dự án, nội dung hỗ trợ hoặc mã phiếu."
     autocomplete_fields = ("du_an", "phieu")
     date_hierarchy = "ngay_ho_tro"
     ordering = ("-ngay_ho_tro", "-id")

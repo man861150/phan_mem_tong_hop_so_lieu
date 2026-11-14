@@ -7,9 +7,45 @@ from django.contrib.auth.forms import (
     PasswordChangeForm,
     UserChangeForm,
 )
+from django.contrib.auth.password_validation import (
+    CommonPasswordValidator,
+    MinimumLengthValidator,
+    NumericPasswordValidator,
+    UserAttributeSimilarityValidator,
+    get_default_password_validators,
+)
 
 from apps.accounts.models import User
 from apps.accounts.roles import SCOPED_ROLE_DEPARTMENT_ERROR, SCOPED_ROLES
+
+RULE_ORDER = {"length": 0, "numeric": 1, "common": 2, "similarity": 3}
+
+
+def build_password_rules():
+    """Summarise the configured validators so the UI never invents rules."""
+    rules = []
+    for validator in get_default_password_validators():
+        if isinstance(validator, MinimumLengthValidator):
+            rules.append(
+                {
+                    "key": "length",
+                    "label": f"Ít nhất {validator.min_length} ký tự",
+                    "min_length": validator.min_length,
+                }
+            )
+        elif isinstance(validator, NumericPasswordValidator):
+            rules.append({"key": "numeric", "label": "Không chỉ gồm chữ số"})
+        elif isinstance(validator, CommonPasswordValidator):
+            rules.append({"key": "common", "label": "Không phải mật khẩu phổ biến"})
+        elif isinstance(validator, UserAttributeSimilarityValidator):
+            rules.append(
+                {"key": "similarity", "label": "Không quá giống thông tin cá nhân"}
+            )
+        else:
+            label = validator.get_help_text()
+            if label:
+                rules.append({"key": f"validator-{len(rules)}", "label": label})
+    return sorted(rules, key=lambda rule: RULE_ORDER.get(rule["key"], 99))
 
 
 class DepartmentRequiredMixin:
@@ -96,6 +132,13 @@ class AccountPasswordChangeForm(PasswordChangeForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        rules = build_password_rules()
+        self.password_rules = rules
+        self.password_min_length = next(
+            (rule["min_length"] for rule in rules if rule["key"] == "length"),
+            0,
+        )
+        self.password_has_numeric_rule = any(rule["key"] == "numeric" for rule in rules)
         labels = {
             "old_password": "Mật khẩu hiện tại",
             "new_password1": "Mật khẩu mới",

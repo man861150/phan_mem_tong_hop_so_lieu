@@ -27,8 +27,37 @@ from apps.catalog.models import (
     NguonSoLieu,
     NhomChiTieu,
     PhongBan,
+    TrangThaiKeHoach,
     TrangThaiKy,
 )
+from config.admin_display import pill
+from config.admin_portal import LINH_VUC_GUIDANCE, PERIOD_GUIDANCE, GuidanceMixin
+
+CHITIEU_HELP = {
+    "kieu_ghi_nhan": (
+        "Chọn phiếu nào được dùng để nhập chỉ tiêu này: hoạt động, tháng hoặc dự án."
+    ),
+    "cach_tong_hop": (
+        "Cách cộng các phiếu thành số báo cáo. Tỷ lệ dùng tử số và mẫu số. "
+        "Đếm dùng đối tượng đếm."
+    ),
+    "count_subject": "Chỉ điền khi cách tổng hợp là Đếm.",
+    "chi_tieu_tu_so": (
+        "Chỉ điền khi cách tổng hợp là Tỷ lệ. Cùng phòng với chỉ tiêu này."
+    ),
+    "chi_tieu_mau_so": (
+        "Chỉ điền khi cách tổng hợp là Tỷ lệ. Cùng phòng với chỉ tiêu này."
+    ),
+    "khong_vuot_chi_tieu": "Nếu chọn, giá trị nhập không được vượt chỉ tiêu này.",
+    "phan_loai_doi_tuong": "Bật khi số liệu tách theo đối tượng.",
+    "phan_loai_linh_vuc": "Bật khi số liệu tách theo lĩnh vực.",
+}
+
+
+def _dang_su_dung(obj):
+    if obj.dang_su_dung:
+        return pill("Đang sử dụng", "active")
+    return pill("Ngừng sử dụng", "inactive")
 
 
 class CatalogPermissionMixin:
@@ -69,13 +98,20 @@ class NhomChiTieuInline(admin.TabularInline):
 
 
 @admin.register(PhongBan)
-class PhongBanAdmin(CatalogPermissionMixin, DepartmentScopedAdminMixin, SimpleHistoryAdmin):
+class PhongBanAdmin(
+    CatalogPermissionMixin, DepartmentScopedAdminMixin, SimpleHistoryAdmin
+):
     scope_field = "id"
-    list_display = ("ma_phong", "ten_phong", "dang_su_dung")
+    list_display = ("ma_phong", "ten_phong", "trang_thai_su_dung")
     list_filter = ("dang_su_dung",)
     search_fields = ("ma_phong", "ten_phong")
+    search_help_text = "Tìm theo mã phòng hoặc tên phòng."
     ordering = ("ma_phong",)
     inlines = (NhomChiTieuInline,)
+
+    @admin.display(description="Trạng thái", ordering="dang_su_dung")
+    def trang_thai_su_dung(self, obj):
+        return _dang_su_dung(obj)
 
 
 @admin.register(NhomChiTieu)
@@ -85,6 +121,7 @@ class NhomChiTieuAdmin(
     list_display = ("ten_mang", "phong", "thu_tu")
     list_filter = ("phong",)
     search_fields = ("ten_mang",)
+    search_help_text = "Tìm theo tên mảng."
     ordering = ("thu_tu", "ten_mang")
     list_select_related = ("phong",)
 
@@ -100,12 +137,25 @@ class ChiTieuAdmin(
         "nhom",
         "kieu_ghi_nhan",
         "cach_tong_hop",
-        "dang_su_dung",
+        "trang_thai_su_dung",
     )
     list_filter = ("nhom__phong", "kieu_ghi_nhan", "cach_tong_hop", "dang_su_dung")
     search_fields = ("ma_chi_tieu", "ten_chi_tieu")
+    search_help_text = "Tìm theo mã chỉ tiêu hoặc tên chỉ tiêu."
     ordering = ("ma_chi_tieu",)
     list_select_related = ("nhom", "nhom__phong")
+
+    @admin.display(description="Trạng thái", ordering="dang_su_dung")
+    def trang_thai_su_dung(self, obj):
+        return _dang_su_dung(obj)
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        for name, text in CHITIEU_HELP.items():
+            if name in form.base_fields:
+                form.base_fields[name].help_text = text
+        return form
+
     fieldsets = (
         (
             None,
@@ -123,6 +173,12 @@ class ChiTieuAdmin(
         (
             "Cách ghi nhận",
             {
+                "description": (
+                    "Kiểu ghi nhận chọn cách nhập: theo hoạt động, theo tháng "
+                    "hoặc theo dự án. Cách tổng hợp chọn cách cộng dồn: tổng, "
+                    "đếm, lũy kế, tỷ lệ, trung bình hoặc mới nhất. Chỉ tiêu tỷ lệ "
+                    "cần tử số và mẫu số. Chỉ tiêu đếm cần đối tượng đếm."
+                ),
                 "fields": (
                     "kieu_ghi_nhan",
                     "cach_tong_hop",
@@ -136,7 +192,7 @@ class ChiTieuAdmin(
                     "phan_loai_linh_vuc",
                     "doi_tuong_ap_dung",
                     "nguon_cho_phep",
-                )
+                ),
             },
         ),
         (
@@ -157,14 +213,17 @@ class ChiTieuAdmin(
 class DanhMucDoiTuongAdmin(CatalogPermissionMixin, SimpleHistoryAdmin):
     list_display = ("ten_doi_tuong",)
     search_fields = ("ten_doi_tuong",)
+    search_help_text = "Tìm theo tên đối tượng."
     ordering = ("ten_doi_tuong",)
 
 
 @admin.register(DanhMucLinhVuc)
-class DanhMucLinhVucAdmin(CatalogPermissionMixin, SimpleHistoryAdmin):
+class DanhMucLinhVucAdmin(GuidanceMixin, CatalogPermissionMixin, SimpleHistoryAdmin):
+    guidance = LINH_VUC_GUIDANCE
     list_display = ("he_thong", "ma", "ten", "cap", "cha")
     list_filter = ("he_thong",)
     search_fields = ("ma", "ten")
+    search_help_text = "Tìm theo mã hoặc tên lĩnh vực."
     ordering = ("he_thong", "ma")
     list_select_related = ("cha",)
     change_list_template = "admin/catalog/danhmuc_linh_vuc/change_list.html"
@@ -197,18 +256,16 @@ class DanhMucLinhVucAdmin(CatalogPermissionMixin, SimpleHistoryAdmin):
                     "Đã nạp fixtures/linh_vuc.csv: "
                     f"tạo mới {counts['created']}, "
                     f"cập nhật {counts['updated']}, "
-                    f"giữ nguyên {counts['unchanged']}. "
-                    + CONFIRMATION,
+                    f"giữ nguyên {counts['unchanged']}. " + CONFIRMATION,
                 )
-        return HttpResponseRedirect(
-            reverse("admin:catalog_danhmuclinhvuc_changelist")
-        )
+        return HttpResponseRedirect(reverse("admin:catalog_danhmuclinhvuc_changelist"))
 
 
 @admin.register(NguonSoLieu)
 class NguonSoLieuAdmin(CatalogPermissionMixin, SimpleHistoryAdmin):
     list_display = ("ten_nguon",)
     search_fields = ("ten_nguon",)
+    search_help_text = "Tìm theo tên nguồn."
     ordering = ("ten_nguon",)
 
 
@@ -241,6 +298,7 @@ class LoaiHoatDongAdmin(
     list_display = ("ten_loai", "phong", "co_ke_hoach_so_luong")
     list_filter = ("phong", "co_ke_hoach_so_luong")
     search_fields = ("ten_loai",)
+    search_help_text = "Tìm theo tên loại hoạt động."
     ordering = ("ten_loai",)
     list_select_related = ("phong",)
     inlines = (BieuMauChiTieuInline,)
@@ -253,6 +311,12 @@ class BieuMauChiTieuAdmin(
     scope_field = "loai_hoat_dong__phong_id"
     list_display = ("loai_hoat_dong", "chi_tieu", "bat_buoc", "thu_tu")
     list_filter = ("loai_hoat_dong__phong", "bat_buoc")
+    search_fields = (
+        "loai_hoat_dong__ten_loai",
+        "chi_tieu__ma_chi_tieu",
+        "chi_tieu__ten_chi_tieu",
+    )
+    search_help_text = "Tìm theo tên loại hoạt động, mã chỉ tiêu hoặc tên chỉ tiêu."
     ordering = ("thu_tu", "id")
     list_select_related = ("loai_hoat_dong", "chi_tieu")
 
@@ -262,11 +326,24 @@ class ChiTieuKeHoachAdmin(
     CatalogPermissionMixin, DepartmentScopedAdminMixin, SimpleHistoryAdmin
 ):
     scope_field = "chi_tieu__nhom__phong_id"
-    list_display = ("chi_tieu", "nam", "gia_tri_ke_hoach", "doi_tuong", "trang_thai")
+    list_display = (
+        "chi_tieu",
+        "nam",
+        "gia_tri_ke_hoach",
+        "doi_tuong",
+        "trang_thai_ke_hoach",
+    )
     list_filter = ("nam", "trang_thai", "chi_tieu__nhom__phong")
     search_fields = ("chi_tieu__ma_chi_tieu", "chi_tieu__ten_chi_tieu", "ly_do")
+    search_help_text = "Tìm theo mã chỉ tiêu, tên chỉ tiêu hoặc lý do."
     ordering = ("-nam", "chi_tieu")
     list_select_related = ("chi_tieu", "doi_tuong")
+
+    @admin.display(description="Trạng thái", ordering="trang_thai")
+    def trang_thai_ke_hoach(self, obj):
+        if obj.trang_thai == TrangThaiKeHoach.DA_XAC_NHAN:
+            return pill("Đã xác nhận", "confirmed")
+        return pill("Dự thảo", "draft")
 
     def save_model(self, request, obj, form, change):
         if (obj.ly_do or "").strip():
@@ -275,12 +352,29 @@ class ChiTieuKeHoachAdmin(
 
 
 @admin.register(KyBaoCao)
-class KyBaoCaoAdmin(CatalogPermissionMixin, SimpleHistoryAdmin):
+class KyBaoCaoAdmin(GuidanceMixin, CatalogPermissionMixin, SimpleHistoryAdmin):
+    guidance = PERIOD_GUIDANCE
     permission_action = "manage_periods"
-    list_display = ("nam", "so_ky", "tu_ngay", "den_ngay", "trang_thai", "loai_ky")
+    list_display = ("nam", "so_ky", "tu_ngay", "den_ngay", "trang_thai_ky", "loai_ky")
     list_filter = ("nam", "trang_thai")
+    search_fields = ("nam",)
+    search_help_text = "Nhập năm, ví dụ 2026."
     ordering = ("-nam", "-so_ky")
     actions = ("mo_ky", "khoa_ky")
+
+    @admin.display(description="Trạng thái", ordering="trang_thai")
+    def trang_thai_ky(self, obj):
+        if obj.trang_thai == TrangThaiKy.MO:
+            return pill("Đang mở", "open")
+        return pill("Đã khóa", "locked")
+
+    def get_search_results(self, request, queryset, search_term):
+        term = (search_term or "").strip()
+        if not term:
+            return queryset, False
+        if term.isdigit():
+            return queryset.filter(nam=int(term)), False
+        return queryset.none(), False
 
     @admin.action(description="Mở kỳ")
     def mo_ky(self, request, queryset):

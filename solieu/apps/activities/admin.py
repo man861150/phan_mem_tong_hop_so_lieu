@@ -12,6 +12,7 @@ from apps.activities.models import (
 )
 from apps.catalog.admin import CatalogPermissionMixin
 from apps.entry.admin import BusinessReadOnlyAdminMixin
+from config.admin_portal import DON_VI_GUIDANCE, GuidanceMixin
 
 
 class DonViPhoiHopForm(forms.ModelForm):
@@ -90,11 +91,14 @@ def gop_don_vi_trung(modeladmin, request, queryset):
 
 
 @admin.register(DonViPhoiHop)
-class DonViPhoiHopAdmin(CatalogPermissionMixin, SimpleHistoryAdmin):
+class DonViPhoiHopAdmin(GuidanceMixin, CatalogPermissionMixin, SimpleHistoryAdmin):
+    guidance = DON_VI_GUIDANCE
     form = DonViPhoiHopForm
     list_display = ("ten_don_vi", "doi_tuong")
     list_filter = ("doi_tuong",)
+    list_select_related = ("doi_tuong",)
     search_fields = ("ten_don_vi",)
+    search_help_text = "Tìm theo tên đơn vị phối hợp."
     ordering = ("ten_don_vi", "id")
     actions = (gop_don_vi_trung,)
 
@@ -132,6 +136,9 @@ class HoatDongAdmin(BusinessReadOnlyAdminMixin, SimpleHistoryAdmin):
         "loai_hoat_dong",
     )
     search_fields = ("ten", "dia_diem")
+    search_help_text = "Tìm theo tên hoạt động hoặc địa điểm."
+    list_per_page = 50
+    list_select_related = ("loai_hoat_dong",)
     date_hierarchy = "tu_ngay"
     filter_horizontal = ("doi_tuong_huong_toi",)
     inlines = (HoatDongDonViInline,)
@@ -143,4 +150,6 @@ class DuAnAdmin(BusinessReadOnlyAdminMixin, SimpleHistoryAdmin):
     list_display = ("ten_du_an", "phong", "chuong_trinh", "hinh_thuc", "nam")
     list_filter = ("phong", "chuong_trinh", "hinh_thuc", "nam")
     search_fields = ("ten_du_an",)
+    search_help_text = "Tìm theo tên dự án."
+    list_select_related = ("phong",)
     ordering = ("-nam", "ten_du_an", "id")

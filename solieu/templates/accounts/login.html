@@ -1,47 +1,133 @@
 {% extends "base.html" %}
+{% load static %}
 
+{% block body_class %}auth-page{% endblock %}
 {% block title %}Đăng nhập — Tổng hợp số liệu{% endblock %}
 
 {% block content %}
-  <div class="grid grid-cols-12">
-    <div class="col-span-12 md:col-span-6 md:col-start-4 lg:col-span-4 lg:col-start-5">
-      <div class="card">
-        <div class="card-body">
-          <h2 class="card-title mb-3">Đăng nhập</h2>
-          <form method="post" novalidate>
-            {% csrf_token %}
-            {% if form.non_field_errors %}
-              <div class="alert alert-danger" role="alert">
-                {{ form.non_field_errors }}
-              </div>
-            {% endif %}
-            <div class="mb-3">
-              <label class="form-label" for="{{ form.username.id_for_label }}">Tên đăng nhập</label>
+  <div class="auth-layout">
+    <section class="auth-brand">
+      <div class="auth-brand-lockup">
+        <span class="auth-logo">
+          <img src="{% static 'img/sihub-logo.png' %}" alt="SIHUB" width="724" height="214">
+        </span>
+        <span class="auth-brand-divider" aria-hidden="true"></span>
+        <p class="auth-org">Trung tâm Khởi nghiệp sáng tạo Thành phố Hồ Chí Minh</p>
+      </div>
+
+      <div class="auth-brand-body">
+        <p class="auth-kicker">Nền tảng dữ liệu đổi mới sáng tạo</p>
+        <p class="auth-statement">
+          Kết nối dữ liệu.
+          <span class="auth-statement-accent">Kiến tạo tương lai.</span>
+        </p>
+        <p class="auth-lead">Hệ thống tổng hợp số liệu và báo cáo hoạt động dành cho hệ sinh thái khởi nghiệp sáng tạo Thành phố Hồ Chí Minh.</p>
+      </div>
+    </section>
+
+    <section class="auth-form-panel" aria-labelledby="login-title">
+      <div class="auth-form-wrap">
+        <header class="auth-form-header">
+          <span class="auth-form-icon" aria-hidden="true">
+            <svg class="size-5"><use href="#icon-shield"></use></svg>
+          </span>
+          <p class="eyebrow auth-eyebrow">Xin chào!</p>
+          <h1 class="auth-title" id="login-title">Chào mừng trở lại</h1>
+          <p class="auth-subtitle">Đăng nhập để tiếp tục truy cập hệ thống.</p>
+        </header>
+
+        <form class="auth-form" method="post" novalidate>
+          {% csrf_token %}
+          {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="auth-field">
+            <label class="form-label" for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+            <div class="auth-control">
+              <span class="auth-control-icon" aria-hidden="true">
+                <svg class="size-5"><use href="#icon-user"></use></svg>
+              </span>
               <input
                 class="form-control"
                 type="text"
                 name="username"
                 id="{{ form.username.id_for_label }}"
+                value="{{ form.username.value|default:'' }}"
+                placeholder="Nhập tên đăng nhập"
                 autocomplete="username"
                 autofocus
                 required
+                {% if form.username.errors %}aria-invalid="true" aria-describedby="username-errors"{% endif %}
               >
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="{{ form.password.id_for_label }}">Mật khẩu</label>
+            {% if form.username.errors %}
+              <div id="username-errors">
+                {% for error in form.username.errors %}
+                  <p class="form-error" role="alert">{{ error }}</p>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="auth-field auth-field--password">
+            <label class="form-label" for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+            <div class="auth-control" x-data="{ reveal: false }">
+              <span class="auth-control-icon" aria-hidden="true">
+                <svg class="size-5"><use href="#icon-lock"></use></svg>
+              </span>
               <input
                 class="form-control"
                 type="password"
                 name="password"
                 id="{{ form.password.id_for_label }}"
+                placeholder="Nhập mật khẩu"
                 autocomplete="current-password"
                 required
+                :type="reveal ? 'text' : 'password'"
+                {% if form.password.errors %}aria-invalid="true" aria-describedby="password-errors"{% endif %}
               >
+              <button
+                class="auth-reveal"
+                type="button"
+                x-cloak
+                @click="reveal = !reveal"
+                :aria-pressed="reveal ? 'true' : 'false'"
+                :aria-label="reveal ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
+                aria-controls="{{ form.password.id_for_label }}"
+              >
+                <svg class="size-5" aria-hidden="true"><use :href="reveal ? '#icon-eye-off' : '#icon-eye'"></use></svg>
+              </button>
             </div>
-            <button class="btn btn-primary w-full" type="submit">Đăng nhập</button>
-          </form>
-        </div>
+            {% if form.password.errors %}
+              <div id="password-errors">
+                {% for error in form.password.errors %}
+                  <p class="form-error" role="alert">{{ error }}</p>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <button class="btn btn-primary auth-submit" type="submit">
+            Đăng nhập
+            <svg class="size-4" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+          </button>
+        </form>
+
+        <p class="auth-support">Cần hỗ trợ? <strong>Liên hệ quản trị hệ thống.</strong></p>
       </div>
-    </div>
+    </section>
+
+    <footer class="auth-footer">
+      <p class="auth-address">
+        <span class="auth-address-icon" aria-hidden="true">
+          <svg class="size-4"><use href="#icon-pin"></use></svg>
+        </span>
+        <span>123 Đường Trương Định, Phường Xuân Hòa, Thành phố Hồ Chí Minh</span>
+      </p>
+      <p class="auth-legal">© {% now "Y" %} Trung tâm Khởi nghiệp sáng tạo TP.HCM</p>
+    </footer>
   </div>
 {% endblock %}

@@ -135,6 +135,9 @@ AXES_PERMALOCK_MESSAGE = (
     "Tài khoản bị khóa vì đăng nhập sai quá nhiều lần. "
     "Liên hệ quản trị hệ thống để mở khóa."
 )
+# The portal registers one Vietnamese AccessAttempt screen. The stock axes
+# admins (attempts, logs, failure logs) stay off the index.
+AXES_ENABLE_ADMIN = False
 
 # HistoryRequestMiddleware records the signed-in user on each history row.
 # A text field keeps Vietnamese change reasons from being truncated.

@@ -1,0 +1,39 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title }}{% endblock %}
+
+{% block dark-mode-vars %}{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+  <link rel="stylesheet" href="{% static 'css/admin_portal.css' %}">
+{% endblock %}
+
+{% block branding %}
+  <div id="site-name"><a href="{% url 'admin:index' %}">{{ site_header }}</a></div>
+{% endblock %}
+
+{% block welcome-msg %}
+  <span class="portal-user">
+    <strong>{{ portal_full_name|default:user.get_username }}</strong>
+    {% if portal_role_label %}
+      <span class="pill pill-{{ portal_role_tone }}">{{ portal_role_label }}</span>
+    {% endif %}
+  </span>
+{% endblock %}
+
+{% block userlinks %}
+  <a class="portal-back" href="{% url 'home' %}">← Về trang chính</a>
+  <a href="{% url 'accounts:profile' %}">Hồ sơ</a>
+  {% if user.has_usable_password %}
+    <a href="{% url 'admin:password_change' %}">Đổi mật khẩu</a>
+  {% endif %}
+  <form id="logout-form" method="post" action="{% url 'admin:logout' %}">
+    {% csrf_token %}
+    <button type="submit">Đăng xuất</button>
+  </form>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

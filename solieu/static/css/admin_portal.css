@@ -1,0 +1,292 @@
+/* Administration portal. Overrides Django admin tokens to match the main app. */
+
+html[data-theme="light"],
+html[data-theme="dark"],
+:root {
+  --primary: #1b6f56;
+  --secondary: #155e48;
+  --accent: #f0b95d;
+  --primary-fg: #fff;
+
+  --body-fg: #14221d;
+  --body-bg: #f4f7f5;
+  --body-quiet-color: #5c6d66;
+  --body-medium-color: #3d5149;
+  --body-loud-color: #14221d;
+
+  --header-color: #e7f3ee;
+  --header-branding-color: #f0b95d;
+  --header-bg: #103c31;
+  --header-link-color: #fff;
+
+  --breadcrumbs-fg: #d5ebe3;
+  --breadcrumbs-link-fg: #fff;
+  --breadcrumbs-bg: #155e48;
+
+  --link-fg: #1b6f56;
+  --link-hover-color: #155e48;
+  --link-selected-fg: #155e48;
+
+  --hairline-color: #e3e9e6;
+  --border-color: #dce6e1;
+
+  --button-fg: #fff;
+  --button-bg: #1b6f56;
+  --button-hover-bg: #155e48;
+  --default-button-bg: #103c31;
+  --default-button-hover-bg: #155e48;
+
+  --darkened-bg: #f4f7f5;
+  --selected-bg: #eaf6f1;
+  --selected-row: #eaf6f1;
+
+  --message-success-bg: #eaf6f1;
+  --message-warning-bg: #fff1e8;
+  --message-error-bg: #fef2f2;
+
+  --font-family-primary: "Manrope", ui-sans-serif, system-ui, sans-serif;
+}
+
+#header {
+  align-items: center;
+  gap: 12px 20px;
+  padding: 12px 20px;
+}
+
+#site-name a {
+  font-weight: 700;
+}
+
+#user-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  font-size: 0.875rem;
+}
+
+#user-tools a,
+#user-tools button {
+  color: #fff;
+}
+
+#user-tools form {
+  display: inline;
+  margin: 0;
+}
+
+.portal-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.portal-back {
+  background: #f0b95d;
+  color: #173e34 !important;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+  text-decoration: none;
+}
+
+.portal-back:hover {
+  background: #e2aa4b;
+}
+
+.theme-toggle {
+  display: none;
+}
+
+.pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+
+.pill-open,
+.pill-active,
+.pill-confirmed,
+.pill-role-admin {
+  background: #eaf6f1;
+  color: #155e48;
+}
+
+.pill-locked,
+.pill-returned {
+  background: #fff1e8;
+  color: #af5c2f;
+}
+
+.pill-inactive,
+.pill-draft,
+.pill-role-entry {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.pill-waiting,
+.pill-role-center {
+  background: #f0f9ff;
+  color: #0369a1;
+}
+
+.pill-role-head {
+  background: #fff7e8;
+  color: #ae7730;
+}
+
+.portal-intro h1 {
+  margin: 0 0 6px;
+  font-size: 1.6rem;
+  color: #14221d;
+}
+
+.portal-intro p,
+.portal-domain-desc,
+.portal-model-desc {
+  margin: 0;
+  color: #5c6d66;
+}
+
+.portal-kpis,
+.portal-models {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.portal-kpis {
+  margin: 16px 0;
+}
+
+.portal-models {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.portal-card {
+  background: #fff;
+  border: 1px solid #e3e9e6;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 2px rgb(16 60 49 / 0.04), 0 3px 12px rgb(25 54 43 / 0.035);
+}
+
+.portal-card h2,
+.portal-card h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  color: #14221d;
+}
+
+.kpi-value {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: #103c31;
+}
+
+.kpi-meta,
+.kpi-roles {
+  margin: 8px 0 0;
+  color: #5c6d66;
+  font-size: 0.9rem;
+}
+
+.kpi-roles {
+  padding: 0;
+  list-style: none;
+}
+
+.portal-lockout {
+  display: block;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fff1e8;
+  border: 1px solid #fcd34d;
+  color: #af5c2f;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.portal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 20px;
+}
+
+.portal-actions a,
+.portal-btn {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #dce6e1;
+  color: #155e48;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.portal-actions a:hover,
+.portal-btn:hover,
+.portal-btn-primary {
+  background: #1b6f56;
+  border-color: #1b6f56;
+  color: #fff;
+}
+
+.portal-domain {
+  margin: 0 0 22px;
+}
+
+.portal-domain-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 4px;
+}
+
+.portal-domain-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.portal-model-count {
+  margin: 0 0 6px;
+  font-weight: 700;
+  color: #103c31;
+}
+
+.portal-model-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+}
+
+.portal-callout {
+  background: #f4f9fc;
+  border: 1px solid #d8e9f1;
+  color: #14221d;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 0 0 12px;
+}
+
+#nav-sidebar .module caption,
+#nav-sidebar .module th {
+  white-space: normal;
+  line-height: 1.35;
+}
+
+#changelist .pill {
+  vertical-align: middle;
+}

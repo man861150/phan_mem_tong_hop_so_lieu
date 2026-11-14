@@ -3,11 +3,10 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from config.admin_portal import install
 from config.views import home
 
-admin.site.site_header = "Quản trị tổng hợp số liệu"
-admin.site.site_title = "Tổng hợp số liệu"
-admin.site.index_title = "Danh mục hệ thống"
+install()
 
 urlpatterns = [
     path("", home, name="home"),

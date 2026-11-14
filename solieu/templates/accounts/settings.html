@@ -1,17 +1,32 @@
 {% extends "base.html" %}
 
-{% block title %}Cài đặt — Tổng hợp số liệu{% endblock %}
+{% block title %}Bảo mật tài khoản — Tổng hợp số liệu{% endblock %}
 
 {% block content %}
-  <div class="page-header d-print-none">
-    <div class="grid grid-cols-12 items-center">
-      <div class="col-span-12">
-        <p class="eyebrow">Tài khoản</p>
-        <h1 class="page-title">Cài đặt</h1>
-        <div class="text-slate-500">Quản lý mật khẩu đăng nhập của bạn.</div>
+  <header class="account-page-header d-print-none">
+    <div class="account-page-heading">
+      <p class="eyebrow account-eyebrow">Tài khoản</p>
+      <h1 class="page-title account-page-title">Bảo mật tài khoản</h1>
+    </div>
+
+    <div class="account-status">
+      <span class="account-status-icon" aria-hidden="true">
+        <svg class="size-5"><use href="#icon-shield"></use></svg>
+      </span>
+      <div class="account-status-copy">
+        <p class="account-status-title">
+          {% if user.has_usable_password %}Tài khoản được bảo vệ{% else %}Tài khoản chưa có mật khẩu{% endif %}
+        </p>
+        <p class="account-status-meta">
+          {% if user.last_login %}
+            Đăng nhập gần nhất: {{ user.last_login|date:"H:i, d/m/Y" }}
+          {% else %}
+            Chưa ghi nhận lần đăng nhập
+          {% endif %}
+        </p>
       </div>
     </div>
-  </div>
+  </header>
 
   {% if messages %}
     {% for message in messages %}
@@ -19,55 +34,108 @@
     {% endfor %}
   {% endif %}
 
-  <div class="grid grid-cols-12 gap-4">
-    <div class="col-span-12 lg:col-span-8">
-      <section class="card">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">Đổi mật khẩu</h2>
-            <p class="card-subtitle">Nhập mật khẩu hiện tại và mật khẩu mới.</p>
-          </div>
+  <div class="account-security-layout">
+    <section class="card" aria-labelledby="password-title">
+      <div class="card-header account-card-header">
+        <span class="account-card-icon" aria-hidden="true">
+          <svg class="size-5"><use href="#icon-lock"></use></svg>
+        </span>
+        <div class="account-card-heading">
+          <h2 class="card-title" id="password-title">Đổi mật khẩu</h2>
+          <p class="card-subtitle">Mật khẩu mới sẽ thay thế mật khẩu hiện tại.</p>
         </div>
+      </div>
 
-        <form class="account-form" method="post" novalidate>
-          {% csrf_token %}
-          <div class="card-body">
-            {% if form.non_field_errors %}
-              <div class="alert alert-danger" role="alert">
-                {% for error in form.non_field_errors %}<p class="form-alert-line">{{ error }}</p>{% endfor %}
-              </div>
-            {% endif %}
-
-            <div class="account-form-grid account-form-grid--single">
-              {% include "accounts/_form_field.html" with field=form.old_password %}
-              {% include "accounts/_form_field.html" with field=form.new_password1 %}
-              {% include "accounts/_form_field.html" with field=form.new_password2 %}
-            </div>
-          </div>
-
-          <div class="card-footer account-form-actions">
-            <a class="btn btn-outline-secondary" href="{% url 'accounts:profile' %}">Quay lại thông tin tài khoản</a>
-            <button class="btn btn-primary" type="submit">Cập nhật mật khẩu</button>
-          </div>
-        </form>
-      </section>
-    </div>
-
-    <div class="col-span-12 lg:col-span-4">
-      <section class="card">
-        <div class="card-header">
-          <h2 class="card-title">Bảo mật</h2>
-        </div>
+      <form class="account-form" method="post" novalidate>
+        {% csrf_token %}
         <div class="card-body">
-          <p class="account-note">
-            Sau khi đổi mật khẩu, các phiên đăng nhập khác của tài khoản sẽ kết thúc.
-          </p>
-          <p class="account-note">
-            Nếu bạn quên mật khẩu hiện tại, hãy liên hệ quản trị hệ thống để được hỗ trợ.
-          </p>
-          <a class="btn btn-outline-secondary w-full" href="{% url 'accounts:profile' %}">Thông tin tài khoản</a>
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+              {% for error in form.non_field_errors %}<p class="form-alert-line">{{ error }}</p>{% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="account-form-grid">
+            {% include "accounts/_form_field.html" with field=form.old_password reveal_label="mật khẩu hiện tại" %}
+
+            <div class="account-password-group"
+                 x-data="{
+                   password: '',
+                   minLength: {{ form.password_min_length }},
+                   hasNumeric: {{ form.password_has_numeric_rule|yesno:"true,false" }},
+                   get lengthOk() { return this.password.length >= this.minLength; },
+                   get numericOk() { return this.password.length > 0 ? /\D/.test(this.password) : false; },
+                   get strength() {
+                     if (!this.password) return 0;
+                     const checks = [];
+                     if (this.minLength > 0) checks.push(this.lengthOk);
+                     if (this.hasNumeric) checks.push(this.numericOk);
+                     const passed = checks.filter(Boolean).length;
+                     return Math.max(1, Math.ceil((passed / (checks.length || 1)) * 3));
+                   },
+                   get strengthLabel() {
+                     if (!this.password) return 'Chưa nhập';
+                     if (this.strength === 3) return 'Tốt';
+                     if (this.strength === 2) return 'Trung bình';
+                     return 'Yếu';
+                   }
+                 }"
+                 @input="if ($event.target.id === '{{ form.new_password1.id_for_label }}') password = $event.target.value">
+              {% include "accounts/_form_field.html" with field=form.new_password1 hide_help=1 reveal_label="mật khẩu mới" %}
+
+              <div class="account-strength" x-cloak>
+                <div class="account-strength-head">
+                  <p class="account-strength-label">Độ mạnh mật khẩu <span>(ước lượng)</span></p>
+                  <p class="account-strength-value" aria-live="polite" x-text="strengthLabel">Chưa nhập</p>
+                </div>
+                <div class="account-strength-track" aria-hidden="true">
+                  <span class="account-strength-segment" :class="{ 'is-filled': strength >= 1 }"></span>
+                  <span class="account-strength-segment" :class="{ 'is-filled': strength >= 2 }"></span>
+                  <span class="account-strength-segment" :class="{ 'is-filled': strength >= 3 }"></span>
+                </div>
+              </div>
+
+              <ul class="account-rules" id="{{ form.new_password1.auto_id }}_helptext">
+                {% for rule in form.password_rules %}
+                  <li class="account-rule">{{ rule.label }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+
+            {% include "accounts/_form_field.html" with field=form.new_password2 reveal_label="mật khẩu nhập lại" %}
+          </div>
         </div>
-      </section>
-    </div>
+
+        <div class="card-footer account-form-actions">
+          <button class="btn btn-primary" type="submit">Cập nhật mật khẩu</button>
+        </div>
+      </form>
+    </section>
+
+    <aside class="card" aria-labelledby="account-security-title">
+      <div class="card-body account-security-body">
+        <div class="account-security-motif" aria-hidden="true">
+          <span class="account-security-icon">
+            <svg class="size-6"><use href="#icon-shield"></use></svg>
+          </span>
+        </div>
+
+        <p class="eyebrow account-security-eyebrow">Bảo mật</p>
+        <h2 class="account-security-title" id="account-security-title">Phiên đăng nhập</h2>
+        <p class="account-security-text">Sau khi đổi mật khẩu, các phiên đăng nhập khác của tài khoản sẽ tự động kết thúc.</p>
+
+        <div class="account-recovery">
+          <span class="account-recovery-icon" aria-hidden="true">
+            <svg class="size-5"><use href="#icon-mail"></use></svg>
+          </span>
+          <p>Nếu bạn quên mật khẩu hiện tại, hãy liên hệ quản trị hệ thống để được hỗ trợ.</p>
+        </div>
+
+        <a class="account-security-link" href="{% url 'accounts:profile' %}">
+          <span>Thông tin tài khoản</span>
+          <svg class="size-4" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+        </a>
+      </div>
+    </aside>
   </div>
 {% endblock %}

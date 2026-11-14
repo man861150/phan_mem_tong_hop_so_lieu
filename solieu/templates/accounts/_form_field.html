@@ -2,7 +2,27 @@
   <label class="form-label" for="{{ field.id_for_label }}">
     {{ field.label }}{% if field.field.required %}<span class="required-mark" aria-hidden="true">*</span><span class="sr-only"> (bắt buộc)</span>{% endif %}
   </label>
-  {{ field }}
-  {% if field.help_text %}<div class="form-hint">{{ field.help_text|safe }}</div>{% endif %}
+  {% if field.field.widget.input_type == "password" %}
+    {% firstof reveal_label field.label as reveal_name %}
+    <div class="account-control" x-data="{ reveal: false }">
+      {{ field }}
+      <button
+        class="account-reveal"
+        type="button"
+        x-cloak
+        aria-pressed="false"
+        aria-label="Hiện {{ reveal_name }}"
+        @click="const input = $el.closest('.account-control').querySelector('input'); const show = input.type === 'password'; input.type = show ? 'text' : 'password'; reveal = show"
+        :aria-pressed="reveal ? 'true' : 'false'"
+        :aria-label="reveal ? 'Ẩn {{ reveal_name|escapejs }}' : 'Hiện {{ reveal_name|escapejs }}'"
+        aria-controls="{{ field.id_for_label }}"
+      >
+        <svg class="size-5" aria-hidden="true"><use :href="reveal ? '#icon-eye-off' : '#icon-eye'"></use></svg>
+      </button>
+    </div>
+  {% else %}
+    {{ field }}
+  {% endif %}
+  {% if field.help_text and not hide_help %}<div class="form-hint" id="{{ field.auto_id }}_helptext">{{ field.help_text|safe }}</div>{% endif %}
   {% for error in field.errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
 </div>
