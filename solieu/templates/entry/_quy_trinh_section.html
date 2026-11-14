@@ -1,0 +1,82 @@
+<section class="card guide-flow"
+         x-data="{ open: true }"
+         aria-labelledby="guide-{{ workflow.key }}-title"
+         aria-describedby="guide-{{ workflow.key }}-help">
+  <div class="card-body guide-flow-card">
+    <div class="guide-flow-head">
+      <h2 class="guide-flow-title"
+          id="guide-{{ workflow.key }}-title"
+          title="{{ workflow.explanation }}">{{ workflow.title }}</h2>
+      {% if workflow.status_badge %}
+        <span class="guide-flow-badge guide-flow-badge--waiting">{{ workflow.status_badge }}</span>
+      {% else %}
+        <span class="guide-flow-badge">{{ workflow.step_badge }}</span>
+      {% endif %}
+    </div>
+    <p class="sr-only" id="guide-{{ workflow.key }}-help">{{ workflow.explanation }}</p>
+
+    <div class="guide-flow-collapsible" id="guide-{{ workflow.key }}-body" x-show="open">
+      {% include "entry/_quy_trinh_stepper.html" with workflow=workflow %}
+
+      {% if workflow.primary_url %}
+        <div class="guide-priority">
+          <span class="guide-priority-icon" aria-hidden="true">
+            <svg class="size-5"><use href="#icon-arrow-right"></use></svg>
+          </span>
+          <div class="guide-priority-copy">
+            <span class="sr-only">Việc cần làm trước</span>
+            <strong>{{ workflow.primary_title }}</strong>
+          </div>
+          <a class="btn btn-primary guide-cta" href="{{ workflow.primary_url }}">
+            {{ workflow.primary_label }}
+            <svg class="size-4" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+          </a>
+        </div>
+      {% endif %}
+
+      {% if workflow.blocked_message %}
+        <p class="guide-blocked" role="status">{{ workflow.blocked_message }}</p>
+      {% endif %}
+
+      {% if workflow.items %}
+        <ul class="guide-work">
+          {% for item in workflow.items %}
+            {% include "entry/_quy_trinh_task.html" with item=item %}
+          {% endfor %}
+        </ul>
+      {% elif workflow.empty_message %}
+        <div class="guide-empty">
+          <span class="guide-empty-icon" aria-hidden="true">
+            <svg class="size-5"><use href="#icon-check"></use></svg>
+          </span>
+          <div>
+            <span>{{ workflow.empty_message }}</span>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <footer class="guide-flow-footer">
+      <p class="guide-flow-count">
+        {% if workflow.hidden_count %}Còn {{ workflow.hidden_count }} việc khác.{% endif %}
+        <a href="{{ workflow.completed_url }}">{{ workflow.completed_label }}</a>
+      </p>
+      {% if workflow.items|length > 4 or workflow.hidden_count %}
+        <button type="button"
+                class="guide-collapse"
+                aria-expanded="true"
+                aria-controls="guide-{{ workflow.key }}-body"
+                aria-label="Thu gọn"
+                title="Thu gọn"
+                @click="open = !open"
+                :aria-expanded="open.toString()"
+                :aria-label="open ? 'Thu gọn' : 'Mở rộng'"
+                :title="open ? 'Thu gọn' : 'Mở rộng'">
+          <svg class="guide-collapse-icon" :class="{ 'is-collapsed': !open }" aria-hidden="true">
+            <use href="#icon-chevron-down"></use>
+          </svg>
+        </button>
+      {% endif %}
+    </footer>
+  </div>
+</section>

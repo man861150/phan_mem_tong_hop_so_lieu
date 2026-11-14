@@ -1,0 +1,34 @@
+<li class="guide-task"{% if item.state != "blocked" %} title="{{ item.explanation }}"{% endif %}>
+  <span class="guide-task-icon guide-task-icon--{{ item.state }}" aria-hidden="true">
+    <svg class="size-5">
+      <use href="{% if item.state == 'blocked' %}#icon-clock{% else %}#icon-file{% endif %}"></use>
+    </svg>
+  </span>
+
+  <div class="guide-task-copy">
+    <h3>{{ item.title }}</h3>
+    <p class="guide-task-meta">{{ item.meta }}</p>
+    {% if item.state == "blocked" %}
+      <p class="guide-task-note">{{ item.explanation }}</p>
+    {% else %}
+      <span class="sr-only">{{ item.explanation }}</span>
+    {% endif %}
+    {% if item.comment %}
+      <p class="guide-task-comment"><strong>Ý kiến trả lại:</strong> {{ item.comment }}</p>
+    {% endif %}
+  </div>
+
+  <div class="guide-task-side">
+    <span class="guide-pill guide-pill--{{ item.state }}">
+      <span class="guide-pill-dot" aria-hidden="true"></span>
+      {{ item.state_pill_label }}
+    </span>
+    {% if item.action_url %}
+      <a class="btn {% if item.state == 'blocked' %}btn-outline-secondary{% else %}btn-primary{% endif %} guide-cta"
+         href="{{ item.action_url }}">
+        {{ item.action_label }}
+        <svg class="size-4" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+      </a>
+    {% endif %}
+  </div>
+</li>

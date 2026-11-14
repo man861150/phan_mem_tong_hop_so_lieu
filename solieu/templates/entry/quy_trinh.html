@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Quy trình công việc — Tổng hợp số liệu{% endblock %}
+
+{% block topbar_breadcrumb %}
+  <div class="topbar-breadcrumb">
+    <strong class="topbar-breadcrumb-title">Trung tâm Khởi nghiệp sáng tạo</strong>
+  </div>
+{% endblock %}
+
+{% block topbar_actions %}
+  <a class="topbar-icon"
+     href="{% url 'activities:hoat_dong_list' %}"
+     aria-label="Tìm kiếm hoạt động"
+     title="Tìm kiếm hoạt động">
+    <svg class="size-5" aria-hidden="true"><use href="#icon-search"></use></svg>
+  </a>
+{% endblock %}
+
+{% block content %}
+  <header class="guide-page-header">
+    <div class="guide-page-heading">
+      <h1 class="guide-page-title">Quy trình công việc</h1>
+    </div>
+
+    <div class="guide-summary" aria-label="Tóm tắt hồ sơ">
+      <div class="guide-summary-item">
+        <span class="guide-summary-label">Đang xử lý</span>
+        <strong class="guide-summary-value">{{ summary.in_progress|stringformat:"02d" }}</strong>
+      </div>
+      <div class="guide-summary-item">
+        <span class="guide-summary-label">Chờ duyệt</span>
+        <strong class="guide-summary-value">{{ summary.pending|stringformat:"02d" }}</strong>
+      </div>
+      <div class="guide-summary-item">
+        <span class="guide-summary-label">Hoàn thành</span>
+        <strong class="guide-summary-value">{{ summary.completed|stringformat:"02d" }}</strong>
+      </div>
+    </div>
+  </header>
+
+  {% if approval %}
+    <section class="guide-approval" aria-labelledby="guide-approval-title">
+      <span class="guide-approval-icon" aria-hidden="true">
+        <svg class="size-5"><use href="#icon-check"></use></svg>
+      </span>
+      <div class="guide-approval-copy">
+        <h2 id="guide-approval-title">Phiếu chờ duyệt</h2>
+        <p>{{ approval.count }} phiếu trong phòng đang chờ duyệt.</p>
+      </div>
+      <a class="btn btn-primary guide-cta" href="{{ approval.url }}">
+        Mở danh sách chờ duyệt
+        <svg class="size-4" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+      </a>
+    </section>
+  {% endif %}
+
+  <div class="guide-flows">
+    {% for workflow in workflows %}
+      {% include "entry/_quy_trinh_section.html" %}
+    {% endfor %}
+  </div>
+{% endblock %}

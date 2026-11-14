@@ -1,0 +1,17 @@
+<ol class="guide-stepper" tabindex="0" aria-label="Các bước {{ workflow.title }}">
+  {% for step in workflow.steps %}
+    <li class="guide-step guide-step--{{ step.state }}"{% if step.current %} aria-current="step"{% endif %}>
+      <span class="guide-step-marker" aria-hidden="true">
+        {% if step.state == "completed" %}
+          <svg class="size-3.5"><use href="#icon-check"></use></svg>
+        {% else %}
+          {{ step.number }}
+        {% endif %}
+      </span>
+      <span class="guide-step-copy">
+        <span class="guide-step-title">{{ step.title }}</span>
+        <span class="sr-only">{{ step.state_label }}</span>
+      </span>
+    </li>
+  {% endfor %}
+</ol>
