@@ -1,0 +1,82 @@
+/* Designer layout. Widths are classes so templates do not use inline grid spans. */
+
+.designer {
+  display: grid;
+  grid-template-columns: 16rem minmax(0, 1fr) 22rem;
+  gap: 1rem;
+  align-items: start;
+}
+
+.designer-top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--tblr-bg-surface, #fff);
+}
+
+.designer-pane {
+  min-width: 0;
+  max-height: calc(100vh - 8rem);
+  overflow: auto;
+}
+
+.designer-drawer-toggle {
+  display: none;
+}
+
+.reorder-form {
+  display: none;
+}
+
+#designer-stage {
+  display: contents;
+}
+
+[x-cloak] {
+  display: none !important;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.form-span-1 { grid-column: span 1; }
+.form-span-2 { grid-column: span 2; }
+.form-span-3 { grid-column: span 3; }
+.form-span-4 { grid-column: span 4; }
+.form-span-5 { grid-column: span 5; }
+.form-span-6 { grid-column: span 6; }
+.form-span-7 { grid-column: span 7; }
+.form-span-8 { grid-column: span 8; }
+.form-span-9 { grid-column: span 9; }
+.form-span-10 { grid-column: span 10; }
+.form-span-11 { grid-column: span 11; }
+.form-span-12 { grid-column: span 12; }
+
+.field-card.is-selected {
+  outline: 2px solid var(--tblr-primary, #206bc4);
+}
+
+.field-card[draggable="true"] {
+  cursor: grab;
+}
+
+@media (max-width: 1279px) {
+  .designer {
+    grid-template-columns: 1fr;
+  }
+
+  .designer-drawer {
+    display: none;
+  }
+
+  .designer-drawer.is-open {
+    display: block;
+  }
+
+  .designer-drawer-toggle {
+    display: inline-flex;
+  }
+}

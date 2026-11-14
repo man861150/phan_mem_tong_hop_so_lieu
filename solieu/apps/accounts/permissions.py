@@ -21,6 +21,10 @@ _ALLOWED = {
             "confirm_plan",
             "view_plan",
             "approve_entry",
+            "view_form_templates",
+            "design_form_template",
+            "publish_form_template",
+            "archive_form_template",
         }
     ),
     Role.CENTER_HEAD: frozenset(
@@ -30,6 +34,7 @@ _ALLOWED = {
             "export_department_report",
             "export_center_report",
             "view_history",
+            "view_form_templates",
         }
     ),
     Role.SYSTEM_ADMIN: frozenset(
@@ -44,6 +49,10 @@ _ALLOWED = {
             "export_department_report",
             "export_center_report",
             "view_history",
+            "view_form_templates",
+            "design_form_template",
+            "publish_form_template",
+            "archive_form_template",
         }
     ),
 }

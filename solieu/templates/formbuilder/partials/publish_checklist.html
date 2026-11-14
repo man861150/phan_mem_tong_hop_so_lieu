@@ -1,0 +1,8 @@
+<div id="publish-checklist" class="alert alert-danger" role="alert">
+  <strong>Chưa xuất bản được.</strong>
+  <ul class="mb-0">
+    {% for error in errors %}
+      <li>{{ error }}</li>
+    {% endfor %}
+  </ul>
+</div>

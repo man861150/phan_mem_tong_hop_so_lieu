@@ -1,0 +1,7 @@
+<div id="save-state" aria-live="polite">
+  {% if error %}
+    <span class="text-red-700">Không lưu được. Thử lại.</span>
+  {% else %}
+    <span class="text-slate-500">Đã lưu lúc {{ save_label }}</span>
+  {% endif %}
+</div>

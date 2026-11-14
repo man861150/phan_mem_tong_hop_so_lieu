@@ -42,6 +42,20 @@
           {% endif %}
           {% if row.nguon.errors %}<div class="text-red-700">{{ row.nguon.errors }}</div>{% endif %}
         </div>
+        {% for extra in row.custom_fields %}
+          <div class="col-span-12 md:col-span-4">
+            <label class="form-label" for="{{ extra.bound.id_for_label }}">
+              {{ extra.label }}{% if extra.required %} <span class="text-red-700">*</span>{% endif %}
+            </label>
+            {% if can_edit %}
+              {{ extra.bound }}
+            {% else %}
+              <div class="form-control-plaintext">{{ extra.bound.value|default:"—" }}</div>
+            {% endif %}
+            {% if extra.errors %}<div class="text-red-700">{{ extra.errors }}</div>{% endif %}
+            {% if extra.help_text %}<div class="form-hint">{{ extra.help_text }}</div>{% endif %}
+          </div>
+        {% endfor %}
         {% if show_month_info %}
           <div class="col-span-12 md:col-span-2">
             <label class="form-label">Tháng trước</label>

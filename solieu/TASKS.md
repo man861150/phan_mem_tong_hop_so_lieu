@@ -1,6 +1,6 @@
 # solieu — implementation plan
 
-Status: complete — 2026-11-12.
+Status: M0–M10 complete — 2026-11-12. M11 form designer implemented 2026-11-15; browser walk not recorded.
 
 Checkbox convention: mark a task `[x]` only after its **Verify** steps have been done on localhost.
 
@@ -96,7 +96,7 @@ Mount these from the existing app `urls.py` files. Remove the English prefixes i
 
 Milestone numbers match the outcomes in section 4.2. Implement in this order, because the monthly and training-class screens display aggregates and the rollup needs `SoLieu` to exist:
 
-`M0 → M1 → M2 → M3 → M4-T01..T03 → M6 → M4-T04..T11 → M5 → M7 → M8 → M9 → M10`
+`M0 → M1 → M2 → M3 → M4-T01..T03 → M6 → M4-T04..T11 → M5 → M7 → M8 → M9 → M10 → M11`
 
 ## 4.2 Milestones
 
@@ -113,6 +113,7 @@ Milestone numbers match the outcomes in section 4.2. Implement in this order, be
 | M8 | Dashboard and charts | Home shows drafts, returns, the approval queue, and percent complete. Progress is a table. At most two ECharts. |
 | M9 | Audit and published reports | Field history and workflow comments are readable. Downloaded files stay byte-for-byte stable after reopen. Search works. |
 | M10 | End-to-end verification and polish | The scenario in section 5 passes. UI strings are Vietnamese. `ruff check` and `manage.py check` pass. |
+| M11 | Form template designer | A department head designs, publishes, and archives a form. Entry screens use the published version and keep older phiếu pinned. |
 
 ## 4.3 Tasks
 
@@ -1161,6 +1162,73 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
   - **Result 2026-11-12:** passed on a fresh ICU `vi-VN` database. First export hashes: `.xlsx` `f6a1452b…f7b9248`, `.docx` `7977ecec…62516dd`; both remained byte-identical after reopen, edit, and re-approval.
   - **Estimate:** L
 
+### M11 — Form template designer
+
+Checkboxes stay open until the Verify step has been clicked through on localhost. The automated suite covers the behavior below.
+
+- [ ] **M11-T01 — Models, permissions, and department scope**
+  - **Why:** form structure has to be data, and only the owning department may change it.
+  - **Files:** `apps/formbuilder/models.py`, `apps/accounts/permissions.py`, `apps/formbuilder/migrations/0001_initial.py`.
+  - **Depends on:** M1-T03, M1-T04, M4-T01.
+  - **Acceptance criteria:**
+    - `scope_key` is generated per function and target. One active template per department and scope.
+    - A published version rejects edits. Publishing clones the next draft.
+    - `department_head` and `system_admin` get view, design, publish, and archive. `center_head` gets view. `entry_officer` gets none.
+    - Another department's template returns 404. An entry officer gets 403 on designer URLs.
+  - **Verify:** `uv run python manage.py test apps.formbuilder.tests.test_models apps.formbuilder.tests.test_permissions`.
+  - **Estimate:** M
+
+- [ ] **M11-T02 — Designer screens**
+  - **Why:** the department head needs a page, not the admin.
+  - **Files:** `apps/formbuilder/views.py`, `apps/formbuilder/urls.py`, `templates/formbuilder/`.
+  - **Depends on:** M11-T01.
+  - **Acceptance criteria:**
+    - Create opens the designer with **Thông tin chung**.
+    - Each field type can be added, edited, and deleted. Options reject a duplicate value.
+    - Reorder persists. An invalid reorder payload returns 400.
+    - Autosave returns **Đã lưu lúc**. Labels are escaped.
+    - Sidebar **Biểu mẫu** is visible only when `can(user, "view_form_templates")`.
+  - **Verify:** `uv run python manage.py test apps.formbuilder.tests.test_builder_views`, then click the designer at desktop width.
+  - **Estimate:** L
+
+- [ ] **M11-T03 — Publish, versions, duplicate, archive**
+  - **Why:** new phiếu must use a frozen version, and old phiếu must stay readable.
+  - **Files:** `apps/formbuilder/services.py`, `templates/formbuilder/versions.html`.
+  - **Depends on:** M11-T02.
+  - **Acceptance criteria:**
+    - An invalid draft shows **Chưa xuất bản được.** and stays unpublished.
+    - A valid publish sets version 1 published and opens draft version 2.
+    - Duplicate copies fields and rules into an inactive copy. Restore fails while another active template owns the scope.
+    - Replacing the draft from an older version drops draft-only fields and leaves the published version in place.
+  - **Verify:** `uv run python manage.py test apps.formbuilder.tests.test_publishing`.
+  - **Estimate:** M
+
+- [ ] **M11-T04 — Entry, validation, and historical rendering**
+  - **Why:** the published template has to sit on the existing draft → submit → approve path.
+  - **Files:** `apps/formbuilder/forms.py`, `apps/formbuilder/values.py`, `apps/formbuilder/integration.py`, `apps/entry/views.py`, `templates/entry/`.
+  - **Depends on:** M11-T03, M5-T02.
+  - **Acceptance criteria:**
+    - No published template leaves the fixed form unchanged.
+    - Draft save allows an empty required custom field. **Gửi duyệt** blocks it, shows a Vietnamese field error, and writes no `LichSuXuLy`.
+    - Detail, history, and the approval screen show the saved value. A file downloads only inside the department.
+    - A per-row indicator field stores `so_lieu` on the total row.
+    - Publishing version 2 does not change an older phiếu. Archiving hides the template from new phiếu.
+    - Month and project screens follow the same rule.
+  - **Verify:** `uv run python manage.py test apps.formbuilder.tests.test_rendering apps.formbuilder.tests.test_entry_integration`.
+  - **Estimate:** L
+
+- [ ] **M11-T05 — Seed, guide, and regression**
+  - **Why:** the pilot department needs one realistic template and a written procedure.
+  - **Files:** `apps/formbuilder/management/commands/seed_form_templates.py`, `doc/Huong_dan_thiet_ke_bieu_mau.md`.
+  - **Depends on:** M11-T04.
+  - **Acceptance criteria:**
+    - `seed_form_templates` creates the HTKN **Lớp huấn luyện** template once and skips the second run.
+    - The guide explains create, reorder, conditions, preview, publish, duplicate, and archive.
+    - `uv run python manage.py test`, `uv run python manage.py check`, and `uv run ruff check .` pass.
+    - Custom fields are stored and displayed. They are not added to rollup totals.
+  - **Verify:** run the three commands from `solieu/`. Walk the guide once on localhost before checking this task.
+  - **Estimate:** M
+
 ## 4.4 Coverage checklist
 
 | Required item | Tasks |
@@ -1185,6 +1253,7 @@ Execute after M4-T03 and before M4-T04. Dashboard, Excel, and Word call this fun
 | Numeric storage and `1.234` display | M4-T02, M10-T03 |
 | Vendor assets in `base.html` | M0-T02 |
 | Ruff and `manage.py check` | M0-T01, M10-T05 |
+| Department-designed entry forms | M11-T01 through M11-T05 |
 
 ## 4.5 Traceability matrix
 
@@ -1276,4 +1345,5 @@ Run this on a fresh local database after M10-T05 is green.
 | M8 | 5 |
 | M9 | 6 |
 | M10 | 6 |
-| **Total** | **83** |
+| M11 | 5 |
+| **Total** | **88** |

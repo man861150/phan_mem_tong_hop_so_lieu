@@ -1,0 +1,73 @@
+{% if layout %}
+  {% if form and form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+  {% endif %}
+  {% for section in layout.sections %}
+    <section class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">{{ section.title }}</h3>
+        {% if section.description %}<div class="text-slate-500">{{ section.description }}</div>{% endif %}
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          {% for item in section.items %}
+            <div class="{{ item.span_class }}">
+              {% if item.kind == "system" %}
+                {% if system == "indicator" %}
+                  {% include "entry/_indicator_form.html" with form=form rows=rows can_edit=can_edit show_month_info=show_month_info has_split_grids=has_split_grids %}
+                {% elif system == "ad_hoc" %}
+                  <div class="mb-3">
+                    <label class="form-label" for="{{ form.noi_dung.id_for_label }}">{{ form.noi_dung.label }}</label>
+                    {% if can_edit %}{{ form.noi_dung }}{% else %}<div class="form-control-plaintext">{{ activity.noi_dung|linebreaksbr|default:"—" }}</div>{% endif %}
+                    {% if form.noi_dung.errors %}<div class="text-red-700">{{ form.noi_dung.errors }}</div>{% endif %}
+                  </div>
+                  <div>
+                    <label class="form-label" for="{{ form.ket_qua.id_for_label }}">{{ form.ket_qua.label }}</label>
+                    {% if can_edit %}{{ form.ket_qua }}{% else %}<div class="form-control-plaintext">{{ activity.ket_qua|linebreaksbr|default:"—" }}</div>{% endif %}
+                    {% if form.ket_qua.errors %}<div class="text-red-700">{{ form.ket_qua.errors }}</div>{% endif %}
+                  </div>
+                {% elif system == "note" %}
+                  <p>Dòng hỗ trợ được nhập ở phần bên dưới.</p>
+                {% endif %}
+              {% elif item.kind == "echo" %}
+                <div class="text-slate-500 small">{{ item.label }}</div>
+                <div>{{ item.value }}</div>
+              {% elif item.kind == "instruction" %}
+                <div class="alert alert-info">
+                  <strong>{{ item.label }}</strong>
+                  {% if item.help_text %}<div>{{ item.help_text }}</div>{% endif %}
+                </div>
+              {% elif item.kind == "input" and item.bound %}
+                <label class="form-label" for="{{ item.bound.id_for_label }}">
+                  {{ item.label }}{% if item.required %} <span class="text-red-700">*</span>{% endif %}
+                </label>
+                {% if can_edit %}
+                  {{ item.bound }}
+                  {% if item.field_type == "percent" %}<span class="text-slate-500">%</span>{% endif %}
+                {% else %}
+                  <div class="form-control-plaintext">{{ item.bound.value|default:"—" }}</div>
+                {% endif %}
+                {% if item.errors %}<div class="text-red-700">{{ item.errors }}</div>{% endif %}
+                {% if item.help_text %}<div class="form-hint">{{ item.help_text }}</div>{% endif %}
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  {% endfor %}
+  {% if not layout.system_seen %}
+    {% if system == "indicator" %}
+      {% include "entry/_indicator_form.html" with form=form rows=rows can_edit=can_edit show_month_info=show_month_info has_split_grids=has_split_grids %}
+    {% elif system == "ad_hoc" %}
+      <div class="card mb-3">
+        <div class="card-body">
+          <label class="form-label" for="{{ form.noi_dung.id_for_label }}">{{ form.noi_dung.label }}</label>
+          {% if can_edit %}{{ form.noi_dung }}{% else %}<div>{{ activity.noi_dung|default:"—" }}</div>{% endif %}
+          <label class="form-label" for="{{ form.ket_qua.id_for_label }}">{{ form.ket_qua.label }}</label>
+          {% if can_edit %}{{ form.ket_qua }}{% else %}<div>{{ activity.ket_qua|default:"—" }}</div>{% endif %}
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
+{% endif %}

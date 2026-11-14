@@ -15,6 +15,7 @@ urlpatterns = [
     path("", include("apps.catalog.urls")),
     path("", include("apps.activities.urls")),
     path("", include("apps.entry.urls")),
+    path("", include("apps.formbuilder.urls")),
     path("", include("apps.reporting.urls")),
 ]
 

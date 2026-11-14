@@ -413,24 +413,35 @@ class DashboardTests(ReportFixtureMixin, TestCase):
         self.assertIn(reverse("accounts:login"), response["Location"])
 
     def test_entry_home_lists_only_own_drafts_and_returns(self):
+        # One primary month phiếu per department and period. The fixture
+        # already owns self.ky, so these rows use other open periods.
+        spare = [number for number in range(1, 13) if number != self.month]
+        periods = [
+            KyBaoCao.objects.create(
+                nam=self.year,
+                so_ky=number,
+                trang_thai=TrangThaiKy.MO,
+            )
+            for number in spare[:3]
+        ]
         draft = PhieuNhapLieu.objects.create(
             phong=self.htkn,
             loai_phieu=LoaiPhieu.THANG,
-            ky=self.ky,
+            ky=periods[0],
             nguoi_nhap=self.cb_htkn,
             trang_thai=TrangThaiPhieu.NHAP,
         )
         returned = PhieuNhapLieu.objects.create(
             phong=self.htkn,
             loai_phieu=LoaiPhieu.THANG,
-            ky=self.ky,
+            ky=periods[1],
             nguoi_nhap=self.cb_htkn,
             trang_thai=TrangThaiPhieu.TRA_LAI,
         )
         other_draft = PhieuNhapLieu.objects.create(
             phong=self.htkn,
             loai_phieu=LoaiPhieu.THANG,
-            ky=self.ky,
+            ky=periods[2],
             nguoi_nhap=self.ld_htkn,
             trang_thai=TrangThaiPhieu.NHAP,
         )
@@ -597,15 +608,8 @@ class ProgressTableTests(ReportFixtureMixin, TestCase):
         self.assertNotIn('id="chart2"', content)
 
     def test_pending_toggle_keeps_official_cumulative(self):
-        pending = PhieuNhapLieu.objects.create(
-            phong=self.htkn,
-            loai_phieu=LoaiPhieu.THANG,
-            ky=self.ky,
-            nguoi_nhap=self.cb_htkn,
-            trang_thai=TrangThaiPhieu.CHO_DUYET,
-        )
         SoLieu.objects.create(
-            phieu=pending,
+            phieu=self.pending_month,
             chi_tieu=self.chi_tieu_hv,
             gia_tri=Decimal("5"),
         )
@@ -713,6 +717,7 @@ class DrillDownTests(ReportFixtureMixin, TestCase):
             du_an=project,
             nguoi_nhap=self.cb_htkn,
             trang_thai=TrangThaiPhieu.NHAP,
+            la_phieu_bo_sung=True,
         )
         HoTroDuAn.objects.create(
             du_an=project,

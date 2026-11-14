@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Tạo biểu mẫu{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Tạo biểu mẫu</h2>
+      <div class="text-slate-500">Sau khi tạo, bạn được chuyển tới màn thiết kế.</div>
+    </div>
+  </div>
+  <form method="post" class="card">
+    {% csrf_token %}
+    <div class="card-body">
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+      {% if departments %}
+        <div class="mb-3">
+          <label class="form-label" for="phong">Phòng ban</label>
+          <select class="form-control" id="phong" name="phong" onchange="location.search='?phong='+this.value">
+            <option value="">Chọn phòng</option>
+            {% for item in departments %}
+              <option value="{{ item.pk }}" {% if phong and phong.pk == item.pk %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      {% elif phong %}
+        <input type="hidden" name="phong" value="{{ phong.pk }}">
+      {% endif %}
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.name.id_for_label }}">Tên biểu mẫu</label>
+        {{ form.name }}
+        {% if form.name.errors %}<div class="text-red-700">{{ form.name.errors }}</div>{% endif %}
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.function_type.id_for_label }}">Chức năng</label>
+        {{ form.function_type }}
+        {% if form.function_type.errors %}<div class="text-red-700">{{ form.function_type.errors }}</div>{% endif %}
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.target.id_for_label }}">Phạm vi</label>
+        {{ form.target }}
+        <div class="text-slate-500 small">Chọn Tất cả hoặc một loại hoạt động / nhóm chỉ tiêu của phòng.</div>
+        {% if form.target.errors %}<div class="text-red-700">{{ form.target.errors }}</div>{% endif %}
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.description.id_for_label }}">Mô tả</label>
+        {{ form.description }}
+      </div>
+    </div>
+    <div class="card-footer flex justify-end gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'formbuilder:list' %}">Quay lại</a>
+      <button class="btn btn-primary" type="submit">Tạo và thiết kế</button>
+    </div>
+  </form>
+{% endblock %}

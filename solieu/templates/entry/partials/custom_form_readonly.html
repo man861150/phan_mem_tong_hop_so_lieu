@@ -1,0 +1,37 @@
+{% for group in custom_groups %}
+  <section class="card mb-3">
+    <div class="card-header">
+      <h3 class="card-title">{{ group.template.name }}</h3>
+      <div class="text-slate-500 small">Phiên bản {{ group.version.version }}</div>
+    </div>
+    <div class="card-body">
+      {% for section in group.sections %}
+        <h4 class="mb-2">{{ section.title }}</h4>
+        {% if section.description %}<p class="text-slate-500">{{ section.description }}</p>{% endif %}
+        <div class="form-grid mb-3">
+          {% for item in section.items %}
+            <div class="{{ item.span_class|default:'form-span-12' }}">
+              {% if item.kind == "instruction" %}
+                <div class="alert alert-info">
+                  <strong>{{ item.label }}</strong>
+                  {% if item.help_text %}<div>{{ item.help_text }}</div>{% endif %}
+                </div>
+              {% else %}
+                <div class="text-slate-500 small">{{ item.label }}</div>
+                {% if item.attachments %}
+                  <div>
+                    {% for attachment in item.attachments %}
+                      <a href="{% url 'formbuilder:attachment' attachment.pk %}">{{ attachment.original_name }}</a>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <div>{{ item.display }}</div>
+                {% endif %}
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+{% endfor %}

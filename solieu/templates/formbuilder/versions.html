@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Phiên bản — {{ form_template.name }}{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
+        <h2 class="page-title">Lịch sử phiên bản</h2>
+        <div class="text-slate-500">
+          {{ form_template.name }}. Phiếu đã tạo giữ nguyên phiên bản lúc lưu. Phiếu mới dùng phiên bản đã xuất bản mới nhất.
+        </div>
+      </div>
+      <div class="col-auto">
+        <a class="btn btn-outline-secondary" href="{% url 'formbuilder:design' form_template.pk %}">Về thiết kế</a>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table">
+        <thead>
+          <tr>
+            <th>Phiên bản</th>
+            <th>Trạng thái</th>
+            <th>Người xuất bản</th>
+            <th>Thời điểm</th>
+            <th>Số trường</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td>v{{ row.version.version }}{% if row.in_use %} <span class="badge bg-green-lt">Đang dùng cho phiếu mới</span>{% endif %}</td>
+              <td>{{ row.version.get_status_display }}</td>
+              <td>{% if row.version.published_by %}{{ row.version.published_by.ho_ten }}{% else %}—{% endif %}</td>
+              <td>{{ row.version.published_at|date:"d/m/Y H:i"|default:"—" }}</td>
+              <td>{{ row.field_count }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'formbuilder:preview' form_template.pk %}">Xem trước</a>
+                {% if can_edit and row.version.pk != form_template.current_draft_id %}
+                  <form class="d-inline" method="post" action="{% url 'formbuilder:draft_from_version' form_template.pk row.version.pk %}"
+                        onsubmit="return confirm('Tạo bản nháp mới từ phiên bản {{ row.version.version }}? Bản nháp hiện tại chưa có phiếu sẽ bị thay.');">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-primary" type="submit">Tạo bản nháp từ phiên bản này</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-slate-500">Chưa có phiên bản.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

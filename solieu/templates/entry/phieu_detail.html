@@ -147,12 +147,32 @@
                 <td class="text-end">{{ item.previous|vi_number }}</td>
                 <td class="text-end">{{ item.official|vi_number }}</td>
               </tr>
+              {% if item.custom %}
+                <tr>
+                  <td colspan="6">
+                    {% for extra in item.custom %}
+                      <div>
+                        <span class="text-slate-500">{{ extra.label }}:</span>
+                        {% if extra.attachments %}
+                          {% for attachment in extra.attachments %}
+                            <a href="{% url 'formbuilder:attachment' attachment.pk %}">{{ attachment.original_name }}</a>
+                          {% endfor %}
+                        {% else %}
+                          {{ extra.display }}
+                        {% endif %}
+                      </div>
+                    {% endfor %}
+                  </td>
+                </tr>
+              {% endif %}
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
   {% endif %}
+
+  {% include "entry/partials/custom_form_readonly.html" %}
 
   {% if ad_hoc %}
     <div class="card mb-3">

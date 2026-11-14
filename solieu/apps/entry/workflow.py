@@ -28,12 +28,8 @@ from apps.entry.models import (
     TrangThaiPhieu,
 )
 
-PERIOD_CLOSED_MESSAGE = (
-    "Kỳ đã đóng. Phiếu tháng chỉ được xem, không được lưu."
-)
-PHIEU_PROCESSED_MESSAGE = (
-    "Phiếu đã được xử lý. Tải lại trang trước khi lưu."
-)
+PERIOD_CLOSED_MESSAGE = "Kỳ đã đóng. Phiếu tháng chỉ được xem, không được lưu."
+PHIEU_PROCESSED_MESSAGE = "Phiếu đã được xử lý. Tải lại trang trước khi lưu."
 
 
 class WorkflowError(Exception):
@@ -113,27 +109,20 @@ def _transition(phieu_id, user, action, *, y_kien="", apply=None):
         # Lock order everywhere: period first, then phiếu.
         if current.ky_id:
             ky = KyBaoCao.objects.select_for_update().get(pk=current.ky_id)
-            if (
-                action == HanhDongXuLy.GUI
-                and ky.trang_thai == TrangThaiKy.KHOA
-            ):
+            if action == HanhDongXuLy.GUI and ky.trang_thai == TrangThaiKy.KHOA:
                 raise InvalidTransition(PERIOD_CLOSED_MESSAGE)
         phieu = PhieuNhapLieu.objects.select_for_update().get(pk=phieu_id)
         if not can(user, rule.permission, phieu.phong_id):
             raise PermissionDenied
         if phieu.trang_thai not in rule.from_statuses:
-            allowed = ", ".join(
-                _status_label(status) for status in rule.from_statuses
-            )
+            allowed = ", ".join(_status_label(status) for status in rule.from_statuses)
             raise InvalidTransition(
                 "Không thể thực hiện hành động này khi phiếu đang ở trạng "
                 f"thái {_status_label(phieu.trang_thai)}. "
                 f"Trạng thái hợp lệ: {allowed}."
             )
         if rule.comment_required and not comment:
-            raise CommentRequired(
-                "Vui lòng nhập ý kiến khi trả lại hoặc mở lại phiếu."
-            )
+            raise CommentRequired("Vui lòng nhập ý kiến khi trả lại hoặc mở lại phiếu.")
 
         if apply is not None:
             apply(phieu)
@@ -228,9 +217,7 @@ def _persisted_form_data(phieu):
                     "" if row.gia_tri is None else str(row.gia_tri)
                 )
 
-        linh_vuc_rows = [
-            row for row in group if row.linh_vuc_id is not None
-        ]
+        linh_vuc_rows = [row for row in group if row.linh_vuc_id is not None]
         if linh_vuc_rows:
             data.setlist(
                 f"linh_vuc_{chi_tieu_id}",
@@ -308,16 +295,24 @@ def submission_errors(phieu):
     """
     form, blockers = _submission_form(phieu)
     if blockers:
+        blockers.extend(_custom_submission_errors(phieu))
         return blockers
-    if form is None:
-        return []
-    if not form.is_valid():
-        return _form_errors(form)
-    try:
-        form.validate_required()
-    except ValidationError as exc:
-        return exc.messages
-    return []
+    messages = []
+    if form is not None and not form.is_valid():
+        messages.extend(_form_errors(form))
+    elif form is not None:
+        try:
+            form.validate_required()
+        except ValidationError as exc:
+            messages.extend(exc.messages)
+    messages.extend(_custom_submission_errors(phieu))
+    return messages
+
+
+def _custom_submission_errors(phieu):
+    from apps.formbuilder.integration import custom_submission_errors
+
+    return custom_submission_errors(phieu)
 
 
 def changes_since_previous_submit(phieu):
@@ -351,9 +346,7 @@ def changes_since_previous_submit(phieu):
         old_snapshot = previous.get(snapshot.id)
         if snapshot.history_date > cutoff:
             old_value = old_snapshot.gia_tri if old_snapshot else None
-            new_value = (
-                snapshot.gia_tri if snapshot.history_type != "-" else None
-            )
+            new_value = snapshot.gia_tri if snapshot.history_type != "-" else None
             if old_value != new_value:
                 suffix = []
                 if snapshot.doi_tuong_id:

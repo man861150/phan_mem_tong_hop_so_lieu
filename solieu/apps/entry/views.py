@@ -209,9 +209,7 @@ def _ensure_activity_phieu(activity, user, *, bo_sung=False):
     phieu = queryset.first()
     if phieu is None:
         phieu = _create_primary_phieu(
-            lambda: _activity_phieus(activity)
-            .filter(la_phieu_bo_sung=False)
-            .first(),
+            lambda: _activity_phieus(activity).filter(la_phieu_bo_sung=False).first(),
             phong=activity.phong,
             loai_phieu=LoaiPhieu.HOAT_DONG,
             hoat_dong=activity,
@@ -223,12 +221,16 @@ def _ensure_activity_phieu(activity, user, *, bo_sung=False):
 
 
 def _month_phieu(phong, ky):
-    return PhieuNhapLieu.objects.filter(
-        loai_phieu=LoaiPhieu.THANG,
-        phong=phong,
-        ky=ky,
-        la_phieu_bo_sung=False,
-    ).order_by("id").first()
+    return (
+        PhieuNhapLieu.objects.filter(
+            loai_phieu=LoaiPhieu.THANG,
+            phong=phong,
+            ky=ky,
+            la_phieu_bo_sung=False,
+        )
+        .order_by("id")
+        .first()
+    )
 
 
 def _ensure_month_phieu(phong, ky, user):
@@ -247,11 +249,15 @@ def _ensure_month_phieu(phong, ky, user):
 
 
 def _project_phieu(du_an):
-    return PhieuNhapLieu.objects.filter(
-        loai_phieu=LoaiPhieu.DU_AN,
-        du_an=du_an,
-        la_phieu_bo_sung=False,
-    ).order_by("id").first()
+    return (
+        PhieuNhapLieu.objects.filter(
+            loai_phieu=LoaiPhieu.DU_AN,
+            du_an=du_an,
+            la_phieu_bo_sung=False,
+        )
+        .order_by("id")
+        .first()
+    )
 
 
 def _ensure_project_phieu(du_an, user):
@@ -350,9 +356,7 @@ def _render_activity(
         "has_split_grids": has_split_grids,
         "last_return": _last_return(phieu),
         "can_delete": (
-            phieu is not None
-            and can_edit
-            and phieu.trang_thai in EDITABLE_STATUSES
+            phieu is not None and can_edit and phieu.trang_thai in EDITABLE_STATUSES
         ),
     }
     if organized:
@@ -371,7 +375,7 @@ def _render_activity(
     return render(request, "entry/phieu_form.html", context)
 
 
-def _submit_entry_form(form, phieu, user):
+def _submit_entry_form(form, phieu, user, bundle=None):
     """Validate a bound entry form and submit it inside the workflow lock."""
     try:
         form.validate_required()
@@ -379,16 +383,50 @@ def _submit_entry_form(form, phieu, user):
         for field, errors in exc.message_dict.items():
             form.add_error(field, errors)
         return False
+    if bundle is not None and not bundle.is_valid():
+        form.add_error(None, bundle.error_messages())
+        return False
+
+    def apply(locked):
+        form.save(locked)
+        if bundle is not None:
+            bundle.save(locked, user)
+
     try:
-        workflow.submit(
-            phieu,
-            user,
-            apply=lambda locked: form.save(locked),
-        )
+        workflow.submit(phieu, user, apply=apply)
     except ValidationError as exc:
         form.add_error(None, exc.messages)
         return False
     return True
+
+
+def _entry_extras(request, phieu, rows, *, system, posted=None):
+    """Bind the published custom template. Unbound on GET so defaults apply."""
+    from apps.formbuilder.integration import (
+        attach_row_fields,
+        bind_entry,
+        layout_sections,
+        needs_multipart,
+    )
+
+    if posted is None:
+        posted = request.method == "POST"
+    action = request.POST.get("action", "save") if posted else "save"
+    bundle = bind_entry(
+        phieu,
+        request.POST if posted else None,
+        request.FILES if posted else None,
+        enforce_required=posted and action == "gui",
+        rows=rows,
+    )
+    attach_row_fields(rows, bundle)
+    if posted and bundle is not None:
+        bundle.is_valid()
+    return bundle, {
+        "custom_layout": layout_sections(bundle, phieu),
+        "multipart": needs_multipart(bundle),
+        "custom_system": system,
+    }
 
 
 @login_required
@@ -423,38 +461,58 @@ def phieu_hoat_dong(request, hoat_dong_id):
     action = request.POST.get("action", "save")
     if activity.la_nhiem_vu_phat_sinh:
         form = AdHocForm(request.POST or None, instance=activity)
-        if request.method == "POST" and form.is_valid():
+        bundle, extras = _entry_extras(
+            request,
+            phieu,
+            [],
+            system="ad_hoc",
+        )
+        custom_ok = bundle is None or not bundle.errors
+        if request.method == "POST" and form.is_valid() and custom_ok:
             if action == "gui":
+
+                def apply_ad_hoc(locked):
+                    form.save()
+                    if bundle is not None:
+                        bundle.save(locked, request.user)
+
                 try:
-                    workflow.submit(
-                        phieu,
-                        request.user,
-                        apply=lambda locked: form.save(),
-                    )
+                    workflow.submit(phieu, request.user, apply=apply_ad_hoc)
                 except workflow.InvalidTransition as exc:
                     return HttpResponseBadRequest(str(exc))
-                messages.success(
-                    request,
-                    "Đã gửi duyệt phiếu nhiệm vụ phát sinh.",
-                )
+                except ValidationError as exc:
+                    form.add_error(None, exc.messages)
+                else:
+                    messages.success(
+                        request,
+                        "Đã gửi duyệt phiếu nhiệm vụ phát sinh.",
+                    )
+                    return redirect(_activity_url(activity, phieu))
             else:
-                with transaction.atomic():
-                    _ky, _locked, refusal = _lock_for_write(phieu.pk)
-                    if refusal:
-                        messages.error(request, refusal)
-                        return redirect(_activity_url(activity, phieu))
-                    form.save()
-                messages.success(
-                    request,
-                    "Đã lưu nội dung nhiệm vụ phát sinh.",
-                )
-            return redirect(_activity_url(activity, phieu))
+                try:
+                    with transaction.atomic():
+                        _ky, locked, refusal = _lock_for_write(phieu.pk)
+                        if refusal:
+                            messages.error(request, refusal)
+                            return redirect(_activity_url(activity, phieu))
+                        form.save()
+                        if bundle is not None:
+                            bundle.save(locked, request.user)
+                except ValidationError as exc:
+                    form.add_error(None, exc.messages)
+                else:
+                    messages.success(
+                        request,
+                        "Đã lưu nội dung nhiệm vụ phát sinh.",
+                    )
+                    return redirect(_activity_url(activity, phieu))
+        extras["ad_hoc"] = True
         return _render_activity(
             request,
             activity,
             form=form,
             phieu=phieu,
-            extra={"ad_hoc": True},
+            extra=extras,
         )
 
     form = ActivityEntryForm(
@@ -462,36 +520,51 @@ def phieu_hoat_dong(request, hoat_dong_id):
         activity=activity,
         phieu=phieu,
         default_nguon_name=(
-            SOURCE_SURVEY
-            if phieu is not None and phieu.la_phieu_bo_sung
-            else None
+            SOURCE_SURVEY if phieu is not None and phieu.la_phieu_bo_sung else None
         ),
     )
-    if request.method == "POST" and form.is_valid():
+    if form.is_bound:
+        form.is_valid()
+    rows = form.presentation_rows()
+    bundle, extras = _entry_extras(request, phieu, rows, system="indicator")
+    custom_ok = bundle is None or not bundle.errors
+    if request.method == "POST" and form.is_valid() and custom_ok:
         if action == "gui":
             try:
-                submitted = _submit_entry_form(form, phieu, request.user)
+                submitted = _submit_entry_form(
+                    form,
+                    phieu,
+                    request.user,
+                    bundle,
+                )
             except workflow.InvalidTransition as exc:
                 return HttpResponseBadRequest(str(exc))
             if submitted:
                 messages.success(request, "Đã gửi duyệt phiếu kết quả.")
                 return redirect(_activity_url(activity, phieu))
         else:
-            with transaction.atomic():
-                _ky, locked, refusal = _lock_for_write(phieu.pk)
-                if refusal:
-                    messages.error(request, refusal)
-                    return redirect(_activity_url(activity, phieu))
-                form.save(locked)
-            messages.success(request, "Đã lưu nháp phiếu kết quả.")
-            return redirect(_activity_url(activity, phieu))
+            try:
+                with transaction.atomic():
+                    _ky, locked, refusal = _lock_for_write(phieu.pk)
+                    if refusal:
+                        messages.error(request, refusal)
+                        return redirect(_activity_url(activity, phieu))
+                    form.save(locked)
+                    if bundle is not None:
+                        bundle.save(locked, request.user)
+            except ValidationError as exc:
+                form.add_error(None, exc.messages)
+            else:
+                messages.success(request, "Đã lưu nháp phiếu kết quả.")
+                return redirect(_activity_url(activity, phieu))
+    extras["ad_hoc"] = False
     return _render_activity(
         request,
         activity,
         form=form,
         phieu=phieu,
-        rows=form.presentation_rows(),
-        extra={"ad_hoc": False},
+        rows=rows,
+        extra=extras,
     )
 
 
@@ -522,6 +595,8 @@ def phieu_xoa(request, phieu_id):
     _require_view(request.user)
     phieu = get_object_or_404(_phieu_queryset(request.user), pk=phieu_id)
     if not can(request.user, "edit_entry", phieu.phong_id):
+        raise PermissionDenied
+    if phieu.trang_thai not in EDITABLE_STATUSES:
         raise PermissionDenied
     ky_id = phieu.ky_id if phieu.loai_phieu == LoaiPhieu.THANG else None
     with transaction.atomic():
@@ -556,15 +631,9 @@ def _month_rollup_values(phong, ky):
         previous_period = ReportPeriod.month(ky.nam, ky.so_ky - 1)
     current_rows = rollup(current_period, department_id=phong.pk)
     previous_rows = rollup(previous_period, department_id=phong.pk)
-    previous_values = {
-        row.chi_tieu_id: row.period_value for row in previous_rows
-    }
-    cumulative_values = {
-        row.chi_tieu_id: row.cumulative for row in current_rows
-    }
-    current_by_indicator = {
-        row.chi_tieu_id: row for row in current_rows
-    }
+    previous_values = {row.chi_tieu_id: row.period_value for row in previous_rows}
+    cumulative_values = {row.chi_tieu_id: row.cumulative for row in current_rows}
+    current_by_indicator = {row.chi_tieu_id: row for row in current_rows}
     return previous_values, cumulative_values, current_by_indicator
 
 
@@ -652,17 +721,13 @@ def phieu_thang(request, ky_id):
     if phieu is None and period_open and has_edit_permission:
         phieu = _ensure_month_phieu(phong, ky, request.user)
 
-    can_edit = (
-        period_open
-        and has_edit_permission
-        and _status_is_editable(phieu)
-    )
+    can_edit = period_open and has_edit_permission and _status_is_editable(phieu)
     if request.method == "POST" and not can_edit:
         raise PermissionDenied
 
     action = request.POST.get("action", "save")
-    previous_values, cumulative_values, current_by_indicator = (
-        _month_rollup_values(phong, ky)
+    previous_values, cumulative_values, current_by_indicator = _month_rollup_values(
+        phong, ky
     )
     form = MonthlyEntryForm(
         request.POST or None,
@@ -672,29 +737,42 @@ def phieu_thang(request, ky_id):
         previous_values=previous_values,
         cumulative_values=cumulative_values,
     )
-    if request.method == "POST" and form.is_valid():
-        with transaction.atomic():
-            _ky_locked, locked, refusal = _lock_for_write(phieu.pk, ky.pk)
-            if refusal:
-                messages.error(request, refusal)
-                return redirect("entry:phieu_thang", ky_id=ky.pk)
-            if action == "gui":
-                try:
+    if form.is_bound:
+        form.is_valid()
+    rows = form.presentation_rows()
+    bundle, extras = _entry_extras(request, phieu, rows, system="indicator")
+    custom_ok = bundle is None or not bundle.errors
+    submitted = False
+    saved = False
+    if request.method == "POST" and form.is_valid() and custom_ok:
+        try:
+            with transaction.atomic():
+                _ky_locked, locked, refusal = _lock_for_write(phieu.pk, ky.pk)
+                if refusal:
+                    messages.error(request, refusal)
+                    return redirect("entry:phieu_thang", ky_id=ky.pk)
+                if action == "gui":
                     submitted = _submit_entry_form(
                         form,
                         locked,
                         request.user,
+                        bundle,
                     )
-                except workflow.InvalidTransition as exc:
-                    return HttpResponseBadRequest(str(exc))
-            else:
-                form.save(locked)
-                submitted = False
-        if action == "gui":
-            if submitted:
-                messages.success(request, "Đã gửi duyệt phiếu tháng.")
-                return redirect("entry:phieu_thang", ky_id=ky.pk)
-        else:
+                else:
+                    form.save(locked)
+                    if bundle is not None:
+                        bundle.save(locked, request.user)
+                    saved = True
+        except workflow.InvalidTransition as exc:
+            return HttpResponseBadRequest(str(exc))
+        except ValidationError as exc:
+            form.add_error(None, exc.messages)
+            saved = False
+            submitted = False
+        if action == "gui" and submitted:
+            messages.success(request, "Đã gửi duyệt phiếu tháng.")
+            return redirect("entry:phieu_thang", ky_id=ky.pk)
+        if action != "gui" and saved:
             messages.success(request, "Đã lưu nháp phiếu tháng.")
             return redirect("entry:phieu_thang", ky_id=ky.pk)
 
@@ -712,7 +790,6 @@ def phieu_thang(request, ky_id):
         {"chi_tieu": item, "rollup": current_by_indicator.get(item.pk)}
         for item in derived
     ]
-    rows = form.presentation_rows()
     has_split_grids = any(
         row.get("has_object") or row.get("has_linh_vuc") for row in rows
     )
@@ -734,10 +811,9 @@ def phieu_thang(request, ky_id):
             "last_return": _last_return(phieu),
             "period_open": period_open,
             "can_delete": (
-                phieu is not None
-                and can_edit
-                and phieu.trang_thai in EDITABLE_STATUSES
+                phieu is not None and can_edit and phieu.trang_thai in EDITABLE_STATUSES
             ),
+            **extras,
         },
     )
 
@@ -763,8 +839,10 @@ def phieu_du_an(request, du_an_id):
     if request.method == "POST" and not can_edit:
         raise PermissionDenied
 
+    action = request.POST.get("action", "")
+    custom_submit = request.method == "POST" and action in {"save", "gui"}
     form = None
-    if can_edit and phieu is not None:
+    if can_edit and phieu is not None and not custom_submit:
         form = HoTroDuAnForm(
             request.POST or None,
             du_an=project,
@@ -781,6 +859,40 @@ def phieu_du_an(request, du_an_id):
                     )
                 form.save()
             messages.success(request, "Đã thêm dòng hỗ trợ dự án.")
+            return redirect("entry:phieu_du_an", du_an_id=project.pk)
+    elif can_edit and phieu is not None:
+        form = HoTroDuAnForm(None, du_an=project, phieu=phieu)
+
+    bundle, extras = _entry_extras(
+        request,
+        phieu,
+        [],
+        system="note",
+        posted=custom_submit,
+    )
+    if custom_submit and (bundle is None or not bundle.errors):
+        try:
+            with transaction.atomic():
+                _ky, locked, refusal = _lock_for_write(phieu.pk)
+                if refusal:
+                    messages.error(request, refusal)
+                    return redirect("entry:phieu_du_an", du_an_id=project.pk)
+                if bundle is not None:
+                    bundle.save(locked, request.user)
+                if action == "gui":
+                    blockers = workflow.submission_errors(locked)
+                    if blockers:
+                        raise ValidationError(blockers)
+                    workflow.submit(locked, request.user)
+        except workflow.InvalidTransition as exc:
+            return HttpResponseBadRequest(str(exc))
+        except ValidationError as exc:
+            messages.error(request, "; ".join(exc.messages))
+        else:
+            if action == "gui":
+                messages.success(request, "Đã gửi duyệt phiếu dự án.")
+            else:
+                messages.success(request, "Đã lưu thông tin bổ sung.")
             return redirect("entry:phieu_du_an", du_an_id=project.pk)
 
     lines = (
@@ -803,10 +915,9 @@ def phieu_du_an(request, du_an_id):
             "locked": phieu is not None and not _status_is_editable(phieu),
             "last_return": _last_return(phieu),
             "can_delete": (
-                phieu is not None
-                and can_edit
-                and phieu.trang_thai in EDITABLE_STATUSES
+                phieu is not None and can_edit and phieu.trang_thai in EDITABLE_STATUSES
             ),
+            **extras,
         },
     )
 
@@ -836,8 +947,7 @@ def _detail_rollup(phieu):
         return None, {}, {}
     previous_period = _previous_period(period)
     current = {
-        row.chi_tieu_id: row
-        for row in rollup(period, department_id=phieu.phong_id)
+        row.chi_tieu_id: row for row in rollup(period, department_id=phieu.phong_id)
     }
     previous = {
         row.chi_tieu_id: row
@@ -848,15 +958,12 @@ def _detail_rollup(phieu):
 
 def _detail_rows(phieu):
     _period, current, previous = _detail_rollup(phieu)
-    rows = (
-        phieu.so_lieu.select_related(
-            "chi_tieu",
-            "doi_tuong",
-            "linh_vuc",
-            "nguon",
-        )
-        .order_by("chi_tieu__ma_chi_tieu", "id")
-    )
+    rows = phieu.so_lieu.select_related(
+        "chi_tieu",
+        "doi_tuong",
+        "linh_vuc",
+        "nguon",
+    ).order_by("chi_tieu__ma_chi_tieu", "id")
     result = []
     for row in rows:
         current_row = current.get(row.chi_tieu_id)
@@ -865,14 +972,10 @@ def _detail_rows(phieu):
             {
                 "row": row,
                 "official": (
-                    current_row.period_value
-                    if current_row is not None
-                    else None
+                    current_row.period_value if current_row is not None else None
                 ),
                 "previous": (
-                    previous_row.period_value
-                    if previous_row is not None
-                    else None
+                    previous_row.period_value if previous_row is not None else None
                 ),
             }
         )
@@ -886,6 +989,12 @@ def _render_phieu_detail(request, phieu, **extra):
     editable = phieu.trang_thai in EDITABLE_STATUSES
     previous_period, _current, _previous = _detail_rollup(phieu)
     activity = phieu.hoat_dong if phieu.hoat_dong_id else None
+    from apps.formbuilder.integration import readonly_context
+
+    detail_rows = _detail_rows(phieu)
+    custom = readonly_context(phieu)
+    for item in detail_rows:
+        item["custom"] = custom["custom_row_values"].get(item["row"].pk, [])
     context = {
         "phieu": phieu,
         "target": phieu.hoat_dong or phieu.ky or phieu.du_an,
@@ -900,7 +1009,8 @@ def _render_phieu_detail(request, phieu, **extra):
             if phieu.loai_phieu == LoaiPhieu.DU_AN
             else []
         ),
-        "detail_rows": _detail_rows(phieu),
+        "detail_rows": detail_rows,
+        "custom_groups": custom["custom_groups"],
         "previous_period": previous_period,
         "workflow_history": (
             phieu.lich_su_xu_ly.select_related("nguoi_xu_ly").order_by(
@@ -913,12 +1023,9 @@ def _render_phieu_detail(request, phieu, **extra):
         "can_edit": can_edit and editable,
         "can_submit": can_edit and editable,
         "can_approve_role": can_approve_role,
-        "can_approve": can_approve
-        and phieu.trang_thai == TrangThaiPhieu.CHO_DUYET,
-        "can_return": can_approve
-        and phieu.trang_thai == TrangThaiPhieu.CHO_DUYET,
-        "can_reopen": can_approve
-        and phieu.trang_thai == TrangThaiPhieu.DA_DUYET,
+        "can_approve": can_approve and phieu.trang_thai == TrangThaiPhieu.CHO_DUYET,
+        "can_return": can_approve and phieu.trang_thai == TrangThaiPhieu.CHO_DUYET,
+        "can_reopen": can_approve and phieu.trang_thai == TrangThaiPhieu.DA_DUYET,
         "can_view_history": can(request.user, "view_history"),
         "comment_form": WorkflowCommentForm(),
     }
@@ -1020,9 +1127,7 @@ def _history_rows(phieu):
                 {
                     "thoi_diem": record.history_date,
                     "nguoi": _history_user(record),
-                    "chi_tieu": (
-                        indicator.ten_chi_tieu if indicator else "—"
-                    ),
+                    "chi_tieu": (indicator.ten_chi_tieu if indicator else "—"),
                     "ten_truong": field.verbose_name,
                     "cu": _history_value(old_record, field_name),
                     "moi": _history_value(new_record, field_name),
@@ -1049,6 +1154,9 @@ def phieu_lich_su(request, phieu_id):
     page_obj = Paginator(_history_rows(phieu), HISTORY_PAGE_SIZE).get_page(
         request.GET.get("trang")
     )
+    from apps.formbuilder.integration import readonly_context
+
+    custom = readonly_context(phieu)
     return render(
         request,
         "entry/lich_su_truong.html",
@@ -1056,6 +1164,7 @@ def phieu_lich_su(request, phieu_id):
             "phieu": phieu,
             "rows": page_obj.object_list,
             "page_obj": page_obj,
+            "custom_groups": custom["custom_groups"],
         },
     )
 
@@ -1216,13 +1325,10 @@ def duyet_list(request):
         approved = 0
         blocked = 0
         selected_ids = {
-            int(value)
-            for value in request.POST.getlist("phieu_ids")
-            if value.isdigit()
+            int(value) for value in request.POST.getlist("phieu_ids") if value.isdigit()
         }
         phieus = {
-            phieu.pk: phieu
-            for phieu in queue_queryset.filter(pk__in=selected_ids)
+            phieu.pk: phieu for phieu in queue_queryset.filter(pk__in=selected_ids)
         }
         for phieu_id in selected_ids:
             phieu = phieus.get(phieu_id)
@@ -1234,7 +1340,7 @@ def duyet_list(request):
                 continue
             try:
                 workflow.approve(phieu, request.user)
-            except (workflow.InvalidTransition, PermissionDenied):
+            except workflow.InvalidTransition, PermissionDenied:
                 blocked += 1
             else:
                 approved += 1

@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Thiết kế — {{ form_template.name }}{% endblock %}
+
+{% block content %}
+  <div class="designer-page"
+       x-data="{ dirty: false, paletteOpen: false, inspectorOpen: true }"
+       @htmx:before-request.window="window.__designerFocus = document.activeElement && document.activeElement.name"
+       @htmx:after-swap.window="dirty = false; const name = window.__designerFocus; if (name) { const field = document.querySelector('#designer-inspector [name=\'' + name + '\']'); if (field) field.focus(); }"
+       @beforeunload.window="if (dirty) { $event.preventDefault(); $event.returnValue = ''; }">
+    <div class="designer-top card mb-3">
+      <div class="card-body flex flex-wrap items-center gap-2">
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'formbuilder:list' %}">Quay lại</a>
+        <div>
+          <strong>{{ form_template.name }}</strong>
+          <div class="text-slate-500 small">
+            {{ form_template.get_function_type_display }} —
+            {% if form_template.target_activity_type %}{{ form_template.target_activity_type.ten_loai }}
+            {% elif form_template.target_indicator_group %}{{ form_template.target_indicator_group.ten_mang }}
+            {% else %}Tất cả{% endif %}
+          </div>
+        </div>
+        <span id="designer-status" class="badge bg-blue-lt">
+          {% if not form_template.is_active %}Đã lưu trữ
+          {% elif published %}Đã xuất bản
+          {% else %}Bản nháp{% endif %}
+        </span>
+        <span id="designer-version" class="text-slate-500 small">
+          Bản nháp v{{ draft.version }}{% if published %} • Đang dùng v{{ published.version }}{% endif %}
+        </span>
+        {% include "formbuilder/partials/save_state.html" %}
+        <div class="ml-auto flex flex-wrap gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm designer-drawer-toggle" @click="paletteOpen = !paletteOpen">Thêm trường</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm designer-drawer-toggle" @click="inspectorOpen = !inspectorOpen">Thuộc tính</button>
+          <a class="btn btn-outline-secondary" href="{% url 'formbuilder:preview' form_template.pk %}">Xem trước</a>
+          <a class="btn btn-outline-secondary" href="{% url 'formbuilder:versions' form_template.pk %}">Phiên bản</a>
+          {% if can_edit %}
+            <button class="btn btn-outline-primary" type="submit" form="draft-meta-form">Lưu nháp</button>
+          {% endif %}
+          {% if can_publish and form_template.is_active %}
+            <form method="post" action="{% url 'formbuilder:publish' form_template.pk %}"
+                  hx-post="{% url 'formbuilder:publish' form_template.pk %}"
+                  hx-target="#designer-stage" hx-swap="outerHTML">
+              {% csrf_token %}
+              <button class="btn btn-primary" type="submit">Xuất bản</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+      {% if can_edit %}
+        <form id="draft-meta-form" method="post" class="card-body border-t"
+              action="{% url 'formbuilder:save_draft' form_template.pk %}"
+              hx-post="{% url 'formbuilder:save_draft' form_template.pk %}"
+              hx-target="#save-state" hx-swap="outerHTML"
+              @input="dirty = true">
+          {% csrf_token %}
+          <div class="grid grid-cols-12 gap-2">
+            <div class="col-span-12 md:col-span-4">
+              <label class="form-label" for="template-name">Tên biểu mẫu</label>
+              <input class="form-control" id="template-name" name="name" value="{{ form_template.name }}" required>
+            </div>
+            <div class="col-span-12 md:col-span-4">
+              <label class="form-label" for="template-description">Mô tả</label>
+              <input class="form-control" id="template-description" name="description" value="{{ form_template.description }}">
+            </div>
+            <div class="col-span-12 md:col-span-4">
+              <label class="form-label" for="layout-notes">Ghi chú nội bộ</label>
+              <input class="form-control" id="layout-notes" name="layout_notes" value="{{ draft.layout_notes }}">
+            </div>
+          </div>
+        </form>
+      {% endif %}
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="designer">
+      <aside class="designer-pane designer-drawer card" :class="paletteOpen ? 'is-open' : ''">
+        <div class="card-header"><h3 class="card-title">Thêm trường</h3></div>
+        <div class="card-body">
+          {% if read_only %}
+            <p class="text-slate-500">Bạn chỉ được xem biểu mẫu này.</p>
+          {% else %}
+            {% for group_label, items in palette %}
+              <div class="mb-3">
+                <div class="text-slate-500 small mb-1">{{ group_label }}</div>
+                <div class="flex flex-wrap gap-2">
+                  {% for code, label in items %}
+                    <form method="post" action="{% url 'formbuilder:field_create' form_template.pk %}"
+                          hx-post="{% url 'formbuilder:field_create' form_template.pk %}"
+                          hx-target="#designer-stage" hx-swap="outerHTML">
+                      {% csrf_token %}
+                      <input type="hidden" name="field_type" value="{{ code }}">
+                      <input type="hidden" name="section" value="{{ default_section_id }}">
+                      <button class="btn btn-outline-secondary btn-sm" type="submit" @click="window.__designerFocus = 'label'">{{ label }}</button>
+                    </form>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endfor %}
+            <form method="post" action="{% url 'formbuilder:section_create' form_template.pk %}"
+                  hx-post="{% url 'formbuilder:section_create' form_template.pk %}"
+                  hx-target="#designer-stage" hx-swap="outerHTML">
+              {% csrf_token %}
+              <input type="hidden" name="title" value="Phần mới">
+              <button class="btn btn-outline-primary btn-sm" type="submit">Thêm phần</button>
+            </form>
+            {% if unused_core %}
+              <div class="mt-3">
+                <div class="text-slate-500 small mb-1">Trường hệ thống</div>
+                {% for definition in unused_core %}
+                  <form method="post" class="mb-1" action="{% url 'formbuilder:field_create' form_template.pk %}"
+                        hx-post="{% url 'formbuilder:field_create' form_template.pk %}"
+                        hx-target="#designer-stage" hx-swap="outerHTML">
+                    {% csrf_token %}
+                    <input type="hidden" name="core_key" value="{{ definition.core_key }}">
+                    <input type="hidden" name="section" value="{{ default_section_id }}">
+                    <button class="btn btn-outline-secondary btn-sm" type="submit">{{ definition.label }}</button>
+                  </form>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endif %}
+        </div>
+      </aside>
+
+      {% include "formbuilder/partials/stage.html" %}
+    </div>
+  </div>
+  {% if can_edit %}
+    <script>
+      document.addEventListener("dragstart", function (event) {
+        var card = event.target.closest("[data-field-id]");
+        if (!card) return;
+        event.dataTransfer.setData("text/plain", card.dataset.fieldId);
+        event.dataTransfer.effectAllowed = "move";
+      });
+      document.addEventListener("dragover", function (event) {
+        if (event.target.closest("[data-field-list]")) event.preventDefault();
+      });
+      document.addEventListener("drop", function (event) {
+        var list = event.target.closest("[data-field-list]");
+        if (!list) return;
+        event.preventDefault();
+        var id = event.dataTransfer.getData("text/plain");
+        var card = document.querySelector('[data-field-id="' + CSS.escape(id) + '"]');
+        if (!card) return;
+        var before = event.target.closest("[data-field-id]");
+        if (before && before !== card && list.contains(before)) list.insertBefore(card, before);
+        else list.appendChild(card);
+        var sections = Array.from(document.querySelectorAll("[data-section-id]")).map(function (el) {
+          return Number(el.dataset.sectionId);
+        });
+        var fields = [];
+        document.querySelectorAll("[data-section-id]").forEach(function (section) {
+          Array.from(section.querySelectorAll("[data-field-id]")).forEach(function (item, index) {
+            fields.push({
+              id: Number(item.dataset.fieldId),
+              section_id: Number(section.dataset.sectionId),
+              order: index + 1
+            });
+          });
+        });
+        var input = document.getElementById("reorder-payload");
+        if (!input) return;
+        input.value = JSON.stringify({sections: sections, fields: fields});
+        var form = document.getElementById("reorder-form");
+        if (form && window.htmx) htmx.trigger(form, "submit");
+        else if (form) form.submit();
+      });
+    </script>
+  {% endif %}
+{% endblock %}

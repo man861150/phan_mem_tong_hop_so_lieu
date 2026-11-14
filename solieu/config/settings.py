@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "apps.catalog",
     "apps.activities",
     "apps.entry",
+    "apps.formbuilder",
     "apps.reporting",
 ]
 

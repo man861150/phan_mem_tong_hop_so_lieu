@@ -99,6 +99,20 @@
     {% endif %}
 
     {% if ad_hoc %}
+      {% if custom_layout %}
+        <form method="post" class="mb-3" {% if multipart %}enctype="multipart/form-data"{% endif %}>
+          {% csrf_token %}
+          {% include "entry/partials/custom_form_sections.html" with layout=custom_layout system="ad_hoc" form=form rows=rows can_edit=can_edit show_month_info=False has_split_grids=has_split_grids activity=activity %}
+          {% if can_edit %}
+            <div class="flex justify-end gap-2">
+              <button class="btn btn-outline-primary" type="submit" name="action" value="save">Lưu nháp</button>
+              {% if can_submit %}
+                <button class="btn btn-primary" type="submit" name="action" value="gui">Gửi duyệt</button>
+              {% endif %}
+            </div>
+          {% endif %}
+        </form>
+      {% else %}
       <form method="post" class="card">
         {% csrf_token %}
         <div class="card-header">
@@ -137,7 +151,22 @@
           </div>
         {% endif %}
       </form>
+      {% endif %}
     {% else %}
+      {% if custom_layout %}
+        <form method="post" {% if multipart %}enctype="multipart/form-data"{% endif %}>
+          {% csrf_token %}
+          {% include "entry/partials/custom_form_sections.html" with layout=custom_layout system="indicator" form=form rows=rows can_edit=can_edit show_month_info=False has_split_grids=has_split_grids activity=activity %}
+          {% if can_edit %}
+            <div class="flex justify-end gap-2">
+              <button class="btn btn-outline-primary" type="submit" name="action" value="save">Lưu nháp</button>
+              {% if can_submit %}
+                <button class="btn btn-primary" type="submit" name="action" value="gui">Gửi duyệt</button>
+              {% endif %}
+            </div>
+          {% endif %}
+        </form>
+      {% else %}
       <form method="post">
         {% csrf_token %}
         {% include "entry/_indicator_form.html" with form=form rows=rows can_edit=can_edit show_month_info=False has_split_grids=has_split_grids %}
@@ -150,6 +179,7 @@
           </div>
         {% endif %}
       </form>
+      {% endif %}
     {% endif %}
 
     {% if can_delete %}

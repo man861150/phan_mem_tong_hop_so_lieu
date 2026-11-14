@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Biểu mẫu nhập liệu{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
+        <h2 class="page-title">Biểu mẫu nhập liệu</h2>
+        <div class="text-slate-500">Thiết kế biểu mẫu cho cán bộ nhập liệu trong phòng.</div>
+      </div>
+      {% if can_create %}
+        <div class="col-auto">
+          <a class="btn btn-primary" href="{% url 'formbuilder:create' %}">Tạo biểu mẫu</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="get" class="card mb-3">
+    <div class="card-body flex flex-wrap items-end gap-2">
+      <div>
+        <label class="form-label" for="q">Tìm theo tên</label>
+        <input class="form-control" id="q" name="q" value="{{ query }}">
+      </div>
+      {% if departments %}
+        <div>
+          <label class="form-label" for="phong">Phòng</label>
+          <select class="form-control" id="phong" name="phong">
+            <option value="">Tất cả phòng</option>
+            {% for phong in departments %}
+              <option value="{{ phong.pk }}" {% if phong_id == phong.pk|stringformat:"s" %}selected{% endif %}>{{ phong.ma_phong }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      {% endif %}
+      <button class="btn btn-outline-primary" type="submit">Lọc</button>
+    </div>
+  </form>
+
+  <div class="flex flex-wrap gap-2 mb-3">
+    <a class="btn btn-sm {% if not function_type %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?">Tất cả</a>
+    {% for value, label in function_choices %}
+      <a class="btn btn-sm {% if function_type == value %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?chuc_nang={{ value }}">{{ label }}</a>
+    {% endfor %}
+    <a class="btn btn-sm {% if status == 'nhap' %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?trang_thai=nhap">Bản nháp</a>
+    <a class="btn btn-sm {% if status == 'xuat_ban' %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?trang_thai=xuat_ban">Đã xuất bản</a>
+    <a class="btn btn-sm {% if status == 'luu_tru' %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?trang_thai=luu_tru">Đã lưu trữ</a>
+  </div>
+
+  {% if not templates %}
+    <div class="card">
+      <div class="card-body">
+        <h3 class="card-title">Chưa có biểu mẫu</h3>
+        <p class="text-slate-500">Tạo biểu mẫu để cán bộ nhập liệu thấy các trường bổ sung trên phiếu. Khi chưa xuất bản, phiếu vẫn dùng mẫu cố định hiện tại.</p>
+        {% if can_create %}
+          <a class="btn btn-primary" href="{% url 'formbuilder:create' %}">Tạo biểu mẫu</a>
+        {% endif %}
+      </div>
+    </div>
+  {% else %}
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr>
+              <th>Tên</th>
+              <th>Chức năng</th>
+              <th>Phạm vi</th>
+              <th>Trạng thái</th>
+              <th>Phiên bản</th>
+              <th>Cập nhật</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in templates %}
+              <tr>
+                <td>
+                  <div>{{ item.name }}</div>
+                  <div class="text-slate-500 small">{{ item.phong.ma_phong }}</div>
+                </td>
+                <td>{{ item.get_function_type_display }}</td>
+                <td>{{ item.scope_label }}</td>
+                <td>
+                  {% if not item.is_active %}
+                    <span class="badge bg-secondary-lt">Đã lưu trữ</span>
+                  {% elif item.current_published %}
+                    <span class="badge bg-green-lt">Đã xuất bản</span>
+                  {% else %}
+                    <span class="badge bg-yellow-lt">Bản nháp</span>
+                  {% endif %}
+                </td>
+                <td>{% if item.current_published %}v{{ item.current_published.version }}{% else %}—{% endif %}</td>
+                <td>{{ item.updated_at|date:"d/m/Y H:i" }}</td>
+                <td class="flex flex-wrap gap-1">
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'formbuilder:design' item.pk %}">Thiết kế</a>
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'formbuilder:preview' item.pk %}">Xem trước</a>
+                  {% if can_create %}
+                    <form method="post" action="{% url 'formbuilder:duplicate' item.pk %}">{% csrf_token %}
+                      <button class="btn btn-sm btn-outline-secondary" type="submit">Nhân bản</button>
+                    </form>
+                    {% if item.is_active and item.current_draft %}
+                      <form method="post" action="{% url 'formbuilder:publish' item.pk %}">{% csrf_token %}
+                        <button class="btn btn-sm btn-primary" type="submit">Xuất bản</button>
+                      </form>
+                    {% endif %}
+                    {% if item.is_active %}
+                      <form method="post" action="{% url 'formbuilder:archive' item.pk %}">{% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger" type="submit">Lưu trữ</button>
+                      </form>
+                    {% else %}
+                      <form method="post" action="{% url 'formbuilder:restore' item.pk %}">{% csrf_token %}
+                        <button class="btn btn-sm btn-outline-primary" type="submit">Khôi phục</button>
+                      </form>
+                    {% endif %}
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

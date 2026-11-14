@@ -73,8 +73,7 @@ def navigation(request):
             "label": "Dự án",
             "icon": "project",
             "url": reverse("activities:du_an_list"),
-            "active": path.startswith("/du-an/")
-            or path.startswith("/phieu/du-an/"),
+            "active": path.startswith("/du-an/") or path.startswith("/phieu/du-an/"),
             "visible": _can_any(user, "edit_entry", "view_progress"),
         },
         {
@@ -111,11 +110,17 @@ def navigation(request):
             "visible": can(user, "view_history"),
         },
         {
+            "label": "Biểu mẫu",
+            "icon": "form",
+            "url": reverse("formbuilder:list"),
+            "active": path.startswith("/bieu-mau/"),
+            "visible": can(user, "view_form_templates"),
+        },
+        {
             "label": "Danh mục",
             "icon": "catalog",
             "url": reverse("catalog:danh_muc"),
-            "active": path.startswith("/danh-muc/")
-            or path.startswith("/ke-hoach/"),
+            "active": path.startswith("/danh-muc/") or path.startswith("/ke-hoach/"),
             "visible": can(user, "view_catalog"),
         },
         {

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Xem trước — {{ form_template.name }}{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div class="grid grid-cols-12 items-center">
+      <div class="col-span-12">
+        <h2 class="page-title">Xem trước biểu mẫu</h2>
+        <div class="text-slate-500">
+          {{ form_template.name }} — bản nháp v{{ draft.version }}. Đây là dạng cán bộ nhập liệu sẽ thấy với các trường tùy chỉnh.
+        </div>
+      </div>
+      <div class="col-auto flex gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'formbuilder:design' form_template.pk %}">Về thiết kế</a>
+      </div>
+    </div>
+  </div>
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+  {% endif %}
+  {% if form.errors %}
+    <div class="alert alert-danger">
+      <div>Chưa hợp lệ. Kiểm tra các trường được đánh dấu.</div>
+    </div>
+  {% endif %}
+
+  <form method="post" action="{% url 'formbuilder:preview_check' form_template.pk %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% for block in sections %}
+      <section class="card mb-3">
+        <div class="card-header">
+          <h3 class="card-title">{{ block.section.title }}</h3>
+          {% if block.section.description %}
+            <div class="text-slate-500">{{ block.section.description }}</div>
+          {% endif %}
+        </div>
+        <div class="card-body">
+          <div class="form-grid">
+            {% for item in block.items %}
+              <div class="{{ item.span_class }}">
+                {% if item.field.field_type == "instruction" %}
+                  <div class="alert alert-info">
+                    <strong>{{ item.field.label }}</strong>
+                    {% if item.field.help_text %}<div>{{ item.field.help_text }}</div>{% endif %}
+                  </div>
+                {% elif item.field.source == "core" %}
+                  <div class="text-slate-500 small">{{ item.field.label }}</div>
+                  <div class="form-control-plaintext">Trường hệ thống — lấy từ phiếu khi nhập liệu.</div>
+                {% elif item.bound %}
+                  <label class="form-label" for="{{ item.bound.id_for_label }}">
+                    {{ item.field.label }}{% if item.required %} <span class="text-red-700">*</span>{% endif %}
+                  </label>
+                  {{ item.bound }}
+                  {% if item.field.field_type == "percent" %}<span class="text-slate-500">%</span>{% endif %}
+                  {% if item.bound.errors %}<div class="text-red-700">{{ item.bound.errors }}</div>{% endif %}
+                  {% if item.field.help_text %}<div class="form-hint">{{ item.field.help_text }}</div>{% endif %}
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    {% endfor %}
+    <button class="btn btn-primary" type="submit">Kiểm tra hợp lệ</button>
+  </form>
+{% endblock %}
