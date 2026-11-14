@@ -230,7 +230,9 @@
         </div>
       </div>
       <div class="card-body">
-        <div id="chart2" class="chart-canvas chart-canvas--tall"></div>
+        <div id="chart2" class="chart-canvas chart-canvas--tall" role="img"
+             aria-label="Lũy kế so với kế hoạch năm" aria-describedby="chart2-fallback"></div>
+        <p id="chart2-fallback" class="sr-only"></p>
         <p class="card-note">
           <span class="note-dot note-dot--accent" aria-hidden="true"></span>
           Chỉ hiển thị chỉ tiêu có kế hoạch năm đã xác nhận.
@@ -266,6 +268,38 @@
       };
       const fontFamily = getComputedStyle(document.body).fontFamily;
       const axisLabel = { color: palette.label, fontSize: 12, fontFamily: fontFamily };
+      const textMeasure = document.createElement("canvas").getContext("2d");
+
+      function measureText(text, font) {
+        textMeasure.font = font;
+        return textMeasure.measureText(text).width;
+      }
+
+      function formatViNumber(value) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) {
+          return "—";
+        }
+        const negative = number < 0;
+        const rounded = Math.round((Math.abs(number) + Number.EPSILON) * 100) / 100;
+        const parts = rounded.toFixed(2).split(".");
+        const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        const fraction = parts[1].replace(/0+$/, "");
+        const text = fraction ? integer + "," + fraction : integer;
+        return negative ? "-" + text : text;
+      }
+
+      function escapeHtml(text) {
+        return String(text).replace(/[&<>"']/g, function (char) {
+          return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            "\"": "&quot;",
+            "'": "&#39;"
+          }[char];
+        });
+      }
 
       function emptyOption(message) {
         return {
@@ -324,58 +358,168 @@
         }, true);
       }
 
-      function renderChart2(data) {
-        if (!data.labels.length) {
-          chart2.clear();
-          chart2.setOption(emptyOption("Chưa có số liệu"));
+      function chart2Fallback(data) {
+        const node = document.getElementById("chart2-fallback");
+        if (!node) {
           return;
         }
+        if (!data.labels.length) {
+          node.textContent = "Chưa có số liệu.";
+          return;
+        }
+        node.textContent = data.labels.map(function (label, index) {
+          const unit = data.units && data.units[index] ? " " + data.units[index] : "";
+          return label
+            + ": kế hoạch " + formatViNumber(data.plans[index]) + unit
+            + ", lũy kế " + formatViNumber(data.cumulative[index]) + unit + ".";
+        }).join(" ");
+      }
+
+      function renderChart2(data) {
+        chart2Current = data;
+        chart2Fallback(data);
+        if (!data.labels.length) {
+          chart2.clear();
+          chart2.setOption(emptyOption("Chưa có số liệu"), true);
+          return;
+        }
+
+        const width = chart2Element.clientWidth || 320;
+        const count = data.labels.length;
+        const labelSize = 11;
+        const valueFont = "800 " + labelSize + "px " + fontFamily;
+        const axisFont = "12px " + fontFamily;
+        let maxValue = 0;
+        let longest = "";
+        data.plans.concat(data.cumulative).forEach(function (value) {
+          maxValue = Math.max(maxValue, Number(value) || 0);
+          const text = formatViNumber(value);
+          if (text.length > longest.length) {
+            longest = text;
+          }
+        });
+        const showLabels = width >= 640;
+        const labelWidth = longest ? measureText(longest, valueFont) : 0;
+        const top = showLabels
+          ? Math.min(140, Math.max(28, Math.ceil(labelWidth) + 14, 12 + longest.length * 6.6))
+          : 16;
+        const left = Math.max(48, Math.ceil(measureText(formatViNumber(maxValue), axisFont)) + 18);
+
+        function categoryLayout(slot) {
+          const safeSlot = Math.max(1, slot);
+          if (safeSlot >= 24) {
+            return { interval: 0, width: Math.max(16, Math.floor(safeSlot) - 4) };
+          }
+          const group = Math.max(2, Math.ceil(56 / safeSlot));
+          return {
+            interval: group - 1,
+            width: Math.max(40, Math.floor(safeSlot * group - 8))
+          };
+        }
+
+        const estimatedSlot = Math.max(1, (width - left - 20) / count);
+        let categoryAxis = categoryLayout(estimatedSlot);
+
+        function seriesLabel(color) {
+          return {
+            show: showLabels,
+            position: "top",
+            distance: 4,
+            rotate: 90,
+            align: "left",
+            verticalAlign: "middle",
+            fontFamily: fontFamily,
+            fontSize: labelSize,
+            fontWeight: 800,
+            color: color,
+            formatter: function (item) { return formatViNumber(item.value); }
+          };
+        }
+
+        function series(name, values, color, labelColor) {
+          return {
+            name: name,
+            type: "bar",
+            data: values,
+            barMaxWidth: 48,
+            barGap: "12%",
+            barCategoryGap: "18%",
+            clip: false,
+            itemStyle: { color: color, borderRadius: [8, 8, 0, 0] },
+            label: seriesLabel(labelColor),
+            labelLayout: { hideOverlap: true }
+          };
+        }
+
         chart2.setOption({
           tooltip: {
             trigger: "axis",
-            axisPointer: { type: "shadow" }
+            axisPointer: { type: "shadow" },
+            formatter: function (items) {
+              if (!items.length) {
+                return "";
+              }
+              const index = items[0].dataIndex;
+              const unit = data.units && data.units[index] ? " " + escapeHtml(data.units[index]) : "";
+              const lines = [escapeHtml(data.labels[index])];
+              items.forEach(function (item) {
+                lines.push(item.marker + escapeHtml(item.seriesName) + ": " + formatViNumber(item.value) + unit);
+              });
+              return lines.join("<br/>");
+            }
           },
-          grid: { left: 48, right: 16, top: 32, bottom: 64 },
+          grid: { left: left, right: 16, top: top, bottom: 8, containLabel: true },
           xAxis: {
             type: "category",
             data: data.labels,
             axisLine: { lineStyle: { color: palette.axis } },
             axisTick: { show: false },
             axisLabel: Object.assign({
-              interval: 0,
-              width: 140,
-              overflow: "break"
+              interval: categoryAxis.interval,
+              hideOverlap: true,
+              margin: 14,
+              width: categoryAxis.width,
+              overflow: "truncate",
+              ellipsis: "…"
             }, axisLabel)
           },
           yAxis: {
             type: "value",
             axisLine: { show: false },
-            axisLabel: axisLabel,
+            axisLabel: Object.assign({
+              hideOverlap: true,
+              formatter: function (value) { return formatViNumber(value); }
+            }, axisLabel),
             splitLine: { lineStyle: { color: palette.grid } }
           },
           series: [
-            {
-              name: "Kế hoạch",
-              type: "bar",
-              data: data.plans,
-              barMaxWidth: 48,
-              itemStyle: { color: palette.plan, borderRadius: [8, 8, 0, 0] },
-              label: { show: true, position: "top", fontFamily: fontFamily, color: palette.value, fontWeight: 800 }
-            },
-            {
-              name: "Lũy kế",
-              type: "bar",
-              data: data.cumulative,
-              barMaxWidth: 48,
-              itemStyle: { color: palette.total, borderRadius: [8, 8, 0, 0] },
-              label: { show: true, position: "top", fontFamily: fontFamily, color: palette.totalValue, fontWeight: 800 }
-            }
+            series("Kế hoạch", data.plans, palette.plan, palette.value),
+            series("Lũy kế", data.cumulative, palette.total, palette.totalValue)
           ]
         }, true);
+
+        if (count > 1) {
+          const pitch = Math.abs(
+            chart2.convertToPixel({ xAxisIndex: 0 }, 1) - chart2.convertToPixel({ xAxisIndex: 0 }, 0)
+          );
+          const fitted = pitch > 0 ? categoryLayout(pitch) : categoryAxis;
+          if (fitted.interval !== categoryAxis.interval || Math.abs(fitted.width - categoryAxis.width) > 2) {
+            categoryAxis = fitted;
+            chart2.setOption({
+              xAxis: {
+                axisLabel: {
+                  interval: fitted.interval,
+                  width: fitted.width
+                }
+              }
+            });
+          }
+        }
       }
 
       const chart1 = echarts.init(chart1Element);
       const chart2 = echarts.init(chart2Element);
+      let chart2Current = chart2Data;
       renderChart1(chart1Data);
       renderChart2(chart2Data);
 
@@ -400,9 +544,14 @@
         });
       }
 
+      let chart2Resize = 0;
       window.addEventListener("resize", function () {
         chart1.resize();
         chart2.resize();
+        cancelAnimationFrame(chart2Resize);
+        chart2Resize = requestAnimationFrame(function () {
+          renderChart2(chart2Current);
+        });
       });
     });
   </script>
