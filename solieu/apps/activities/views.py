@@ -15,6 +15,7 @@ from apps.accounts.roles import Role
 from apps.accounts.scoping import scoped
 from apps.activities.forms import DuAnForm, HoatDongForm
 from apps.activities.models import (
+    ChuongTrinhDuAn,
     DonViPhoiHop,
     DuAn,
     HoatDong,
@@ -333,18 +334,62 @@ def _du_an_queryset(user):
 @require_GET
 def du_an_list(request):
     _require_view(request.user)
-    page_obj = Paginator(
-        _du_an_queryset(request.user),
-        LIST_PAGE_SIZE,
-    ).get_page(request.GET.get("trang"))
+    base_queryset = _du_an_queryset(request.user)
+
+    query = request.GET.get("q", "").strip()
+    program_values = {value for value, _label in ChuongTrinhDuAn.choices}
+    selected_chuong_trinh = request.GET.get("chuong_trinh", "").strip()
+    if selected_chuong_trinh not in program_values:
+        selected_chuong_trinh = ""
+
+    queryset = base_queryset
+    if query:
+        queryset = queryset.filter(ten_du_an__icontains=query)
+    if selected_chuong_trinh:
+        queryset = queryset.filter(chuong_trinh=selected_chuong_trinh)
+
+    page_obj = Paginator(queryset, LIST_PAGE_SIZE).get_page(request.GET.get("trang"))
+
+    latest_year = base_queryset.order_by("-nam").values_list("nam", flat=True).first()
+    used_programs = set(base_queryset.values_list("chuong_trinh", flat=True))
+    summary = {
+        "total": base_queryset.count(),
+        "latest_year": latest_year,
+        "latest_year_count": (
+            base_queryset.filter(nam=latest_year).count()
+            if latest_year is not None
+            else 0
+        ),
+        "program_count": len(used_programs),
+        "program_labels": [
+            label for value, label in ChuongTrinhDuAn.choices if value in used_programs
+        ],
+    }
+
+    params = request.GET.copy()
+    params.pop("trang", None)
+    if query:
+        params["q"] = query
+    else:
+        params.pop("q", None)
+    if selected_chuong_trinh:
+        params["chuong_trinh"] = selected_chuong_trinh
+    else:
+        params.pop("chuong_trinh", None)
+
     return render(
         request,
         "activities/du_an_list.html",
         {
             "projects": page_obj.object_list,
             "page_obj": page_obj,
-            "page_query": "",
+            "page_query": params.urlencode(),
             "can_create": can(request.user, "edit_entry", request.user.phong_id),
+            "summary": summary,
+            "program_options": ChuongTrinhDuAn.choices,
+            "selected_q": query,
+            "selected_chuong_trinh": selected_chuong_trinh,
+            "has_filters": bool(query or selected_chuong_trinh),
         },
     )
 

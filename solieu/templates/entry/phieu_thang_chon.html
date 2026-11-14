@@ -1,13 +1,14 @@
 {% extends "base.html" %}
+{% load entry_summary %}
 
-{% block title %}Phiếu tháng — Tổng hợp số liệu{% endblock %}
+{% block title %}Phiếu báo cáo — Tổng hợp số liệu{% endblock %}
 
 {% block content %}
   <div class="page-header d-print-none">
     <div class="grid grid-cols-12 items-center">
       <div class="col-span-12">
-        <h2 class="page-title">Phiếu tháng</h2>
-        <div class="text-slate-500">Chọn kỳ báo cáo để mở phiếu tháng.</div>
+        <p class="eyebrow">Báo cáo định kỳ</p>
+        <h2 class="page-title">Phiếu báo cáo</h2>
       </div>
       <div class="col-auto">
         {% include "partials/guide_link.html" %}
@@ -22,51 +23,124 @@
   {% endif %}
 
   {% if not periods %}
-    <div class="card">
-      <div class="card-body">
-        Chưa có kỳ báo cáo. Quản trị hệ thống mở kỳ trong trang quản trị.
+    <div class="card table-card">
+      <div class="table-empty">
+        <span class="table-empty-icon" aria-hidden="true">
+          <svg class="size-5"><use href="#icon-calendar"></use></svg>
+        </span>
+        <strong>Chưa có kỳ báo cáo</strong>
+        <span>Quản trị hệ thống mở kỳ trong trang quản trị.</span>
       </div>
     </div>
   {% else %}
-    <div class="card">
+    <section class="summary-grid" aria-label="Tóm tắt kỳ báo cáo">
+      <article class="summary-card">
+        <span class="summary-card-label">Kỳ đang mở</span>
+        <strong class="summary-card-value">{{ periods|period_count:"open" }}</strong>
+      </article>
+
+      {% if is_scoped %}
+        <article class="summary-card summary-card--warning">
+          <span class="summary-card-label">Chưa gửi</span>
+          <strong class="summary-card-value">{{ periods|period_count:"attention" }}</strong>
+        </article>
+        <article class="summary-card summary-card--success">
+          <span class="summary-card-label">Đã duyệt</span>
+          <strong class="summary-card-value">{{ periods|period_count:"approved" }}</strong>
+        </article>
+      {% else %}
+        <article class="summary-card">
+          <span class="summary-card-label">Kỳ đã đóng</span>
+          <strong class="summary-card-value">{{ periods|period_count:"closed" }}</strong>
+        </article>
+        <article class="summary-card">
+          <span class="summary-card-label">Tổng kỳ</span>
+          <strong class="summary-card-value">{{ periods|length }}</strong>
+        </article>
+      {% endif %}
+    </section>
+
+    <section class="card table-card" aria-labelledby="period-list-title">
+      <div class="card-header">
+        <h2 class="card-title" id="period-list-title">Danh sách kỳ</h2>
+        <span class="text-slate-500 small">{{ periods|length }} kỳ</span>
+      </div>
+
       <div class="table-responsive">
-        <table class="table table-vcenter card-table">
+        <table class="table table-vcenter card-table table-periods">
           <thead>
             <tr>
-              <th>Kỳ báo cáo</th>
-              <th>Trạng thái</th>
-              {% if is_scoped %}<th>Phiếu của phòng</th>{% endif %}
+              <th scope="col">Kỳ báo cáo</th>
+              <th scope="col">Trạng thái kỳ</th>
+              {% if is_scoped %}<th scope="col">Phiếu của phòng</th>{% endif %}
+              <th scope="col" class="text-end"><span class="sr-only">Thao tác</span></th>
             </tr>
           </thead>
           <tbody>
             {% for item in periods %}
-              <tr>
-                <td>
-                  <a href="{% url 'entry:phieu_thang' item.ky.pk %}">
-                    Tháng {{ item.ky.so_ky }}/{{ item.ky.nam }}
-                  </a>
-                </td>
-                <td>
-                  {% if item.is_open %}
-                    <span class="badge bg-success-lt">Kỳ đang mở</span>
-                  {% else %}
-                    <span class="badge bg-secondary-lt">Kỳ đã đóng</span>
-                  {% endif %}
-                </td>
-                {% if is_scoped %}
-                  <td>
-                    {% if item.phieu %}
-                      {{ item.phieu.get_trang_thai_display }}
+              {% with ky=item.ky %}
+                {% url 'entry:phieu_thang' ky.pk as phieu_url %}
+                <tr>
+                  <td class="period-cell">
+                    <strong>{{ ky.get_loai_ky_display }} {{ ky.so_ky }}/{{ ky.nam }}</strong>
+                  </td>
+                  <td class="period-state">
+                    {% if item.is_open %}
+                      <span class="badge bg-success-lt">Kỳ đang mở</span>
                     {% else %}
-                      Chưa có phiếu
+                      <span class="badge bg-secondary-lt">Kỳ đã đóng</span>
                     {% endif %}
                   </td>
-                {% endif %}
-              </tr>
+                  {% if is_scoped %}
+                    <td class="report-state">
+                      {% if item.phieu %}
+                        <span class="badge {% if item.phieu.trang_thai == 'da_duyet' %}bg-success-lt{% elif item.phieu.trang_thai == 'tra_lai' %}bg-danger-lt{% elif item.phieu.trang_thai == 'cho_duyet' %}bg-info-lt{% else %}bg-secondary-lt{% endif %}">
+                          {{ item.phieu.get_trang_thai_display }}
+                        </span>
+                      {% else %}
+                        <span class="badge bg-warning-lt">Chưa có phiếu</span>
+                      {% endif %}
+                    </td>
+                  {% endif %}
+                  <td class="period-action text-end">
+                    {% if item.phieu %}
+                      {% if item.is_open %}
+                        <a class="btn btn-sm btn-outline-primary"
+                           href="{{ phieu_url }}"
+                           aria-label="Mở phiếu {{ ky.get_loai_ky_display }} {{ ky.so_ky }}/{{ ky.nam }}">
+                          Mở phiếu
+                          <svg class="size-3.5" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+                        </a>
+                      {% else %}
+                        <a class="btn btn-sm btn-link"
+                           href="{{ phieu_url }}"
+                           aria-label="Xem phiếu {{ ky.get_loai_ky_display }} {{ ky.so_ky }}/{{ ky.nam }}">
+                          Xem phiếu
+                          <svg class="size-3.5" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+                        </a>
+                      {% endif %}
+                    {% elif item.is_open %}
+                      <a class="btn btn-sm btn-primary"
+                         href="{{ phieu_url }}"
+                         aria-label="{% if is_scoped %}Tạo phiếu{% else %}Mở phiếu{% endif %} {{ ky.get_loai_ky_display }} {{ ky.so_ky }}/{{ ky.nam }}">
+                        {% if is_scoped %}Tạo phiếu{% else %}Mở phiếu{% endif %}
+                        <svg class="size-3.5" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+                      </a>
+                    {% else %}
+                      <a class="btn btn-sm btn-link"
+                         href="{{ phieu_url }}"
+                         aria-label="Xem kỳ {{ ky.get_loai_ky_display }} {{ ky.so_ky }}/{{ ky.nam }}">
+                        Xem kỳ
+                        <svg class="size-3.5" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+                      </a>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endwith %}
             {% endfor %}
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   {% endif %}
 {% endblock %}

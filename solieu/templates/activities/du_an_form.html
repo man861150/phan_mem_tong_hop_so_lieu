@@ -3,68 +3,74 @@
 {% block title %}{% if project %}{{ project.ten_du_an }}{% else %}Thêm dự án{% endif %} — Tổng hợp số liệu{% endblock %}
 
 {% block content %}
-  <div class="page-header d-print-none">
-    <div class="grid grid-cols-12 items-center">
-      <div class="col-span-12">
-        <h2 class="page-title">
-          {% if project %}
-            {{ project.ten_du_an }}
-          {% else %}
-            Thêm dự án
-          {% endif %}
-        </h2>
-      </div>
-      <div class="col-auto flex flex-wrap items-center gap-2">
-        {% include "partials/guide_link.html" %}
-        <a class="btn btn-outline-secondary" href="{% url 'activities:du_an_list' %}">Danh sách</a>
-      </div>
+  <section class="page-hero d-print-none">
+    <div class="page-hero-main">
+      <p class="eyebrow">
+        Dự án / {% if not project %}Tạo mới{% elif can_edit %}Chỉnh sửa{% else %}Chi tiết{% endif %}
+      </p>
+      <h1 class="page-hero-title">
+        {% if not project %}
+          Thêm dự án mới
+        {% elif can_edit %}
+          Chỉnh sửa dự án
+        {% else %}
+          Chi tiết dự án
+        {% endif %}
+      </h1>
     </div>
-  </div>
+    <div class="page-hero-actions">
+      {% include "partials/guide_link.html" %}
+      <a class="btn btn-outline-secondary" href="{% url 'activities:du_an_list' %}">Danh sách dự án</a>
+    </div>
+  </section>
 
   {% if can_edit %}
-    <form class="card" method="post">
+    <form class="card activity-form activity-form-card" method="post">
       {% csrf_token %}
+      <div class="card-header">
+        <h2 class="card-title">Thông tin dự án</h2>
+      </div>
+
       <div class="card-body">
         {% if form.non_field_errors %}
           <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
+
         <div class="grid grid-cols-12 gap-3">
           <div class="col-span-12 md:col-span-6">
-            <label class="form-label" for="{{ form.phong.id_for_label }}">{{ form.phong.label }}</label>
-            {{ form.phong }}
-            {% if form.phong.errors %}<div class="text-red-700">{{ form.phong.errors }}</div>{% endif %}
+            {% include "activities/_form_field.html" with field=form.phong %}
           </div>
           <div class="col-span-12 md:col-span-6">
-            <label class="form-label" for="{{ form.ten_du_an.id_for_label }}">{{ form.ten_du_an.label }}</label>
-            {{ form.ten_du_an }}
-            {% if form.ten_du_an.errors %}<div class="text-red-700">{{ form.ten_du_an.errors }}</div>{% endif %}
+            {% include "activities/_form_field.html" with field=form.ten_du_an %}
           </div>
           <div class="col-span-12 md:col-span-4">
-            <label class="form-label" for="{{ form.chuong_trinh.id_for_label }}">{{ form.chuong_trinh.label }}</label>
-            {{ form.chuong_trinh }}
-            {% if form.chuong_trinh.errors %}<div class="text-red-700">{{ form.chuong_trinh.errors }}</div>{% endif %}
+            {% include "activities/_form_field.html" with field=form.chuong_trinh %}
           </div>
           <div class="col-span-12 md:col-span-4">
-            <label class="form-label" for="{{ form.hinh_thuc.id_for_label }}">{{ form.hinh_thuc.label }}</label>
-            {{ form.hinh_thuc }}
-            {% if form.hinh_thuc.errors %}<div class="text-red-700">{{ form.hinh_thuc.errors }}</div>{% endif %}
+            {% include "activities/_form_field.html" with field=form.hinh_thuc %}
           </div>
           <div class="col-span-12 md:col-span-4">
-            <label class="form-label" for="{{ form.nam.id_for_label }}">{{ form.nam.label }}</label>
-            {{ form.nam }}
-            {% if form.nam.errors %}<div class="text-red-700">{{ form.nam.errors }}</div>{% endif %}
+            {% include "activities/_form_field.html" with field=form.nam %}
           </div>
         </div>
       </div>
-      <div class="card-footer flex justify-between">
+
+      <div class="card-footer flex flex-wrap items-center justify-between gap-2">
         <a class="btn btn-link" href="{% url 'activities:du_an_list' %}">Hủy</a>
-        <button class="btn btn-primary" type="submit">Lưu dự án</button>
+        <button class="btn btn-primary" type="submit">
+          {% if project %}Cập nhật{% else %}Lưu dự án{% endif %}
+        </button>
       </div>
     </form>
   {% else %}
     <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Thông tin dự án</h2>
+      </div>
       <div class="card-body">
         <dl class="grid grid-cols-12 mb-0">
+          <dt class="col-span-12 sm:col-span-3">Dự án</dt>
+          <dd class="col-span-12 sm:col-span-9">{{ project.ten_du_an }}</dd>
           <dt class="col-span-12 sm:col-span-3">Phòng ban</dt>
           <dd class="col-span-12 sm:col-span-9">{{ project.phong }}</dd>
           <dt class="col-span-12 sm:col-span-3">Chương trình</dt>

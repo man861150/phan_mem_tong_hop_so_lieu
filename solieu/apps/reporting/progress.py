@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import date
+from decimal import Decimal
 
 from apps.catalog.models import (
     CachTongHop,
@@ -17,6 +18,7 @@ from apps.catalog.models import (
     PhongBan,
 )
 from apps.entry.models import LoaiPhieu
+from apps.reporting.dashboard import mean_percent
 from apps.reporting.formatting import format_vi_number
 from apps.reporting.rollup import (
     OFFICIAL_STATUS,
@@ -26,6 +28,17 @@ from apps.reporting.rollup import (
     _project_count_queryset,
     _solieu_queryset,
 )
+
+HUNDRED = Decimal("100")
+BAR_ZERO = Decimal("0")
+
+
+def _bar_percent(value: Decimal | None) -> str | None:
+    """Return a clamped CSS width for a percent bar, without locale separators."""
+    if value is None:
+        return None
+    clamped = min(max(value, BAR_ZERO), HUNDRED)
+    return format(clamped.quantize(Decimal("0.1")), "f")
 
 
 def build_progress_groups(
@@ -62,32 +75,48 @@ def build_progress_groups(
                 info["nhom__ten_mang"],
             )
             grouped[key].append(
-                {
-                    "chi_tieu_id": row.chi_tieu_id,
-                    "ma_chi_tieu": row.ma_chi_tieu,
-                    "ten_chi_tieu": row.ten_chi_tieu,
-                    "don_vi_tinh": row.don_vi_tinh,
-                    "plan": format_vi_number(row.plan),
-                    "cumulative": format_vi_number(row.cumulative),
-                    "percent": format_vi_number(row.percent),
-                    "remainder": format_vi_number(row.remainder),
-                    "pending": format_vi_number(row.pending_cumulative),
-                    "behind": row.behind,
-                    "only_track": row.plan is None,
-                    "percent_missing": row.percent is None,
-                }
+                (
+                    row,
+                    {
+                        "chi_tieu_id": row.chi_tieu_id,
+                        "ma_chi_tieu": row.ma_chi_tieu,
+                        "ten_chi_tieu": row.ten_chi_tieu,
+                        "don_vi_tinh": row.don_vi_tinh,
+                        "plan": format_vi_number(row.plan),
+                        "cumulative": format_vi_number(row.cumulative),
+                        "percent": format_vi_number(row.percent),
+                        "percent_width": _bar_percent(row.percent),
+                        "remainder": format_vi_number(row.remainder),
+                        "pending": format_vi_number(row.pending_cumulative),
+                        "behind": row.behind,
+                        "only_track": row.plan is None,
+                        "percent_missing": row.percent is None,
+                    },
+                )
             )
 
-        groups = [
-            {
-                "ten_mang": key[2],
-                "rows": sorted(
-                    grouped[key],
-                    key=lambda item: item["ma_chi_tieu"],
-                ),
-            }
-            for key in sorted(grouped)
-        ]
+        groups = []
+        for key in sorted(grouped):
+            entries = sorted(
+                grouped[key],
+                key=lambda entry: entry[1]["ma_chi_tieu"],
+            )
+            group_rows = [row for row, _display in entries]
+            percent = mean_percent(group_rows)
+            groups.append(
+                {
+                    "ten_mang": key[2],
+                    "percent": percent,
+                    "percent_display": format_vi_number(percent),
+                    "bar_percent": _bar_percent(percent),
+                    "behind": (
+                        percent is not None
+                        and percent < HUNDRED
+                        and any(row.behind for row in group_rows)
+                    ),
+                    "rows": [display for _row, display in entries],
+                }
+            )
         department_blocks.append(
             {
                 "phong_id": department.pk,
@@ -104,6 +133,70 @@ def build_progress_groups(
             for item in group["rows"]:
                 item.pop("pending", None)
     return department_blocks
+
+
+def build_progress_summary(
+    rows: list[RollupRow],
+    department_blocks: list[dict],
+) -> dict:
+    """Return KPI and group-bar values derived from the same rollup rows."""
+    total = len(rows)
+    average = mean_percent(rows)
+    completed = sum(
+        1 for row in rows if row.percent is not None and row.percent >= HUNDRED
+    )
+    attention = sum(1 for row in rows if row.behind)
+    completion = Decimal(completed) / Decimal(total) * HUNDRED if total else None
+
+    return {
+        "total": total,
+        "average_percent": average,
+        "average_display": format_vi_number(average),
+        "completed": completed,
+        "attention": attention,
+        "completion_percent": completion,
+        "completion_display": format_vi_number(completion),
+        "completion_bar": _bar_percent(completion),
+        "groups": _progress_group_points(department_blocks),
+    }
+
+
+def _progress_group_points(department_blocks: list[dict]) -> list[dict]:
+    """Aggregate group means across departments for the bar section."""
+    ordered = []
+    by_label = {}
+    for block in department_blocks:
+        for group in block["groups"]:
+            point = by_label.get(group["ten_mang"])
+            if point is None:
+                point = {
+                    "ten_mang": group["ten_mang"],
+                    "percent_sum": BAR_ZERO,
+                    "sample_count": 0,
+                    "behind": False,
+                }
+                by_label[group["ten_mang"]] = point
+                ordered.append(point)
+            if group["percent"] is not None:
+                point["percent_sum"] += group["percent"]
+                point["sample_count"] += 1
+            point["behind"] = point["behind"] or group["behind"]
+
+    points = []
+    for point in ordered:
+        if not point["sample_count"]:
+            continue
+        percent = point["percent_sum"] / Decimal(point["sample_count"])
+        points.append(
+            {
+                "ten_mang": point["ten_mang"],
+                "percent": percent,
+                "percent_display": format_vi_number(percent),
+                "bar_percent": _bar_percent(percent),
+                "behind": point["behind"],
+            }
+        )
+    return points
 
 
 def _attribution_value(obj) -> date:

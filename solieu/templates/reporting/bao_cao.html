@@ -3,20 +3,25 @@
 {% block title %}Báo cáo tổng hợp — Tổng hợp số liệu{% endblock %}
 
 {% block content %}
-  <div class="page-header d-print-none">
-    <div class="grid grid-cols-12 items-center">
-      <div class="col-span-12">
-        <h2 class="page-title">Báo cáo tổng hợp số liệu</h2>
-        <div class="text-slate-500">
-          {% if period_label %}{{ period_label }} — {{ scope.label }}{% else %}Chọn kỳ và phạm vi báo cáo.{% endif %}
-        </div>
-      </div>
-      <div class="col-auto flex gap-2">
-        <a class="btn btn-outline-secondary" href="{% url 'reporting:da_xuat' %}">Báo cáo đã xuất</a>
-        <a class="btn btn-outline-secondary" href="{% url 'reporting:nhap_xlsx' %}">Đọc file Excel</a>
-      </div>
+  <section class="page-hero d-print-none">
+    <div class="page-hero-main">
+      <p class="eyebrow">Báo cáo định kỳ</p>
+      <h1 class="page-hero-title">Báo cáo tổng hợp số liệu</h1>
+      {% if period_label %}
+        <p class="page-hero-copy">{{ period_label }} — {{ scope.label }}</p>
+      {% endif %}
     </div>
-  </div>
+    <div class="page-hero-actions">
+      <a class="btn btn-outline-secondary" href="{% url 'reporting:da_xuat' %}">
+        <svg class="size-4" aria-hidden="true"><use href="#icon-history"></use></svg>
+        Báo cáo đã xuất
+      </a>
+      <a class="btn btn-outline-secondary" href="{% url 'reporting:nhap_xlsx' %}">
+        <svg class="size-4" aria-hidden="true"><use href="#icon-file"></use></svg>
+        Đọc file Excel
+      </a>
+    </div>
+  </section>
 
   {% if messages %}
     {% for message in messages %}
@@ -28,66 +33,79 @@
     <div class="alert alert-danger">{{ export_error }}</div>
   {% endif %}
 
-  <div class="card mb-3">
-    <div class="card-header">
-      <h3 class="card-title">Kỳ báo cáo và phạm vi</h3>
-    </div>
-    <div class="card-body">
-      <form method="get">
-        <div class="grid grid-cols-12 gap-3 items-end">
-          <div class="col-span-12 md:col-span-2">
-            <label class="form-label" for="{{ form.kind.id_for_label }}">{{ form.kind.label }}</label>
-            {{ form.kind }}
-            {% if form.kind.errors %}<div class="text-red-700 small">{{ form.kind.errors }}</div>{% endif %}
-          </div>
-          <div class="col-span-12 md:col-span-2">
-            <label class="form-label" for="{{ form.year.id_for_label }}">{{ form.year.label }}</label>
-            {{ form.year }}
-            {% if form.year.errors %}<div class="text-red-700 small">{{ form.year.errors }}</div>{% endif %}
-          </div>
-          <div class="col-span-12 md:col-span-2">
-            <label class="form-label" for="{{ form.month.id_for_label }}">{{ form.month.label }}</label>
-            {{ form.month }}
-            {% if form.month.errors %}<div class="text-red-700 small">{{ form.month.errors }}</div>{% endif %}
-          </div>
-          <div class="col-span-12 md:col-span-2">
-            <label class="form-label" for="{{ form.quarter.id_for_label }}">{{ form.quarter.label }}</label>
-            {{ form.quarter }}
-            {% if form.quarter.errors %}<div class="text-red-700 small">{{ form.quarter.errors }}</div>{% endif %}
-          </div>
-          {% if not is_scoped %}
-            <div class="col-span-12 md:col-span-3">
-              <label class="form-label" for="{{ form.phong.id_for_label }}">{{ form.phong.label }}</label>
-              {{ form.phong }}
-              {% if form.phong.errors %}<div class="text-red-700 small">{{ form.phong.errors }}</div>{% endif %}
-            </div>
-          {% else %}
-            <div class="col-span-12 md:col-span-3">
-              <div class="text-slate-500 small">Phạm vi</div>
-              <div class="form-control-plaintext">{{ scope.label }}</div>
-            </div>
-          {% endif %}
-          <div class="col-span-12 md:col-span-1">
-            <button class="btn btn-primary w-full" type="submit">Xem</button>
-          </div>
+  {% if reports %}
+    <section class="grid grid-cols-12 gap-4 mb-3" aria-label="Tóm tắt báo cáo">
+      <article class="summary-card col-span-6 md:col-span-3">
+        <span class="summary-card-label">Tỷ lệ bình quân</span>
+        <strong class="summary-card-value">{{ kpi.average_completion }}</strong>
+      </article>
+      <article class="summary-card col-span-6 md:col-span-3">
+        <span class="summary-card-label">Chỉ tiêu</span>
+        <strong class="summary-card-value">{{ kpi.indicators }}</strong>
+      </article>
+      <article class="summary-card col-span-6 md:col-span-3">
+        <span class="summary-card-label">Hoạt động</span>
+        <strong class="summary-card-value">{{ kpi.activities }}</strong>
+      </article>
+      <article class="summary-card col-span-6 md:col-span-3">
+        <span class="summary-card-label">Dự án</span>
+        <strong class="summary-card-value">{{ kpi.projects }}</strong>
+      </article>
+    </section>
+  {% endif %}
+
+  <div class="card filter-card d-print-none">
+    <form method="get">
+      <div class="filter-form">
+        <div class="filter-field">
+          <label class="form-label" for="{{ form.kind.id_for_label }}">{{ form.kind.label }}</label>
+          {{ form.kind }}
+          {% if form.kind.errors %}<div class="text-red-700 small">{{ form.kind.errors }}</div>{% endif %}
         </div>
-        {% if form.non_field_errors %}
-          <div class="alert alert-danger mt-3 mb-0">{{ form.non_field_errors }}</div>
+        <div class="filter-field">
+          <label class="form-label" for="{{ form.year.id_for_label }}">{{ form.year.label }}</label>
+          {{ form.year }}
+          {% if form.year.errors %}<div class="text-red-700 small">{{ form.year.errors }}</div>{% endif %}
+        </div>
+        <div class="filter-field">
+          <label class="form-label" for="{{ form.month.id_for_label }}">{{ form.month.label }}</label>
+          {{ form.month }}
+          {% if form.month.errors %}<div class="text-red-700 small">{{ form.month.errors }}</div>{% endif %}
+        </div>
+        <div class="filter-field">
+          <label class="form-label" for="{{ form.quarter.id_for_label }}">{{ form.quarter.label }}</label>
+          {{ form.quarter }}
+          {% if form.quarter.errors %}<div class="text-red-700 small">{{ form.quarter.errors }}</div>{% endif %}
+        </div>
+        {% if not is_scoped %}
+          <div class="filter-field">
+            <label class="form-label" for="{{ form.phong.id_for_label }}">{{ form.phong.label }}</label>
+            {{ form.phong }}
+            {% if form.phong.errors %}<div class="text-red-700 small">{{ form.phong.errors }}</div>{% endif %}
+          </div>
         {% endif %}
-      </form>
-    </div>
+        <div class="filter-actions">
+          <button class="btn btn-primary filter-submit" type="submit">Xem báo cáo</button>
+        </div>
+      </div>
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger mt-3 mb-0">{{ form.non_field_errors }}</div>
+      {% endif %}
+    </form>
   </div>
 
   {% if reports %}
     {% if has_gaps %}
-      <div class="card mb-3 border-warning">
+      <section class="card border-warning mb-3" aria-labelledby="gap-title">
         <div class="card-header">
-          <h3 class="card-title text-amber-700">Số liệu chưa đầy đủ</h3>
-          {% if not accepted %}
-            <div class="card-actions">
+          <h2 class="card-title text-amber-700" id="gap-title">Số liệu chưa đầy đủ</h2>
+          <div class="card-actions flex items-center gap-2">
+            {% if accepted %}
+              <span class="badge bg-warning-lt">Đã chấp nhận</span>
+            {% else %}
               <a class="btn btn-warning" href="{{ continue_url }}">Vẫn lập báo cáo</a>
-            </div>
-          {% endif %}
+            {% endif %}
+          </div>
         </div>
         <div class="card-body">
           {% for block in reports %}
@@ -102,15 +120,8 @@
               </div>
             {% endif %}
           {% endfor %}
-          {% if accepted %}
-            <div class="text-slate-500 mt-2">Báo cáo sẽ được xuất kèm ghi chú “Số liệu chưa đầy đủ”.</div>
-          {% endif %}
         </div>
-      </div>
-    {% endif %}
-
-    {% if accepted and gap_summary %}
-      <div class="alert alert-warning">{{ gap_summary }}</div>
+      </section>
     {% endif %}
 
     <form method="post" action="{{ save_url }}">
@@ -121,36 +132,53 @@
       <input type="hidden" name="tiep_tuc" value="{{ tiep_tuc_value }}">
 
       {% for block in reports %}
-        <div class="card mb-3">
+        <section class="card table-card"
+                 aria-labelledby="report-title-{{ block.report.phong.pk }}">
           <div class="card-header">
-            <h3 class="card-title">PHÒNG {{ block.report.ma_phong }} — {{ block.report.ten }}</h3>
+            <h2 class="card-title" id="report-title-{{ block.report.phong.pk }}">PHÒNG {{ block.report.ma_phong }}</h2>
           </div>
+
           <div class="table-responsive">
-            <table class="table table-vcenter card-table">
+            <table class="table table-vcenter card-table report-table">
               <thead>
                 <tr>
-                  <th>Chỉ tiêu</th>
-                  <th>Đơn vị tính</th>
-                  <th class="text-end">Kế hoạch năm</th>
-                  <th class="text-end">Thực hiện trong kỳ</th>
-                  <th class="text-end">Lũy kế</th>
-                  <th class="text-end">% hoàn thành</th>
-                  <th>Ghi chú</th>
+                  <th scope="col">Chỉ tiêu</th>
+                  <th scope="col">Đơn vị</th>
+                  <th scope="col" class="text-end">Kế hoạch</th>
+                  <th scope="col" class="text-end">Trong kỳ</th>
+                  <th scope="col" class="text-end">Lũy kế</th>
+                  <th scope="col" class="text-end">Hoàn thành</th>
+                  <th scope="col">{% if block.co_danh_gia %}Đánh giá{% else %}Ghi chú{% endif %}</th>
                 </tr>
               </thead>
               <tbody>
                 {% for item in block.rows %}
                   <tr>
                     <td>{{ item.chi_tieu }}</td>
-                    <td>{{ item.don_vi_tinh }}</td>
-                    <td class="text-end">{{ item.ke_hoach }}</td>
-                    <td class="text-end">{{ item.thuc_hien }}</td>
-                    <td class="text-end">{{ item.luy_ke }}</td>
-                    <td class="text-end">{{ item.phan_tram }}{% if item.phan_tram != "—" %}%{% endif %}</td>
+                    <td><span class="badge bg-secondary-lt">{{ item.don_vi_tinh }}</span></td>
+                    <td class="text-end report-number">{{ item.ke_hoach }}</td>
+                    <td class="text-end report-number">{{ item.thuc_hien }}</td>
+                    <td class="text-end report-number">{{ item.luy_ke }}</td>
+                    <td class="text-end">
+                      {% if item.has_percent %}
+                        <div class="flex items-center gap-2">
+                          <div class="progress-track flex-grow-1" role="progressbar"
+                               aria-label="Hoàn thành {{ item.chi_tieu }}"
+                               aria-valuenow="{{ item.percent_width }}"
+                               aria-valuemin="0" aria-valuemax="100">
+                            <span class="progress-fill{% if item.behind %} progress-fill--warning{% endif %}"
+                                  style="width: {{ item.percent_width }}%"></span>
+                          </div>
+                          <span class="progress-bar-value{% if item.behind %} progress-bar-value--warning{% endif %}">{{ item.phan_tram }}%</span>
+                        </div>
+                      {% else %}
+                        <span class="text-slate-500">—</span>
+                      {% endif %}
+                    </td>
                     <td>
-                      {% if item.ghi_chu %}<div class="text-amber-700">{{ item.ghi_chu }}</div>{% endif %}
+                      {% if item.ghi_chu %}<div class="text-amber-700 small">{{ item.ghi_chu }}</div>{% endif %}
                       {% if block.co_danh_gia %}
-                        <label class="form-label small mb-1" for="danh_gia_{{ block.report.phong.pk }}_{{ item.chi_tieu_id }}">Đánh giá hiệu quả</label>
+                        <label class="sr-only" for="danh_gia_{{ block.report.phong.pk }}_{{ item.chi_tieu_id }}">Đánh giá {{ item.chi_tieu }}</label>
                         <textarea class="form-control form-control-sm" rows="2"
                                   id="danh_gia_{{ block.report.phong.pk }}_{{ item.chi_tieu_id }}"
                                   name="danh_gia_{{ block.report.phong.pk }}_{{ item.chi_tieu_id }}">{{ item.danh_gia }}</textarea>
@@ -165,12 +193,13 @@
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
 
         {% if block.report.ma_phong == "TTTK" and block.report.breakdowns %}
-          <div class="card mb-3">
+          <section class="card table-card"
+                   aria-labelledby="breakdown-title-{{ block.report.phong.pk }}">
             <div class="card-header">
-              <h3 class="card-title">Phân tích theo đối tượng và lĩnh vực</h3>
+              <h2 class="card-title" id="breakdown-title-{{ block.report.phong.pk }}">Phân tích theo đối tượng và lĩnh vực</h2>
             </div>
             <div class="card-body">
               {% for breakdown in block.report.breakdowns %}
@@ -184,7 +213,7 @@
                           {% for item in dimension.items %}
                             <tr>
                               <td>{{ item.ten }}</td>
-                              <td class="text-end">{{ item.value }}</td>
+                              <td class="text-end report-number">{{ item.value }}</td>
                             </tr>
                           {% endfor %}
                         </tbody>
@@ -194,27 +223,27 @@
                 </div>
               {% endfor %}
             </div>
-          </div>
+          </section>
         {% endif %}
 
         {% if block.report.ma_phong == "HTKN" %}
           {% if block.report.activities or block.report.projects %}
-            <div class="card mb-3">
+            <section class="card table-card"
+                     aria-labelledby="support-title-{{ block.report.phong.pk }}">
               <div class="card-header">
-                <h3 class="card-title">Hoạt động và dự án hỗ trợ trong kỳ</h3>
+                <h2 class="card-title" id="support-title-{{ block.report.phong.pk }}">Hoạt động và dự án hỗ trợ</h2>
               </div>
+
               {% if block.report.activities %}
                 <div class="table-responsive">
-                  <table class="table table-vcenter card-table">
+                  <table class="table table-vcenter card-table report-table">
                     <thead>
                       <tr>
-                        <th>Loại hoạt động</th>
-                        <th>Hoạt động</th>
-                        <th>Thời gian</th>
-                        <th>Trạng thái</th>
-                        <th>Phiếu kết quả</th>
-                        <th>Nội dung</th>
-                        <th>Kết quả</th>
+                        <th scope="col">Loại</th>
+                        <th scope="col">Hoạt động</th>
+                        <th scope="col">Thời gian</th>
+                        <th scope="col">Trạng thái</th>
+                        <th scope="col">Phiếu</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -223,25 +252,32 @@
                           <td>{{ activity.loai }}</td>
                           <td>{{ activity.ten }}</td>
                           <td>{{ activity.thoi_gian }}</td>
-                          <td>{{ activity.trang_thai }}</td>
-                          <td>{% if activity.phieu %}Đã có{% else %}<span class="text-amber-700">Chưa có</span>{% endif %}</td>
-                          <td>{{ activity.noi_dung }}</td>
-                          <td>{{ activity.ket_qua }}</td>
+                          <td>
+                            <span class="badge {% if activity.trang_thai_code == 'da_to_chuc' %}bg-success-lt{% else %}bg-secondary-lt{% endif %}">{{ activity.trang_thai }}</span>
+                          </td>
+                          <td>
+                            {% if activity.phieu %}
+                              <span class="badge bg-success-lt">Đã có</span>
+                            {% else %}
+                              <span class="badge bg-warning-lt">Chưa có</span>
+                            {% endif %}
+                          </td>
                         </tr>
                       {% endfor %}
                     </tbody>
                   </table>
                 </div>
               {% endif %}
+
               {% if block.report.projects %}
                 <div class="table-responsive">
-                  <table class="table table-vcenter card-table">
+                  <table class="table table-vcenter card-table report-table">
                     <thead>
                       <tr>
-                        <th>Dự án</th>
-                        <th>Loại hỗ trợ</th>
-                        <th>Ngày</th>
-                        <th>Trạng thái phiếu</th>
+                        <th scope="col">Dự án</th>
+                        <th scope="col">Loại hỗ trợ</th>
+                        <th scope="col">Ngày</th>
+                        <th scope="col">Phiếu</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -250,28 +286,32 @@
                           <td>{{ project.du_an }}</td>
                           <td>{{ project.loai_ho_tro }}</td>
                           <td>{{ project.ngay }}</td>
-                          <td>{{ project.trang_thai }}</td>
+                          <td>
+                            <span class="badge {% if project.trang_thai_code == 'da_duyet' %}bg-success-lt{% elif project.trang_thai_code == 'tra_lai' %}bg-danger-lt{% elif project.trang_thai_code == 'cho_duyet' %}bg-info-lt{% else %}bg-secondary-lt{% endif %}">{{ project.trang_thai }}</span>
+                          </td>
                         </tr>
                       {% endfor %}
                     </tbody>
                   </table>
                 </div>
               {% endif %}
-            </div>
+            </section>
           {% endif %}
         {% endif %}
       {% endfor %}
 
-      <div class="card mb-3">
-        <div class="card-body flex flex-wrap gap-2">
+      <div class="card mb-3 d-print-none">
+        <div class="card-body flex flex-wrap items-center justify-between gap-2">
           <button class="btn btn-outline-secondary" type="submit">Lưu đánh giá</button>
           {% if not has_gaps or accepted %}
-            <button class="btn btn-success" type="submit"
-                    formaction="{{ export_xlsx_url }}" formmethod="post">Xuất Excel</button>
-            <button class="btn btn-primary" type="submit"
-                    formaction="{{ export_docx_url }}" formmethod="post">Xuất Word</button>
+            <div class="btn-group">
+              <button class="btn btn-outline-secondary" type="submit"
+                      formaction="{{ export_xlsx_url }}" formmethod="post">Xuất Excel</button>
+              <button class="btn btn-primary" type="submit"
+                      formaction="{{ export_docx_url }}" formmethod="post">Xuất Word</button>
+            </div>
           {% else %}
-            <span class="text-slate-500 align-self-center">Chọn “Vẫn lập báo cáo” để xuất tệp khi còn số liệu chưa đầy đủ.</span>
+            <span class="text-slate-500 small">Chấp nhận số liệu chưa đầy đủ để xuất tệp.</span>
           {% endif %}
         </div>
       </div>

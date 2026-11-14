@@ -395,6 +395,31 @@
   .card-table { margin-bottom: 0; }
   .card-table tr:last-child td { border-bottom: 0; }
 
+  /* Keep the row action beside the state badges when a period table collapses. */
+  @media (max-width: 639px) {
+    .table-periods thead { display: none; }
+
+    .table-periods tbody tr {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 0.75rem;
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .table-periods tbody tr:last-child { border-bottom: 0; }
+
+    .table-periods td {
+      display: block;
+      border: 0;
+      padding: 0;
+    }
+
+    .table-periods .period-cell { flex: 1 0 100%; }
+    .table-periods .period-action { margin-left: auto; }
+  }
+
   .list-group {
     overflow: hidden;
     border: 1px solid var(--color-border);

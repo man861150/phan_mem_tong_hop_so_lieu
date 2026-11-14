@@ -12,7 +12,6 @@
     {% if selected_ten %}<input type="hidden" name="ten" value="{{ selected_ten }}">{% endif %}
     <label class="topbar-year-control" for="year-select">
       <svg class="size-4" aria-hidden="true"><use href="#icon-calendar"></use></svg>
-      <span class="sr-only">Chọn năm</span>
       <select id="year-select" name="nam" aria-label="Chọn năm" onchange="this.form.submit()">
         {% for nam in year_options %}
           <option value="{{ nam }}"{% if nam|stringformat:"s" == selected_nam %} selected{% endif %}>Năm {{ nam }}</option>
@@ -30,7 +29,6 @@
     <div class="page-hero-main">
       <p class="eyebrow">Quản lý dữ liệu</p>
       <h1 class="page-hero-title">Hoạt động</h1>
-      <p class="page-hero-copy">Quản lý các sự kiện, hội thảo và chương trình huấn luyện của đơn vị.</p>
     </div>
     {% if show_workflow_guide or can_create %}
       <div class="page-hero-actions">
@@ -49,19 +47,14 @@
     <article class="summary-card">
       <span class="summary-card-label">Tổng hoạt động</span>
       <strong class="summary-card-value">{{ summary.total|stringformat:"02d" }}</strong>
-      <span class="summary-card-caption">
-        {% if selected_nam %}Trong năm {{ selected_nam }}{% else %}Trong tất cả các năm{% endif %}
-      </span>
     </article>
     <article class="summary-card summary-card--success">
       <span class="summary-card-label">Đã tổ chức</span>
       <strong class="summary-card-value">{{ summary.da_to_chuc }}</strong>
-      <span class="summary-card-caption">Hoạt động đã hoàn thành</span>
     </article>
     <article class="summary-card summary-card--warning">
       <span class="summary-card-label">Sắp diễn ra</span>
       <strong class="summary-card-value">{{ summary.sap_dien_ra }}</strong>
-      <span class="summary-card-caption">Đang chờ triển khai</span>
     </article>
   </section>
 
@@ -72,7 +65,7 @@
         <div class="search-input">
           <svg aria-hidden="true"><use href="#icon-search"></use></svg>
           <input class="form-control" id="ten" name="ten" type="search"
-                 value="{{ selected_ten }}" placeholder="Tìm theo tên hoặc địa điểm...">
+                 value="{{ selected_ten }}" placeholder="Tìm tên, địa điểm...">
         </div>
       </div>
 
@@ -125,53 +118,46 @@
     <div class="card-header">
       <div>
         <h2 class="card-title">Danh sách hoạt động</h2>
-        <p class="card-subtitle">Hiển thị {{ page_obj|length }} trong tổng số {{ page_obj.paginator.count }} hoạt động</p>
+        <p class="card-subtitle">{{ page_obj.paginator.count }} hoạt động</p>
       </div>
-      <span class="period-chip year-chip">
-        <svg class="size-4" aria-hidden="true"><use href="#icon-calendar"></use></svg>
-        {% if selected_nam %}Năm {{ selected_nam }}{% else %}Tất cả năm{% endif %}
-      </span>
     </div>
 
-    <div class="table-responsive">
-      <table class="table activity-table">
-        <colgroup>
-          <col class="activity-col-name">
-          <col class="activity-col-type">
-          <col class="activity-col-department">
-          <col class="activity-col-time">
-          <col class="activity-col-place">
-          <col class="activity-col-status">
-        </colgroup>
-        <thead>
-          <tr>
-            <th scope="col">Tên hoạt động</th>
-            <th scope="col">Loại</th>
-            <th scope="col">Phòng</th>
-            <th scope="col">Thời gian</th>
-            <th scope="col">Địa điểm</th>
-            <th scope="col">Trạng thái</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for activity in activities %}
-            {% include "activities/_hoat_dong_row.html" with activity=activity %}
-          {% empty %}
+    {% if activities %}
+      <div class="table-responsive">
+        <table class="table activity-table">
+          <colgroup>
+            <col class="activity-col-name">
+            <col class="activity-col-type">
+            <col class="activity-col-department">
+            <col class="activity-col-time">
+            <col class="activity-col-place">
+            <col class="activity-col-status">
+          </colgroup>
+          <thead>
             <tr>
-              <td colspan="6">
-                <div class="table-empty">
-                  <span class="table-empty-icon" aria-hidden="true">
-                    <svg class="size-5"><use href="#icon-activity"></use></svg>
-                  </span>
-                  <strong>Không có hoạt động phù hợp.</strong>
-                  <span>Thử điều chỉnh bộ lọc hoặc chọn năm khác.</span>
-                </div>
-              </td>
+              <th scope="col">Tên hoạt động</th>
+              <th scope="col">Loại</th>
+              <th scope="col">Phòng</th>
+              <th scope="col">Thời gian</th>
+              <th scope="col">Địa điểm</th>
+              <th scope="col">Trạng thái</th>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {% for activity in activities %}
+              {% include "activities/_hoat_dong_row.html" with activity=activity %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="table-empty">
+        <span class="table-empty-icon" aria-hidden="true">
+          <svg class="size-5"><use href="#icon-activity"></use></svg>
+        </span>
+        <strong>Thử điều chỉnh bộ lọc hoặc chọn năm khác.</strong>
+      </div>
+    {% endif %}
 
     {% if page_obj.paginator.num_pages > 1 %}
       <div class="page-pagination">

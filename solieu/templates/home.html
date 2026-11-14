@@ -14,7 +14,6 @@
     <div>
       <p class="eyebrow">Trung tâm Khởi nghiệp sáng tạo TP.HCM</p>
       <h1 class="welcome-title">Xin chào, {% if user.phong %}{{ user.phong.ten_phong }}{% else %}{{ user.ho_ten }}{% endif %}</h1>
-      <p class="welcome-copy">Theo dõi tiến độ và cập nhật số liệu hoạt động của đơn vị.</p>
     </div>
     <div class="flex w-full flex-wrap gap-2 sm:w-auto">
       {% if show_workflow_guide %}
@@ -38,10 +37,8 @@
             <span class="stat-label">Bình quân hoàn thành</span>
             {% if card and card.percent is not None %}
               <strong class="stat-value">{{ card.percent_display }}%</strong>
-              <small class="stat-caption">Toàn bộ chỉ tiêu năm {{ year }}</small>
             {% else %}
               <strong class="stat-value stat-value--text">Chưa có số liệu</strong>
-              <small class="stat-caption">Toàn bộ chỉ tiêu năm {{ year }}</small>
             {% endif %}
           </div>
           {% if card and card.percent is not None %}
@@ -57,7 +54,6 @@
         <div class="stat-main">
           <span class="stat-label">Phiếu nháp của tôi</span>
           <strong class="stat-value">{{ my_drafts|length }}</strong>
-          <small class="stat-caption">{{ my_drafts|length }} phiếu đang ở trạng thái nháp</small>
         </div>
         {% if my_drafts %}
           <span class="badge bg-warning-lt stat-badge">Cần hoàn tất</span>
@@ -73,7 +69,6 @@
         <div class="stat-main">
           <span class="stat-label">Phiếu bị trả lại</span>
           <strong class="stat-value">{{ my_returned|length }}</strong>
-          <small class="stat-caption">{% if my_returned %}{{ my_returned|length }} phiếu cần chỉnh sửa{% else %}Không có phiếu cần chỉnh sửa{% endif %}</small>
         </div>
         {% if my_returned %}
           <span class="badge bg-danger-lt stat-badge">Cần chỉnh sửa</span>
@@ -95,7 +90,7 @@
             {% else %}
               <strong class="stat-value stat-value--text">Chưa có số liệu</strong>
             {% endif %}
-            <small class="stat-caption">Bình quân % hoàn thành năm {{ year }}</small>
+            <small class="stat-caption">Bình quân % hoàn thành</small>
           </div>
           {% if item.percent is not None %}
             {% include "partials/progress_ring.html" with percent=item.percent %}
@@ -114,7 +109,6 @@
       <div class="card-header">
         <div>
           <h2 class="card-title">{{ chart1_title }}</h2>
-          <p class="card-subtitle">Tỷ lệ bình quân trên các kế hoạch đã xác nhận</p>
         </div>
       </div>
       <div class="card-body">
@@ -131,7 +125,6 @@
         <div class="card-header">
           <div>
             <h2 class="card-title">Phiếu gần đây</h2>
-            <p class="card-subtitle">Cập nhật mới nhất của đơn vị</p>
           </div>
           <a class="btn btn-link card-actions" href="{% url 'entry:phieu_thang_chon' %}">Xem tất cả</a>
         </div>
@@ -142,10 +135,7 @@
                 <span class="list-row-icon list-row-icon--amber" aria-hidden="true">
                   <svg class="size-4"><use href="#icon-activity"></use></svg>
                 </span>
-                <span class="list-row-copy">
-                  <span class="list-row-title">Phiếu chờ duyệt</span>
-                  <span class="list-row-meta">Mở danh sách chờ duyệt của phòng ban</span>
-                </span>
+                <span class="list-row-title">Phiếu chờ duyệt</span>
                 <span class="badge bg-warning-lt">{{ pending_count }}</span>
               </a>
             </div>
@@ -187,10 +177,7 @@
                 <span class="empty-state-icon" aria-hidden="true">
                   <svg class="size-4"><use href="#icon-check"></use></svg>
                 </span>
-                <div>
-                  <strong>Không có phiếu bị trả lại</strong>
-                  <span>Các phiếu đã gửi đều đang được xử lý.</span>
-                </div>
+                <strong>Không có phiếu bị trả lại</strong>
               </div>
             {% endfor %}
           </div>
@@ -321,18 +308,28 @@
           chart1.setOption(emptyOption("Chưa có số liệu"));
           return;
         }
+        const chartWidth = chart1Element.clientWidth || 640;
+        const labelWidth = Math.max(
+          56,
+          Math.floor((chartWidth - 56) / Math.max(data.labels.length, 1)) - 8
+        );
         chart1.setOption({
           tooltip: {
             trigger: "axis",
             valueFormatter: function (value) { return value + "%"; }
           },
-          grid: { left: 40, right: 16, top: 32, bottom: 48 },
+          grid: { left: 40, right: 16, top: 32, bottom: 68 },
           xAxis: {
             type: "category",
             data: data.labels,
             axisLine: { lineStyle: { color: palette.axis } },
             axisTick: { show: false },
-            axisLabel: Object.assign({ interval: 0, width: 160, overflow: "break" }, axisLabel)
+            axisLabel: Object.assign({
+              interval: 0,
+              width: labelWidth,
+              overflow: "break",
+              lineHeight: 14
+            }, axisLabel)
           },
           yAxis: {
             type: "value",
@@ -544,12 +541,13 @@
         });
       }
 
-      let chart2Resize = 0;
+      let chartResize = 0;
       window.addEventListener("resize", function () {
         chart1.resize();
         chart2.resize();
-        cancelAnimationFrame(chart2Resize);
-        chart2Resize = requestAnimationFrame(function () {
+        cancelAnimationFrame(chartResize);
+        chartResize = requestAnimationFrame(function () {
+          renderChart1(chart1Data);
           renderChart2(chart2Current);
         });
       });

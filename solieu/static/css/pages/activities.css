@@ -9,7 +9,7 @@
   .summary-card::after { content: ""; position: absolute; inset: 0 0 0 auto; width: 4px; background: transparent; }
   .summary-card--success::after { background: var(--color-success); }
   .summary-card--warning::after { background: var(--color-accent); }
-  .summary-card-label { display: block; color: var(--color-text); font-size: .875rem; font-weight: 600; }
+  .summary-card-label { display: block; color: var(--color-muted); font-size: .875rem; font-weight: 600; }
   .summary-card-value { display: block; margin-top: .5rem; color: var(--color-text); font-size: 2rem; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
   .summary-card-caption { display: block; margin-top: .5rem; color: var(--color-subtle); font-size: .75rem; }
   .filter-card { margin-bottom: 1.25rem; }
@@ -26,22 +26,29 @@
   .table-card { margin-bottom: 1.25rem; }
   .table-card .card-header { padding: 1.25rem 1.5rem; }
   .year-chip { height: 2.25rem; padding-inline: .75rem; border-color: var(--color-border-soft); background: var(--color-surface-muted); color: var(--color-muted); font-size: .8125rem; }
-  .activity-table { min-width: 60rem; }
+  .activity-table,
+  .project-table { min-width: 60rem; }
   .activity-col-name { width: 22%; }
   .activity-col-type { width: 14%; }
   .activity-col-department { width: 8%; }
   .activity-col-time { width: 19%; }
   .activity-col-place { width: 24%; }
   .activity-col-status { width: 13%; }
-  .activity-table th { padding: .875rem 1.5rem; background: var(--color-surface-muted); color: var(--color-muted); font-size: .6875rem; letter-spacing: .08em; }
-  .activity-table td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--color-border-soft); }
-  .activity-table tbody tr:last-child td { border-bottom: 0; }
-  .activity-table tbody tr:hover { background: var(--color-surface-muted); }
+  .activity-table th,
+  .project-table th { padding: .875rem 1.5rem; background: var(--color-surface-muted); color: var(--color-muted); font-size: .6875rem; letter-spacing: .08em; }
+  .activity-table td,
+  .project-table td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--color-border-soft); }
+  .activity-table tbody tr:last-child td,
+  .project-table tbody tr:last-child td { border-bottom: 0; }
+  .activity-table tbody tr:hover,
+  .project-table tbody tr:hover { background: var(--color-surface-muted); }
   .activity-name { display: flex; min-width: 0; align-items: center; gap: .875rem; }
   .activity-tile { display: grid; flex: 0 0 auto; width: 2.5rem; height: 2.5rem; place-items: center; border-radius: .75rem; color: var(--color-primary); background: var(--color-primary-soft); }
   .activity-name-copy { min-width: 0; }
-  .activity-name-link { display: block; color: var(--color-text); font-size: .875rem; font-weight: 700; }
-  .activity-name-link:hover { color: var(--color-primary); text-decoration: underline; }
+  .activity-name-link,
+  .project-name-link { display: block; color: var(--color-text); font-size: .875rem; font-weight: 700; }
+  .activity-name-link:hover,
+  .project-name-link:hover { color: var(--color-primary); text-decoration: underline; }
   .activity-code { display: block; margin-top: .125rem; color: var(--color-subtle); font-size: .6875rem; font-weight: 600; letter-spacing: .04em; }
   .activity-department { color: var(--color-text); font-size: .8125rem; font-weight: 700; }
   .cell-icon { display: inline-flex; align-items: center; gap: .4rem; color: var(--color-muted); font-size: .8125rem; }
@@ -71,7 +78,9 @@
     .filter-submit { flex: 1; }
     .table-card .card-header { padding-inline: 1rem; }
     .activity-table th,
-    .activity-table td { padding-inline: 1rem; }
+    .activity-table td,
+    .project-table th,
+    .project-table td { padding-inline: 1rem; }
     .page-pagination { padding-inline: 1rem; }
   }
 
@@ -248,7 +257,10 @@
   }
 
   .activity-form .form-control,
-  .activity-form .form-select {
+  .activity-form .form-select,
+  .activity-form input[type="text"],
+  .activity-form input[type="number"],
+  .activity-form select {
     width: 100%;
     min-height: 2.75rem;
     padding: 0.625rem 0.875rem;
@@ -261,11 +273,13 @@
     box-shadow: inset 0 1px 1px rgb(16 60 49 / 0.02);
   }
 
-  .activity-form .form-control::placeholder {
+  .activity-form .form-control::placeholder,
+  .activity-form input[type="text"]::placeholder {
     color: var(--color-subtle);
   }
 
-  .activity-form .form-select {
+  .activity-form .form-select,
+  .activity-form select {
     padding-right: 2.5rem;
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2371807a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
@@ -274,12 +288,16 @@
     background-size: 1rem 1rem;
   }
 
-  .activity-form .form-select:has(option[value=""]:checked) {
+  .activity-form .form-select:has(option[value=""]:checked),
+  .activity-form select:has(option[value=""]:checked) {
     color: var(--color-subtle);
   }
 
   .activity-form .form-control:focus,
-  .activity-form .form-select:focus {
+  .activity-form .form-select:focus,
+  .activity-form input[type="text"]:focus,
+  .activity-form input[type="number"]:focus,
+  .activity-form select:focus {
     border-color: var(--color-primary);
     outline: 2px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
     outline-offset: 0;

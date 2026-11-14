@@ -44,7 +44,11 @@ from apps.reporting.periods import (
     resolve_period,
     today,
 )
-from apps.reporting.progress import build_drill_rows, build_progress_groups
+from apps.reporting.progress import (
+    build_drill_rows,
+    build_progress_groups,
+    build_progress_summary,
+)
 from apps.reporting.report_data import (
     allowed_departments,
     build_department_reports,
@@ -212,6 +216,27 @@ def _render_report(
         accepted,
     )
     has_gaps = any(report.gaps for report in reports)
+    percent_values = [
+        row.percent
+        for report in reports
+        for row in report.rows
+        if row.percent is not None
+    ]
+    average_completion = (
+        sum(percent_values) / len(percent_values) if percent_values else None
+    )
+    kpi = {
+        "average_completion": (
+            f"{format_vi_number(average_completion)}%"
+            if average_completion is not None
+            else "—"
+        ),
+        "indicators": len(
+            {row.chi_tieu_id for report in reports for row in report.rows}
+        ),
+        "activities": sum(len(report.activities) for report in reports),
+        "projects": sum(len(report.projects) for report in reports),
+    }
     report_blocks = [
         {
             "report": report,
@@ -228,6 +253,7 @@ def _render_report(
         "scope": scope,
         "departments": departments,
         "reports": report_blocks,
+        "kpi": kpi,
         "gaps_by_department": gaps_by_department,
         "has_gaps": has_gaps,
         "accepted": accepted,
@@ -795,6 +821,25 @@ def _build_search_context(request, user):
     }
 
 
+def _signed_difference(value):
+    if value is None:
+        return "—"
+    text = format_vi_number(value)
+    if value > 0:
+        return f"+{text}"
+    return text
+
+
+def _delta_direction(value):
+    if value is None:
+        return "none"
+    if value > 0:
+        return "up"
+    if value < 0:
+        return "down"
+    return "flat"
+
+
 def _comparison_rows(rows_a, rows_b):
     merged = {}
     for row in rows_a:
@@ -829,7 +874,11 @@ def _comparison_rows(rows_a, rows_b):
                 "ten_phong": row.ten_phong,
                 "value_a": format_vi_number(value_a),
                 "value_b": format_vi_number(value_b),
+                "value_a_raw": value_a,
+                "value_b_raw": value_b,
                 "difference": format_vi_number(difference),
+                "difference_display": _signed_difference(difference),
+                "delta_direction": _delta_direction(difference),
             }
         )
     result.sort(key=lambda item: (item["ma_phong"], item["ma_chi_tieu"]))
@@ -935,13 +984,28 @@ def _build_comparison_context(request, user):
     else:
         scope_label = "Toàn trung tâm"
 
+    comparison_rows = _comparison_rows(rows_a, rows_b)
+    rows_with_a = sum(
+        1 for row in comparison_rows if row["value_a_raw"] is not None
+    )
+    rows_with_b = sum(
+        1 for row in comparison_rows if row["value_b_raw"] is not None
+    )
+    comparison_summary = {
+        "indicator_count": len(comparison_rows),
+        "with_a": rows_with_a,
+        "with_b": rows_with_b,
+        "coverage_difference": _signed_difference(rows_with_b - rows_with_a),
+    }
+
     return {
         "mode": "so_sanh",
         "departments": departments,
         "can_choose_center": not _is_scoped(user),
         "month_options": range(1, 13),
         "quarter_options": range(1, 5),
-        "comparison_rows": _comparison_rows(rows_a, rows_b),
+        "comparison_rows": comparison_rows,
+        "comparison_summary": comparison_summary,
         "comparison": {
             "kind": kind,
             "month": month,
@@ -1080,6 +1144,7 @@ def tien_do(request):
             "show_department_filter": not _is_scoped(request.user),
             "include_pending": include_pending,
             "department_blocks": department_blocks,
+            "summary": build_progress_summary(rows, department_blocks),
         },
     )
 

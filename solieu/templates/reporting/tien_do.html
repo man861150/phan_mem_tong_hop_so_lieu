@@ -2,138 +2,340 @@
 
 {% block title %}Tiến độ thực hiện — Tổng hợp số liệu{% endblock %}
 
+{% block topbar_breadcrumb %}
+  <div class="topbar-breadcrumb">
+    <span class="topbar-breadcrumb-eyebrow">Báo cáo</span>
+    <span class="topbar-breadcrumb-title">Tiến độ thực hiện</span>
+  </div>
+{% endblock %}
+
 {% block content %}
-  <div class="page-header d-print-none">
-    <div class="grid grid-cols-12 items-center">
-      <div class="col-span-12">
-        <h2 class="page-title">Tiến độ thực hiện chỉ tiêu</h2>
-        <div class="text-slate-500">
-          Năm {{ year }}{% if selected_department %} — {{ selected_department.ma_phong }} — {{ selected_department.ten_phong }}{% else %} — Toàn trung tâm{% endif %}
+  <div class="progress-page" id="progress-top" x-data="progressFilter()">
+    <header class="progress-hero">
+      <div class="progress-hero-main">
+        <p class="eyebrow">Báo cáo vận hành</p>
+        <h1 class="progress-title">Tiến độ thực hiện chỉ tiêu</h1>
+        <p class="progress-subtitle">
+          Năm {{ year }} · {% if selected_department %}{{ selected_department.ma_phong }} — {{ selected_department.ten_phong }}{% else %}Toàn trung tâm{% endif %}
+        </p>
+      </div>
+      <a class="btn btn-outline-secondary"
+         href="{% url 'reporting:bao_cao' %}?kind=year&amp;year={{ year }}{% if selected_department %}&amp;phong={{ selected_department.pk }}{% endif %}">
+        <svg class="size-4" aria-hidden="true"><use href="#icon-report"></use></svg>
+        Xuất báo cáo
+      </a>
+    </header>
+
+    <form class="card progress-filter" method="get">
+      <div class="progress-filter-grid">
+        <div class="progress-field progress-field--year">
+          <label class="form-label" for="year">Năm báo cáo</label>
+          <input class="form-control" type="number" id="year" name="year"
+                 inputmode="numeric" min="2000" max="2100" value="{{ year }}">
+        </div>
+
+        <div class="progress-field progress-field--department">
+          {% if show_department_filter %}
+            <label class="form-label" for="phong">Phòng ban</label>
+            <select class="form-select" id="phong" name="phong">
+              <option value="">Tất cả phòng ban</option>
+              {% for department in departments %}
+                <option value="{{ department.pk }}"
+                        {% if selected_department and department.pk == selected_department.pk %}selected{% endif %}>
+                  {{ department.ma_phong }} — {{ department.ten_phong }}
+                </option>
+              {% endfor %}
+            </select>
+          {% else %}
+            <span class="form-label">Phòng ban</span>
+            <div class="form-control-plaintext">
+              {% if selected_department %}{{ selected_department.ma_phong }} — {{ selected_department.ten_phong }}{% else %}—{% endif %}
+            </div>
+          {% endif %}
+        </div>
+
+        <label class="form-check form-switch progress-toggle mb-0"
+               title="Cộng thêm số liệu đang chờ duyệt vào cột riêng">
+          <input class="form-check-input" type="checkbox" name="gom_cho_duyet"
+                 value="1" {% if include_pending %}checked{% endif %}>
+          <span class="form-check-label">Gồm số chờ duyệt</span>
+        </label>
+
+        <button class="btn btn-primary progress-filter-submit" type="submit">
+          <svg class="size-4" aria-hidden="true"><use href="#icon-filter"></use></svg>
+          Xem dữ liệu
+        </button>
+      </div>
+      {% if year_error %}
+        <div class="alert alert-warning mt-3 mb-0">{{ year_error }}</div>
+      {% endif %}
+    </form>
+
+    <section class="progress-kpis" aria-label="Tóm tắt tiến độ">
+      <article class="progress-kpi">
+        <span class="progress-kpi-icon" aria-hidden="true">
+          <svg class="size-5"><use href="#icon-catalog"></use></svg>
+        </span>
+        <strong class="progress-kpi-value">{{ summary.total }}</strong>
+        <span class="progress-kpi-label">Tổng chỉ tiêu</span>
+      </article>
+
+      <article class="progress-kpi">
+        <span class="progress-kpi-icon" aria-hidden="true">
+          <svg class="size-5"><use href="#icon-chart"></use></svg>
+        </span>
+        <strong class="progress-kpi-value">
+          {% if summary.average_percent is not None %}{{ summary.average_display }}%{% else %}—{% endif %}
+        </strong>
+        <span class="progress-kpi-label">Tiến độ trung bình</span>
+      </article>
+
+      <article class="progress-kpi">
+        <span class="progress-kpi-icon" aria-hidden="true">
+          <svg class="size-5"><use href="#icon-check"></use></svg>
+        </span>
+        <strong class="progress-kpi-value">{{ summary.completed }}</strong>
+        <span class="progress-kpi-label">Đã hoàn thành</span>
+      </article>
+
+      <article class="progress-kpi{% if summary.attention %} progress-kpi--warning{% endif %}">
+        <span class="progress-kpi-icon{% if summary.attention %} progress-kpi-icon--warning{% endif %}" aria-hidden="true">
+          <svg class="size-5"><use href="#icon-clock"></use></svg>
+        </span>
+        <strong class="progress-kpi-value{% if summary.attention %} progress-kpi-value--warning{% endif %}">
+          {{ summary.attention }}
+        </strong>
+        <span class="progress-kpi-label">Cần chú ý</span>
+      </article>
+    </section>
+
+    <div class="progress-split">
+      <article class="card progress-groups">
+        <div class="card-header">
+          <h2 class="card-title" id="progress-groups-title">Tiến độ theo nhóm</h2>
+          <a class="btn btn-link" href="#chi-tiet">
+            Xem chi tiết
+            <svg class="size-4" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+          </a>
+        </div>
+        <div class="card-body" role="region" aria-labelledby="progress-groups-title" tabindex="0">
+          {% for group in summary.groups %}
+            <div class="progress-bar-row">
+              <div class="progress-bar-meta">
+                <span class="progress-bar-label" title="{{ group.ten_mang }}">{{ group.ten_mang }}</span>
+                <span class="progress-bar-value{% if group.behind %} progress-bar-value--warning{% endif %}">
+                  {{ group.percent_display }}%
+                </span>
+              </div>
+              <div class="progress-track" role="progressbar"
+                   aria-label="{{ group.ten_mang }}"
+                   aria-valuenow="{{ group.bar_percent }}" aria-valuemin="0" aria-valuemax="100">
+                <span class="progress-fill{% if group.behind %} progress-fill--warning{% endif %}"
+                      style="width: {{ group.bar_percent }}%"></span>
+              </div>
+            </div>
+          {% empty %}
+            <div class="empty-state">
+              <span class="empty-state-icon" aria-hidden="true">
+                <svg class="size-4"><use href="#icon-chart"></use></svg>
+              </span>
+              <div><strong>Chưa có số liệu</strong></div>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+
+      <aside class="progress-highlight" aria-labelledby="progress-highlight-title">
+        <div class="progress-highlight-head">
+          <span class="progress-highlight-icon" aria-hidden="true">
+            <svg class="size-5"><use href="#icon-chart"></use></svg>
+          </span>
+          <span class="progress-highlight-eyebrow" id="progress-highlight-title">Tỷ lệ đạt kế hoạch</span>
+        </div>
+        <div class="progress-highlight-main">
+          <strong class="progress-highlight-value">
+            {% if summary.completion_percent is not None %}{{ summary.completion_display }}%{% else %}—{% endif %}
+          </strong>
+          <span class="progress-highlight-meta">{{ summary.completed }}/{{ summary.total }} chỉ tiêu</span>
+        </div>
+        <div class="progress-track progress-track--highlight">
+          {% if summary.completion_bar %}
+            <span class="progress-fill progress-fill--highlight"
+                  style="width: {{ summary.completion_bar }}%"></span>
+          {% endif %}
+        </div>
+      </aside>
+    </div>
+
+    <section class="card progress-table-card" id="chi-tiet" aria-labelledby="progress-detail-title">
+      <div class="card-header progress-table-header">
+        <h2 class="card-title" id="progress-detail-title">Chi tiết chỉ tiêu</h2>
+        <div class="search-input progress-search">
+          <svg aria-hidden="true"><use href="#icon-search"></use></svg>
+          <label class="sr-only" for="progress-search">Tìm chỉ tiêu</label>
+          <input class="form-control" id="progress-search" type="search"
+                 x-model="query" @keydown.escape="reset()"
+                 autocomplete="off" placeholder="Tìm chỉ tiêu, mã…">
+          <button class="progress-search-clear" type="button"
+                  x-show="isFiltering" x-cloak @click="reset()" aria-label="Xóa tìm kiếm">
+            <svg class="size-4" aria-hidden="true"><use href="#icon-close"></use></svg>
+          </button>
         </div>
       </div>
-      <div class="col-auto">
-        <a class="btn btn-outline-secondary" href="{% url 'home' %}">Trang chủ</a>
-      </div>
-    </div>
-  </div>
 
-  <div class="card mb-3">
-    <div class="card-body">
-      <form method="get">
-        <div class="grid grid-cols-12 gap-3 items-end">
-          <div class="col-span-12 md:col-span-2">
-            <label class="form-label" for="year">Năm</label>
-            <input class="form-control" type="number" id="year" name="year"
-                   min="2000" max="2100" value="{{ year }}">
-          </div>
-          {% if show_department_filter %}
-            <div class="col-span-12 md:col-span-4">
-              <label class="form-label" for="phong">Phòng ban</label>
-              <select class="form-select" id="phong" name="phong">
-                <option value="">Tất cả phòng ban</option>
-                {% for department in departments %}
-                  <option value="{{ department.pk }}"
-                          {% if selected_department and department.pk == selected_department.pk %}selected{% endif %}>
-                    {{ department.ma_phong }} — {{ department.ten_phong }}
-                  </option>
+      <div class="progress-no-results" role="status" x-show="isFiltering && !anyMatches($root)" x-cloak>
+        <div class="empty-state">
+          <span class="empty-state-icon" aria-hidden="true">
+            <svg class="size-4"><use href="#icon-search"></use></svg>
+          </span>
+          <div><strong>Không tìm thấy chỉ tiêu</strong></div>
+        </div>
+      </div>
+
+      {% for block in department_blocks %}
+        <section class="progress-department" data-progress-department x-show="departmentMatches($el)">
+          <h3 class="progress-department-head">PHÒNG {{ block.ma_phong }} — {{ block.ten_phong }}</h3>
+          {% if block.groups %}
+            <div class="table-responsive">
+              <table class="table table-vcenter progress-table">
+                <thead>
+                  <tr>
+                    <th class="progress-col-name">Chỉ tiêu</th>
+                    <th class="progress-col-secondary">Đơn vị tính</th>
+                    <th class="text-end progress-col-secondary">Kế hoạch</th>
+                    <th class="text-end progress-col-secondary">Lũy kế</th>
+                    {% if include_pending %}
+                      <th class="text-end">Chờ duyệt</th>
+                    {% endif %}
+                    <th class="text-end progress-col-percent">% hoàn thành</th>
+                    <th class="text-end progress-col-remainder">Còn lại</th>
+                  </tr>
+                </thead>
+                {% for group in block.groups %}
+                  <tbody data-progress-group x-show="groupMatches($el)">
+                    <tr class="progress-group-row">
+                      <th colspan="{% if include_pending %}7{% else %}6{% endif %}">
+                        <span class="progress-group-label" title="{{ group.ten_mang }}">{{ group.ten_mang }}</span>
+                      </th>
+                    </tr>
+                    {% for row in group.rows %}
+                      <tr data-progress-row
+                          data-search="{{ row.ten_chi_tieu|lower }} {{ row.ma_chi_tieu|lower }} {{ group.ten_mang|lower }} {{ block.ten_phong|lower }}"
+                          x-show="rowMatches($el)"
+                          {% if row.behind %}class="progress-row--warning"{% endif %}>
+                        <td class="progress-name-cell">
+                          <div class="progress-name-line">
+                            <a class="progress-name"
+                               href="{% url 'reporting:tien_do_chi_tiet' row.chi_tieu_id %}?year={{ year }}">
+                              {{ row.ten_chi_tieu }}
+                            </a>
+                            {% if row.only_track %}
+                              <span class="badge bg-secondary-lt">Chỉ theo dõi</span>
+                            {% endif %}
+                            {% if row.behind %}
+                              <span class="badge bg-warning-lt">Chậm tiến độ</span>
+                            {% endif %}
+                          </div>
+                          <span class="progress-code">{{ row.ma_chi_tieu }}</span>
+                        </td>
+                        <td class="progress-col-secondary">{{ row.don_vi_tinh }}</td>
+                        <td class="text-end progress-col-secondary">{{ row.plan }}</td>
+                        <td class="text-end progress-col-secondary">{{ row.cumulative }}</td>
+                        {% if include_pending %}
+                          <td class="text-end">{{ row.pending }}</td>
+                        {% endif %}
+                        <td class="text-end progress-percent-cell">
+                          {% if row.percent_missing %}
+                            <span class="progress-dash">—</span>
+                          {% else %}
+                            <span class="progress-percent{% if row.behind %} progress-percent--warning{% endif %}">
+                              {{ row.percent }}%
+                            </span>
+                            <div class="progress-track progress-track--row" role="progressbar"
+                                 aria-label="Tiến độ {{ row.ten_chi_tieu }}"
+                                 aria-valuenow="{{ row.percent_width }}" aria-valuemin="0" aria-valuemax="100">
+                              <span class="progress-fill{% if row.behind %} progress-fill--warning{% endif %}"
+                                    style="width: {{ row.percent_width }}%"></span>
+                            </div>
+                          {% endif %}
+                        </td>
+                        <td class="text-end progress-col-remainder">{{ row.remainder }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
                 {% endfor %}
-              </select>
+              </table>
             </div>
           {% else %}
-            <div class="col-span-12 md:col-span-4">
-              <div class="text-slate-500 small">Phạm vi</div>
-              <div class="form-control-plaintext">
-                {% if selected_department %}{{ selected_department.ma_phong }} — {{ selected_department.ten_phong }}{% else %}Chưa có phòng ban{% endif %}
+            <div class="card-body">
+              <div class="empty-state">
+                <span class="empty-state-icon" aria-hidden="true">
+                  <svg class="size-4"><use href="#icon-file"></use></svg>
+                </span>
+                <div><strong>Chưa có số liệu</strong></div>
               </div>
             </div>
           {% endif %}
-          <div class="col-span-12 md:col-span-3">
-            <label class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" name="gom_cho_duyet"
-                     value="1" {% if include_pending %}checked{% endif %}>
-              <span class="form-check-label">Gồm số chờ duyệt</span>
-            </label>
-          </div>
-          <div class="col-span-12 md:col-span-2">
-            <button class="btn btn-primary w-full" type="submit">Xem</button>
+        </section>
+      {% empty %}
+        <div class="card-body">
+          <div class="empty-state">
+            <span class="empty-state-icon" aria-hidden="true">
+              <svg class="size-4"><use href="#icon-file"></use></svg>
+            </span>
+            <div><strong>Chưa có số liệu</strong></div>
           </div>
         </div>
-        {% if year_error %}
-          <div class="alert alert-warning mt-3 mb-0">{{ year_error }}</div>
-        {% endif %}
-      </form>
-    </div>
+      {% endfor %}
+
+      <footer class="progress-table-footer">
+        <a class="btn btn-link" href="#chi-tiet" @click="reset()">Hiện tất cả dữ liệu</a>
+        <a class="btn btn-link progress-backtop" href="#progress-top">
+          Về đầu trang
+          <svg class="size-4" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+        </a>
+      </footer>
+    </section>
   </div>
+{% endblock %}
 
-  {% if include_pending %}
-    <div class="alert alert-info">
-      Cột “Chờ duyệt” chỉ hiển thị số liệu đang chờ duyệt. Cột “Lũy kế” chính thức không thay đổi.
-    </div>
-  {% endif %}
-
-  {% for block in department_blocks %}
-    <div class="card mb-3">
-      <div class="card-header">
-        <h3 class="card-title">PHÒNG {{ block.ma_phong }} — {{ block.ten_phong }}</h3>
-      </div>
-      {% if block.groups %}
-        {% for group in block.groups %}
-          <div class="card-body pb-0">
-            <h4 class="mb-2">{{ group.ten_mang }}</h4>
-          </div>
-          <div class="table-responsive">
-            <table class="table table-vcenter card-table">
-              <thead>
-                <tr>
-                  <th>Chỉ tiêu</th>
-                  <th>Đơn vị tính</th>
-                  <th class="text-end">Kế hoạch</th>
-                  <th class="text-end">Lũy kế</th>
-                  {% if include_pending %}
-                    <th class="text-end">Chờ duyệt</th>
-                  {% endif %}
-                  <th class="text-end">% hoàn thành</th>
-                  <th class="text-end">Còn lại</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for row in group.rows %}
-                  <tr {% if row.behind %}class="table-warning"{% endif %}>
-                    <td>
-                      <a href="{% url 'reporting:tien_do_chi_tiet' row.chi_tieu_id %}?year={{ year }}">
-                        {{ row.ten_chi_tieu }}
-                      </a>
-                      <div class="text-slate-500 small">{{ row.ma_chi_tieu }}</div>
-                      {% if row.only_track %}
-                        <span class="badge bg-secondary-lt">Chỉ theo dõi</span>
-                      {% endif %}
-                      {% if row.behind %}
-                        <span class="badge bg-warning-lt">Chậm tiến độ</span>
-                      {% endif %}
-                    </td>
-                    <td>{{ row.don_vi_tinh }}</td>
-                    <td class="text-end">{{ row.plan }}</td>
-                    <td class="text-end">{{ row.cumulative }}</td>
-                    {% if include_pending %}
-                      <td class="text-end">{{ row.pending }}</td>
-                    {% endif %}
-                    <td class="text-end">
-                      {{ row.percent }}{% if not row.percent_missing %}%{% endif %}
-                    </td>
-                    <td class="text-end">{{ row.remainder }}</td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        {% endfor %}
-      {% else %}
-        <div class="card-body text-slate-500">Chưa có số liệu.</div>
-      {% endif %}
-    </div>
-  {% empty %}
-    <div class="card">
-      <div class="card-body text-slate-500">Chưa có số liệu.</div>
-    </div>
-  {% endfor %}
+{% block scripts %}
+  <script>
+    function progressFilter() {
+      return {
+        query: '',
+        get isFiltering() {
+          return this.query.trim().length > 0;
+        },
+        rowMatches(row, value) {
+          const term = value === undefined
+            ? this.query.trim().toLowerCase()
+            : value;
+          if (!term) return true;
+          return (row.dataset.search || '').includes(term);
+        },
+        groupMatches(group) {
+          const term = this.query.trim().toLowerCase();
+          if (!term) return true;
+          return Array.from(group.querySelectorAll('[data-progress-row]'))
+            .some((row) => this.rowMatches(row, term));
+        },
+        departmentMatches(department) {
+          const term = this.query.trim().toLowerCase();
+          if (!term) return true;
+          return Array.from(department.querySelectorAll('[data-progress-row]'))
+            .some((row) => this.rowMatches(row, term));
+        },
+        anyMatches(root) {
+          const term = this.query.trim().toLowerCase();
+          if (!term) return true;
+          return Array.from(root.querySelectorAll('[data-progress-row]'))
+            .some((row) => this.rowMatches(row, term));
+        },
+        reset() {
+          this.query = '';
+        }
+      };
+    }
+  </script>
 {% endblock %}

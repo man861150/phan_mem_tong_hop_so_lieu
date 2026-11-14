@@ -2,15 +2,14 @@
   /* Home dashboard. These classes are not used by other pages. */
   .welcome-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1.5rem; margin-bottom: 2rem; }
   .welcome-title { margin: 0; color: var(--color-text); font-size: clamp(1.75rem, 1.2rem + 2vw, 2.5rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.1; }
-  .welcome-copy { margin: .625rem 0 0; color: var(--color-muted); font-size: .9375rem; }
-  .stats-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+  .stats-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
   .stats-grid-full { grid-column: 1 / -1; }
   .stat-card { position: relative; display: flex; min-width: 0; align-items: center; gap: .875rem; min-height: 7.5rem; padding: 1.25rem 1.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); box-shadow: var(--shadow-card); color: inherit; text-decoration: none; }
   .stat-icon { display: grid; flex: 0 0 auto; place-items: center; width: 2.625rem; height: 2.625rem; border-radius: .75rem; }
   .stat-icon--blue { color: #356bba; background: #edf4ff; } .stat-icon--orange { color: #d47740; background: #fff2e9; } .stat-icon--green { color: #258362; background: #e9f7f1; } .stat-icon--amber { color: var(--color-accent-text); background: #fff7e6; }
   .stat-main { min-width: 0; flex: 1; }
   .stat-label { display: block; color: #687670; font-size: .8125rem; font-weight: 600; overflow-wrap: anywhere; }
-  .stat-value { display: block; margin-top: .375rem; color: var(--color-text); font-size: 1.875rem; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+  .stat-value { display: block; margin-top: .375rem; color: var(--color-text); font-size: 2rem; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
   .stat-value--text { font-size: 1rem; letter-spacing: 0; color: var(--color-muted); }
   .stat-caption { display: block; margin-top: .375rem; color: var(--color-subtle); font-size: .75rem; overflow-wrap: anywhere; }
   .stat-badge { flex: 0 0 auto; align-self: flex-start; }
@@ -20,7 +19,7 @@
   .progress-ring-track { stroke: #e6efeb; }
   .progress-ring-value { stroke: #2a8065; stroke-linecap: round; }
   .progress-ring-label { position: absolute; inset: 0; display: grid; place-items: center; color: var(--color-primary); font-size: .6875rem; font-weight: 800; }
-  .dashboard-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; margin-bottom: 1.25rem; }
+  .dashboard-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; margin-bottom: 1.5rem; }
   .dashboard-row > section, .dashboard-row > .card { min-width: 0; }
   .chart-canvas { width: 100%; height: 20rem; }
   .chart-canvas--tall { height: 22rem; }
@@ -41,9 +40,7 @@
   .list-row-icon { display: grid; flex: 0 0 auto; place-items: center; width: 2.125rem; height: 2.125rem; border-radius: .625rem; color: #c86c37; background: var(--color-warning-soft); }
   .list-row-icon--danger { color: var(--color-danger); background: var(--color-danger-soft); }
   .list-row-icon--amber { color: var(--color-accent-text); background: #fff7e6; }
-  .list-row-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: .125rem; }
   .list-row-title { min-width: 0; flex: 1; overflow: hidden; color: #26342f; font-size: .8125rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-  .list-row-meta { color: var(--color-subtle); font-size: .75rem; }
 
 
   @media (min-width: 640px) {
@@ -62,7 +59,7 @@
     .chart-canvas { height: 16rem; }
     .chart-canvas--tall { height: 18rem; }
     .stat-card { padding: 1.125rem; gap: 0.75rem; }
-    .stat-value { font-size: 1.625rem; }
+    .stat-value { font-size: 1.75rem; }
     .form-select--compact { min-width: 0; width: 100%; }
     .chart-toolbar { width: 100%; }
     .recent-heading { margin-bottom: 0.5rem; }

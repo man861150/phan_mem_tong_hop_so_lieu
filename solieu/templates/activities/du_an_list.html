@@ -1,68 +1,152 @@
 {% extends "base.html" %}
 
-{% block title %}Dự án — Tổng hợp số liệu{% endblock %}
+{% block title %}Dự án khởi nghiệp — Tổng hợp số liệu{% endblock %}
 
 {% block content %}
-  <div class="page-header d-print-none">
-    <div class="grid grid-cols-12 items-center">
-      <div class="col-span-12">
-        <h2 class="page-title">Dự án/startup</h2>
-      </div>
-      <div class="col-auto flex flex-wrap items-center gap-2">
+  <section class="page-hero">
+    <div class="page-hero-main">
+      <p class="eyebrow">Không gian làm việc</p>
+      <h1 class="page-hero-title">Dự án khởi nghiệp</h1>
+    </div>
+    {% if show_workflow_guide or can_create %}
+      <div class="page-hero-actions">
         {% include "partials/guide_link.html" %}
         {% if can_create %}
-          <a class="btn btn-primary" href="{% url 'activities:du_an_create' %}">Thêm dự án</a>
+          <a class="btn btn-primary btn-lg" href="{% url 'activities:du_an_create' %}">
+            <svg class="size-5" aria-hidden="true"><use href="#icon-plus"></use></svg>
+            Thêm dự án
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </section>
+
+  {% if summary.total %}
+    <section class="summary-grid" aria-label="Tóm tắt dự án">
+      <article class="summary-card">
+        <span class="summary-card-label">Tổng dự án</span>
+        <strong class="summary-card-value">{{ summary.total|stringformat:"02d" }}</strong>
+      </article>
+      <article class="summary-card">
+        <span class="summary-card-label">Dự án năm {{ summary.latest_year }}</span>
+        <strong class="summary-card-value">{{ summary.latest_year_count|stringformat:"02d" }}</strong>
+      </article>
+      <article class="summary-card">
+        <span class="summary-card-label">Chương trình</span>
+        <strong class="summary-card-value">{{ summary.program_count|stringformat:"02d" }}</strong>
+        <span class="summary-card-caption">{{ summary.program_labels|join:", " }}</span>
+      </article>
+    </section>
+
+    <form class="card filter-card" method="get" action="{% url 'activities:du_an_list' %}">
+      <div class="filter-form">
+        <div class="filter-field filter-field--search">
+          <label class="sr-only" for="q">Tìm kiếm dự án</label>
+          <div class="search-input">
+            <svg aria-hidden="true"><use href="#icon-search"></use></svg>
+            <input class="form-control" id="q" name="q" type="search"
+                   value="{{ selected_q }}" placeholder="Tìm kiếm dự án…">
+          </div>
+        </div>
+
+        <div class="filter-field">
+          <label class="sr-only" for="chuong_trinh">Chương trình</label>
+          <select class="form-select" id="chuong_trinh" name="chuong_trinh">
+            <option value="">Tất cả chương trình</option>
+            {% for value, label in program_options %}
+              <option value="{{ value }}"{% if value == selected_chuong_trinh %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn btn-primary filter-submit" type="submit">
+            <svg class="size-4" aria-hidden="true"><use href="#icon-filter"></use></svg>
+            Lọc
+          </button>
+          {% if has_filters and page_obj.paginator.count %}
+            <a class="btn btn-link" href="{% url 'activities:du_an_list' %}">Xóa lọc</a>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  {% endif %}
+
+  <section class="card table-card" aria-labelledby="project-list-title">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title" id="project-list-title">Danh sách dự án</h2>
+        {% if page_obj.paginator.count %}
+          <p class="card-subtitle">{{ page_obj.paginator.count }} dự án</p>
         {% endif %}
       </div>
     </div>
-  </div>
 
-  <div class="card">
-    <div class="table-responsive">
-      <table class="table table-vcenter card-table">
-        <thead>
-          <tr>
-            <th>Tên dự án</th>
-            <th>Phòng</th>
-            <th>Chương trình</th>
-            <th>Hình thức</th>
-            <th>Năm</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for project in projects %}
+    {% if projects %}
+      <div class="table-responsive">
+        <table class="table table-vcenter project-table">
+          <thead>
             <tr>
-              <td><a href="{% url 'activities:du_an_detail' project.pk %}">{{ project.ten_du_an }}</a></td>
-              <td>{{ project.phong.ma_phong }}</td>
-              <td>{{ project.get_chuong_trinh_display }}</td>
-              <td>{{ project.get_hinh_thuc_display }}</td>
-              <td>{{ project.nam }}</td>
+              <th scope="col">Dự án</th>
+              <th scope="col">Phòng</th>
+              <th scope="col">Chương trình</th>
+              <th scope="col">Hình thức</th>
+              <th scope="col">Năm</th>
+              <th scope="col" class="text-end"><span class="sr-only">Mở dự án</span></th>
             </tr>
-          {% empty %}
-            <tr>
-              <td colspan="5">Chưa có dự án.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+          </thead>
+          <tbody>
+            {% for project in projects %}
+              <tr>
+                <td>
+                  <a class="project-name-link" href="{% url 'activities:du_an_detail' project.pk %}">{{ project.ten_du_an }}</a>
+                </td>
+                <td>
+                  <span class="badge bg-secondary-lt">{{ project.phong.ma_phong }}</span>
+                </td>
+                <td>{{ project.get_chuong_trinh_display }}</td>
+                <td>{{ project.get_hinh_thuc_display }}</td>
+                <td>{{ project.nam }}</td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-link text-slate-500"
+                     href="{% url 'activities:du_an_detail' project.pk %}"
+                     aria-label="Mở dự án {{ project.ten_du_an }}">
+                    <svg class="size-4" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="table-empty">
+        <span class="table-empty-icon" aria-hidden="true">
+          <svg class="size-5"><use href="#icon-project"></use></svg>
+        </span>
+        <strong>{% if has_filters %}Không có dự án phù hợp{% else %}Chưa có dự án{% endif %}</strong>
+        {% if has_filters %}
+          <a class="btn btn-link" href="{% url 'activities:du_an_list' %}">Xóa lọc</a>
+        {% endif %}
+      </div>
+    {% endif %}
 
-  {% if page_obj.paginator.num_pages > 1 %}
-    <div class="card mt-3">
-      <div class="card-body flex flex-wrap justify-between items-center gap-2">
-        <div>Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</div>
-        <div class="btn-group">
+    {% if page_obj.paginator.num_pages > 1 %}
+      <div class="page-pagination">
+        <span>Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        <div class="btn-group" role="group" aria-label="Phân trang dự án">
           {% if page_obj.has_previous %}
-            <a class="btn btn-outline-secondary btn-sm"
+            <a class="btn btn-outline-secondary"
+               aria-label="Trang trước"
                href="?{% if page_query %}{{ page_query }}&{% endif %}trang={{ page_obj.previous_page_number }}">Trước</a>
           {% endif %}
           {% if page_obj.has_next %}
-            <a class="btn btn-outline-secondary btn-sm"
+            <a class="btn btn-outline-secondary"
+               aria-label="Trang sau"
                href="?{% if page_query %}{{ page_query }}&{% endif %}trang={{ page_obj.next_page_number }}">Sau</a>
           {% endif %}
         </div>
       </div>
-    </div>
-  {% endif %}
+    {% endif %}
+  </section>
 {% endblock %}

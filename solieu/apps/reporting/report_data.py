@@ -502,6 +502,7 @@ def activities_for_department(
                     f"{_format_date(activity.den_ngay or activity.tu_ngay)}"
                 ),
                 "trang_thai": activity.get_trang_thai_display(),
+                "trang_thai_code": activity.trang_thai,
                 "noi_dung": (activity.noi_dung or "") if ad_hoc else "",
                 "ket_qua": (activity.ket_qua or "") if ad_hoc else "",
                 "phieu": activity.pk in phieu_map,
@@ -533,6 +534,7 @@ def projects_for_department(
             "loai_ho_tro": line.get_loai_ho_tro_display(),
             "ngay": _format_date(line.ngay_ho_tro),
             "trang_thai": line.phieu.get_trang_thai_display(),
+            "trang_thai_code": line.phieu.trang_thai,
         }
         for line in lines
     ]
@@ -652,6 +654,14 @@ def display_rows(
                 "thuc_hien": format_vi_number(row.period_value),
                 "luy_ke": format_vi_number(row.cumulative),
                 "phan_tram": format_vi_number(row.percent),
+                "percent_width": (
+                    f"{min(max(float(row.percent), 0), 100):.1f}"
+                    .rstrip("0")
+                    .rstrip(".")
+                    if row.percent is not None
+                    else "0"
+                ),
+                "has_percent": row.percent is not None,
                 "ghi_chu": note,
                 "danh_gia": report.notes.get(row.chi_tieu_id, ""),
                 "behind": row.behind,
