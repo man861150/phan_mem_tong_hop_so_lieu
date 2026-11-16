@@ -7,7 +7,7 @@ import os
 import tempfile
 from datetime import date
 from decimal import Decimal
-from io import BytesIO, StringIO
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
 from zipfile import ZipFile
@@ -24,12 +24,17 @@ from apps.accounts.models import User
 from apps.accounts.roles import Role
 from apps.activities.models import DuAn, HoatDong, TrangThaiHoatDong
 from apps.catalog.models import (
+    CachTongHop,
     ChiTieu,
     ChiTieuKeHoach,
+    CountSubject,
     DanhMucDoiTuong,
     DanhMucLinhVuc,
+    KieuGhiNhan,
     KyBaoCao,
     LoaiHoatDong,
+    LoaiHoTro,
+    NhomChiTieu,
     TrangThaiKeHoach,
     TrangThaiKy,
 )
@@ -74,7 +79,7 @@ class ReportFixtureMixin:
             ma_phong="BGĐ",
             ten_phong="Ban Giám đốc",
         )
-        call_command("seed_catalog", verbosity=0, stdout=StringIO())
+        cls._seed_reporting_catalog()
 
         cls.cb_htkn = User.objects.create_user(
             username="cb.htkn",
@@ -230,6 +235,103 @@ class ReportFixtureMixin:
             chi_tieu=cls.chi_tieu_hs,
             gia_tri=Decimal("20"),
         )
+
+    @classmethod
+    def _seed_reporting_catalog(cls):
+        """Catalog rows these tests name by code.
+
+        seed_gdcn replaced the old full catalog. The names, units, and
+        aggregation modes below are the ones the assertions still read.
+        """
+        groups = {}
+        for phong, ten_mang, thu_tu in (
+            (cls.htkn, "Chương trình huấn luyện", 1),
+            (cls.htkn, "Hội nghị/hội thảo", 2),
+            (cls.htkn, "Ươm tạo", 3),
+            (cls.gdcn, "Sàn Techport", 1),
+            (cls.tttk, "Người dùng tin", 1),
+        ):
+            groups[ten_mang] = NhomChiTieu.objects.create(
+                phong=phong,
+                ten_mang=ten_mang,
+                thu_tu=thu_tu,
+            )
+        loai_lop = LoaiHoatDong.objects.create(
+            phong=cls.htkn,
+            ten_loai="Lớp huấn luyện",
+            co_ke_hoach_so_luong=True,
+        )
+        loai_hn = LoaiHoatDong.objects.create(
+            phong=cls.htkn,
+            ten_loai="Hội nghị/hội thảo",
+            co_ke_hoach_so_luong=True,
+        )
+        lop = ChiTieu.objects.create(
+            ma_chi_tieu="HTKN-LOP",
+            ten_chi_tieu="Số lớp huấn luyện",
+            don_vi_tinh="lớp",
+            nhom=groups["Chương trình huấn luyện"],
+            kieu_ghi_nhan=KieuGhiNhan.ACTIVITY,
+            cach_tong_hop=CachTongHop.COUNT,
+            count_subject=CountSubject.ACTIVITY,
+            loai_hoat_dong=loai_lop,
+        )
+        for code, name in (
+            ("HTKN-LOP-HV", "Số học viên tham gia"),
+            ("HTKN-LOP-CN", "Số học viên được cấp chứng nhận"),
+            ("HTKN-LOP-CG", "Số chuyên gia/giảng viên tham gia"),
+            ("HTKN-LOP-KS", "Số học viên tham gia khảo sát"),
+        ):
+            ChiTieu.objects.create(
+                ma_chi_tieu=code,
+                ten_chi_tieu=name,
+                don_vi_tinh="người",
+                nhom=groups["Chương trình huấn luyện"],
+                chi_tieu_cha=lop,
+                kieu_ghi_nhan=KieuGhiNhan.ACTIVITY,
+                cach_tong_hop=CachTongHop.SUM,
+            )
+        ChiTieu.objects.create(
+            ma_chi_tieu="HTKN-HN",
+            ten_chi_tieu="Số hội nghị/hội thảo",
+            don_vi_tinh="sự kiện",
+            nhom=groups["Hội nghị/hội thảo"],
+            kieu_ghi_nhan=KieuGhiNhan.ACTIVITY,
+            cach_tong_hop=CachTongHop.COUNT,
+            count_subject=CountSubject.ACTIVITY,
+            loai_hoat_dong=loai_hn,
+        )
+        ChiTieu.objects.create(
+            ma_chi_tieu="HTKN-DA-CG",
+            ten_chi_tieu="Số dự án được hỗ trợ chuyên gia",
+            don_vi_tinh="dự án",
+            nhom=groups["Ươm tạo"],
+            kieu_ghi_nhan=KieuGhiNhan.PROJECT,
+            cach_tong_hop=CachTongHop.COUNT,
+            count_subject=CountSubject.PROJECT,
+            loai_ho_tro=LoaiHoTro.CHUYEN_GIA,
+        )
+        ChiTieu.objects.create(
+            ma_chi_tieu="GDCN-HS",
+            ten_chi_tieu="Hồ sơ công nghệ",
+            don_vi_tinh="hồ sơ",
+            nhom=groups["Sàn Techport"],
+            kieu_ghi_nhan=KieuGhiNhan.MONTH,
+            cach_tong_hop=CachTongHop.SUM,
+        )
+        ndt = ChiTieu.objects.create(
+            ma_chi_tieu="TTTK-NDT",
+            ten_chi_tieu="Số người dùng tin đang phục vụ",
+            don_vi_tinh="người",
+            nhom=groups["Người dùng tin"],
+            kieu_ghi_nhan=KieuGhiNhan.MONTH,
+            cach_tong_hop=CachTongHop.CUMULATIVE,
+            phan_loai_doi_tuong=True,
+            phan_loai_linh_vuc=True,
+        )
+        for name in ("Doanh nghiệp", "Sinh viên/Học viên"):
+            subject = DanhMucDoiTuong.objects.create(ten_doi_tuong=name)
+            ndt.doi_tuong_ap_dung.add(subject)
 
     @classmethod
     def _confirm_plan(cls, chi_tieu, value):
