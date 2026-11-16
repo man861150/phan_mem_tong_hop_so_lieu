@@ -1,0 +1,6 @@
+<div class="designer-field-control"{% if not visible %} hidden{% endif %}>
+  <label class="designer-label" for="{{ bound.id_for_label }}">{{ label }}</label>
+  <div class="designer-control">{{ bound }}</div>
+  {% if hint %}<p class="designer-hint">{{ hint }}</p>{% endif %}
+  {% if bound.errors %}<div class="designer-field-error">{{ bound.errors }}</div>{% endif %}
+</div>

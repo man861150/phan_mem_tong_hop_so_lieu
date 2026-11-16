@@ -191,6 +191,51 @@ def _builder_context(request, form_template, draft, selected_id=None):
             "design_form_template",
             form_template.phong_id,
         ),
+        "inspector_visibility": (
+            _inspector_visibility(selected) if selected is not None else None
+        ),
+    }
+
+
+_NUMBER_TYPES = frozenset({"integer", "decimal", "percent"})
+_TEXT_TYPES = frozenset({"text", "textarea", "email", "phone", "url"})
+_FILE_TYPES = frozenset({"file", "image"})
+_NO_PLACEHOLDER = frozenset(
+    {"instruction", "checkbox", "switch", "radio", "multi_select", "file", "image"}
+)
+_NO_DEFAULT = frozenset({"instruction", "file", "image"})
+_NO_UNIQUE = frozenset(
+    {"instruction", "checkbox", "switch", "multi_select", "file", "image"}
+)
+
+
+def _inspector_visibility(field):
+    """Which inspector controls apply to this field type.
+
+    Irrelevant controls stay in the form so a save still posts every
+    FieldUpdateForm name. The template only hides them.
+    """
+
+    kind = field.field_type
+    number = kind in _NUMBER_TYPES
+    text = kind in _TEXT_TYPES
+    file = kind in _FILE_TYPES
+    unique = kind not in _NO_UNIQUE
+    return {
+        "placeholder": kind not in _NO_PLACEHOLDER,
+        "default_value": kind not in _NO_DEFAULT,
+        "catalog_source": kind == "lookup",
+        "min_value": number,
+        "max_value": number,
+        "min_length": text,
+        "max_length": text,
+        "regex": text,
+        "max_file_size_mb": file,
+        "allowed_extensions": file,
+        "unique_within_form": unique,
+        "required": kind != "instruction",
+        "read_only": kind != "instruction",
+        "checks": number or text or file or unique,
     }
 
 
@@ -556,6 +601,10 @@ def template_publish(request, pk):
         )
     messages.success(request, f"Đã xuất bản phiên bản {published.version}.")
     if getattr(request, "htmx", False):
+        # publish_template locks and updates its own row. This instance still
+        # has the pre-publish draft and published version cached, so the swap
+        # would keep the old chips and the published field ids.
+        form_template.refresh_from_db()
         return _render_builder(request, form_template)
     return redirect("formbuilder:design", pk=form_template.pk)
 

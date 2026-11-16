@@ -2,128 +2,249 @@
 
 {% block title %}Thiết kế — {{ form_template.name }}{% endblock %}
 
+{% block topbar_breadcrumb %}
+  <nav class="designer-crumb" aria-label="Đường dẫn">
+    <a href="{% url 'formbuilder:list' %}">Biểu mẫu</a>
+    {% include "formbuilder/partials/icon.html" with name="chevron" size=14 %}
+    <strong>Chỉnh sửa biểu mẫu</strong>
+  </nav>
+{% endblock %}
+
 {% block content %}
   <div class="designer-page"
-       x-data="{ dirty: false, paletteOpen: false, inspectorOpen: true }"
+       x-data="{
+         dirty: false,
+         paletteOpen: false,
+         inspectorOpen: false,
+         paletteQuery: '',
+         inspectorTab: 'chung'
+       }"
        @htmx:before-request.window="window.__designerFocus = document.activeElement && document.activeElement.name"
-       @htmx:after-swap.window="dirty = false; const name = window.__designerFocus; if (name) { const field = document.querySelector('#designer-inspector [name=\'' + name + '\']'); if (field) field.focus(); }"
+       @htmx:after-swap.window="dirty = false; const name = window.__designerFocus; if (name) { const field = document.querySelector('#designer-inspector [name=\'' + name + '\']'); if (field) { const panel = field.closest('[data-inspector-tab]'); if (panel) inspectorTab = panel.dataset.inspectorTab; $nextTick(() => field.focus()); } }"
        @beforeunload.window="if (dirty) { $event.preventDefault(); $event.returnValue = ''; }">
-    <div class="designer-top card mb-3">
-      <div class="card-body flex flex-wrap items-center gap-2">
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'formbuilder:list' %}">Quay lại</a>
+    <button type="button" class="designer-scrim" :class="(paletteOpen || inspectorOpen) ? 'is-open' : ''" @click="paletteOpen = false; inspectorOpen = false" tabindex="-1" aria-label="Đóng bảng"></button>
+
+    <header class="designer-heading">
+      <div class="designer-heading-title">
+        <a class="designer-back" href="{% url 'formbuilder:list' %}" aria-label="Quay lại danh sách biểu mẫu">
+          {% include "formbuilder/partials/icon.html" with name="arrowLeft" size=18 %}
+        </a>
         <div>
-          <strong>{{ form_template.name }}</strong>
-          <div class="text-slate-500 small">
-            {{ form_template.get_function_type_display }} —
-            {% if form_template.target_activity_type %}{{ form_template.target_activity_type.ten_loai }}
-            {% elif form_template.target_indicator_group %}{{ form_template.target_indicator_group.ten_mang }}
-            {% else %}Tất cả{% endif %}
+          <p class="eyebrow">Trình thiết kế biểu mẫu</p>
+          <h1>{{ form_template.name }}</h1>
+          <div class="designer-chips">
+            <span id="designer-status" class="designer-status {% if not form_template.is_active %}is-archived{% elif published %}is-published{% else %}is-draft{% endif %}">
+              {% if not form_template.is_active %}Đã lưu trữ
+              {% elif published %}Đã xuất bản
+              {% else %}Bản nháp{% endif %}
+            </span>
+            <span id="designer-version" class="designer-version">
+              Phiên bản {{ draft.version }}{% if published %} · Đang dùng v{{ published.version }}{% endif %}
+            </span>
+            <span class="designer-chip-sep" aria-hidden="true"></span>
+            {% include "formbuilder/partials/save_state.html" %}
           </div>
         </div>
-        <span id="designer-status" class="badge bg-blue-lt">
-          {% if not form_template.is_active %}Đã lưu trữ
-          {% elif published %}Đã xuất bản
-          {% else %}Bản nháp{% endif %}
-        </span>
-        <span id="designer-version" class="text-slate-500 small">
-          Bản nháp v{{ draft.version }}{% if published %} • Đang dùng v{{ published.version }}{% endif %}
-        </span>
-        {% include "formbuilder/partials/save_state.html" %}
-        <div class="ml-auto flex flex-wrap gap-2">
-          <button type="button" class="btn btn-outline-secondary btn-sm designer-drawer-toggle" @click="paletteOpen = !paletteOpen">Thêm trường</button>
-          <button type="button" class="btn btn-outline-secondary btn-sm designer-drawer-toggle" @click="inspectorOpen = !inspectorOpen">Thuộc tính</button>
-          <a class="btn btn-outline-secondary" href="{% url 'formbuilder:preview' form_template.pk %}">Xem trước</a>
-          <a class="btn btn-outline-secondary" href="{% url 'formbuilder:versions' form_template.pk %}">Phiên bản</a>
-          {% if can_edit %}
-            <button class="btn btn-outline-primary" type="submit" form="draft-meta-form">Lưu nháp</button>
-          {% endif %}
-          {% if can_publish and form_template.is_active %}
-            <form method="post" action="{% url 'formbuilder:publish' form_template.pk %}"
-                  hx-post="{% url 'formbuilder:publish' form_template.pk %}"
-                  hx-target="#designer-stage" hx-swap="outerHTML">
-              {% csrf_token %}
-              <button class="btn btn-primary" type="submit">Xuất bản</button>
-            </form>
-          {% endif %}
-        </div>
       </div>
+      <div class="designer-heading-actions">
+        <button type="button" class="btn btn-outline-secondary btn-sm designer-drawer-toggle" @click="paletteOpen = !paletteOpen" :aria-expanded="paletteOpen ? 'true' : 'false'">Thêm trường</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm designer-drawer-toggle" @click="inspectorOpen = !inspectorOpen" :aria-expanded="inspectorOpen ? 'true' : 'false'">Thuộc tính</button>
+        <a class="btn btn-link designer-text-action" href="{% url 'formbuilder:preview' form_template.pk %}">Xem trước</a>
+        <a class="btn btn-outline-secondary" href="{% url 'formbuilder:versions' form_template.pk %}">
+          {% include "formbuilder/partials/icon.html" with name="history" size=16 %}
+          Phiên bản
+        </a>
+        {% if can_edit %}
+          <button class="btn btn-outline-secondary" type="submit" form="draft-meta-form">
+            {% include "formbuilder/partials/icon.html" with name="save" size=16 %}
+            Lưu nháp
+          </button>
+        {% else %}
+          <button class="btn btn-outline-secondary" type="button" disabled>Lưu nháp</button>
+        {% endif %}
+        {% if can_publish and form_template.is_active %}
+          <form method="post" action="{% url 'formbuilder:publish' form_template.pk %}"
+                hx-post="{% url 'formbuilder:publish' form_template.pk %}"
+                hx-target="#designer-stage" hx-swap="outerHTML">
+            {% csrf_token %}
+            <button class="btn btn-primary" type="submit">
+              {% include "formbuilder/partials/icon.html" with name="publish" size=16 %}
+              Xuất bản
+            </button>
+          </form>
+        {% else %}
+          <button class="btn btn-primary" type="button" disabled>
+            {% include "formbuilder/partials/icon.html" with name="publish" size=16 %}
+            Xuất bản
+          </button>
+        {% endif %}
+      </div>
+    </header>
+
+    {% if read_only %}
+      <p class="designer-readonly-note">Bạn chỉ được xem biểu mẫu này.</p>
+    {% endif %}
+
+    <div id="designer-messages" class="designer-messages">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    </div>
+
+    <section class="designer-meta" aria-label="Thông tin biểu mẫu">
       {% if can_edit %}
-        <form id="draft-meta-form" method="post" class="card-body border-t"
+        <form id="draft-meta-form" class="designer-meta-form" method="post"
               action="{% url 'formbuilder:save_draft' form_template.pk %}"
               hx-post="{% url 'formbuilder:save_draft' form_template.pk %}"
               hx-target="#save-state" hx-swap="outerHTML"
               @input="dirty = true">
           {% csrf_token %}
-          <div class="grid grid-cols-12 gap-2">
-            <div class="col-span-12 md:col-span-4">
-              <label class="form-label" for="template-name">Tên biểu mẫu</label>
-              <input class="form-control" id="template-name" name="name" value="{{ form_template.name }}" required>
-            </div>
-            <div class="col-span-12 md:col-span-4">
-              <label class="form-label" for="template-description">Mô tả</label>
-              <input class="form-control" id="template-description" name="description" value="{{ form_template.description }}">
-            </div>
-            <div class="col-span-12 md:col-span-4">
-              <label class="form-label" for="layout-notes">Ghi chú nội bộ</label>
-              <input class="form-control" id="layout-notes" name="layout_notes" value="{{ draft.layout_notes }}">
-            </div>
-          </div>
+          <label class="designer-setting" for="template-name">
+            <span>Tên biểu mẫu</span>
+            <input class="form-control" id="template-name" name="name" value="{{ form_template.name }}" required>
+          </label>
+          <label class="designer-setting" for="template-description">
+            <span>Mô tả</span>
+            <input class="form-control" id="template-description" name="description" value="{{ form_template.description }}" placeholder="Nhập mô tả ngắn...">
+          </label>
+          <label class="designer-setting" for="layout-notes">
+            <span>Ghi chú nội bộ</span>
+            <input class="form-control" id="layout-notes" name="layout_notes" value="{{ draft.layout_notes }}" placeholder="Chỉ hiển thị với quản trị viên">
+          </label>
         </form>
+      {% else %}
+        <div class="designer-meta-form">
+          <label class="designer-setting" for="template-name">
+            <span>Tên biểu mẫu</span>
+            <input class="form-control" id="template-name" value="{{ form_template.name }}" disabled>
+          </label>
+          <label class="designer-setting" for="template-description">
+            <span>Mô tả</span>
+            <input class="form-control" id="template-description" value="{{ form_template.description }}" disabled>
+          </label>
+          <label class="designer-setting" for="layout-notes">
+            <span>Ghi chú nội bộ</span>
+            <input class="form-control" id="layout-notes" value="{{ draft.layout_notes }}" disabled>
+          </label>
+        </div>
       {% endif %}
-    </div>
-
-    {% if messages %}
-      {% for message in messages %}
-        <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
+      {% if can_publish or can_archive %}
+        <details class="designer-menu designer-meta-more">
+          <summary class="designer-icon-btn" aria-label="Thêm thao tác">
+            {% include "formbuilder/partials/icon.html" with name="more" size=18 %}
+          </summary>
+          <div class="designer-menu-panel">
+            {% if can_publish %}
+              <form method="post" action="{% url 'formbuilder:duplicate' form_template.pk %}">
+                {% csrf_token %}
+                <button class="designer-menu-item" type="submit">Nhân bản biểu mẫu</button>
+              </form>
+            {% endif %}
+            {% if can_archive and form_template.is_active %}
+              <form method="post" action="{% url 'formbuilder:archive' form_template.pk %}"
+                    onsubmit="return confirm('Lưu trữ biểu mẫu này? Phiếu cũ vẫn xem được.');">
+                {% csrf_token %}
+                <button class="designer-menu-item is-danger" type="submit">Lưu trữ</button>
+              </form>
+            {% elif can_archive %}
+              <form method="post" action="{% url 'formbuilder:restore' form_template.pk %}">
+                {% csrf_token %}
+                <button class="designer-menu-item" type="submit">Khôi phục</button>
+              </form>
+            {% endif %}
+          </div>
+        </details>
+      {% endif %}
+    </section>
 
     <div class="designer">
-      <aside class="designer-pane designer-drawer card" :class="paletteOpen ? 'is-open' : ''">
-        <div class="card-header"><h3 class="card-title">Thêm trường</h3></div>
-        <div class="card-body">
+      <aside class="designer-pane designer-drawer designer-palette" :class="paletteOpen ? 'is-open' : ''" aria-label="Thêm trường">
+        <div class="designer-panel-head">
+          <div class="designer-palette-head">
+            <div>
+              <p class="eyebrow">Thành phần</p>
+              <h2>Thêm trường</h2>
+            </div>
+            {% if not read_only %}
+              <label class="designer-search">
+                <span class="sr-only">Tìm loại trường</span>
+                {% include "formbuilder/partials/icon.html" with name="search" size=16 %}
+                <input type="search" placeholder="Tìm loại trường" autocomplete="off" x-model="paletteQuery" aria-label="Tìm loại trường">
+              </label>
+            {% endif %}
+          </div>
+          <button type="button" class="designer-icon-btn designer-drawer-close" @click="paletteOpen = false" aria-label="Đóng bảng thành phần">
+            {% include "formbuilder/partials/icon.html" with name="x" size=16 %}
+          </button>
+        </div>
+        <div class="designer-palette-body">
           {% if read_only %}
-            <p class="text-slate-500">Bạn chỉ được xem biểu mẫu này.</p>
+            <p class="designer-hint">Bạn chỉ được xem biểu mẫu này.</p>
           {% else %}
-            {% for group_label, items in palette %}
-              <div class="mb-3">
-                <div class="text-slate-500 small mb-1">{{ group_label }}</div>
-                <div class="flex flex-wrap gap-2">
-                  {% for code, label in items %}
-                    <form method="post" action="{% url 'formbuilder:field_create' form_template.pk %}"
-                          hx-post="{% url 'formbuilder:field_create' form_template.pk %}"
-                          hx-target="#designer-stage" hx-swap="outerHTML">
-                      {% csrf_token %}
-                      <input type="hidden" name="field_type" value="{{ code }}">
-                      <input type="hidden" name="section" value="{{ default_section_id }}">
-                      <button class="btn btn-outline-secondary btn-sm" type="submit" @click="window.__designerFocus = 'label'">{{ label }}</button>
-                    </form>
-                  {% endfor %}
-                </div>
-              </div>
-            {% endfor %}
-            <form method="post" action="{% url 'formbuilder:section_create' form_template.pk %}"
+            <p class="designer-hint">Chọn một loại trường để thêm vào biểu mẫu.</p>
+            <div class="designer-palette-groups">
+              {% for group_label, items in palette %}
+                <section class="designer-palette-group">
+                  <h3>{{ group_label }}</h3>
+                  <div class="designer-pills">
+                    {% for code, label in items %}
+                      <form class="designer-pill-form" method="post" data-label="{{ label|lower }}"
+                            action="{% url 'formbuilder:field_create' form_template.pk %}"
+                            hx-post="{% url 'formbuilder:field_create' form_template.pk %}"
+                            hx-target="#designer-stage" hx-swap="outerHTML"
+                            x-show="!paletteQuery.trim() || $el.dataset.label.includes(paletteQuery.trim().toLowerCase())"
+                            @submit="paletteOpen = false">
+                        {% csrf_token %}
+                        <input type="hidden" name="field_type" value="{{ code }}">
+                        <input type="hidden" name="section" value="{{ default_section_id }}">
+                        <button class="designer-pill" type="submit" @click="window.__designerFocus = 'label'">
+                          {% include "formbuilder/partials/icon.html" with name="plus" size=13 %}
+                          {{ label }}
+                        </button>
+                      </form>
+                    {% endfor %}
+                  </div>
+                </section>
+              {% endfor %}
+              {% if unused_core %}
+                <section class="designer-palette-group">
+                  <h3>Trường hệ thống</h3>
+                  <div class="designer-pills">
+                    {% for definition in unused_core %}
+                      <form class="designer-pill-form" method="post" data-label="{{ definition.label|lower }}"
+                            action="{% url 'formbuilder:field_create' form_template.pk %}"
+                            hx-post="{% url 'formbuilder:field_create' form_template.pk %}"
+                            hx-target="#designer-stage" hx-swap="outerHTML"
+                            x-show="!paletteQuery.trim() || $el.dataset.label.includes(paletteQuery.trim().toLowerCase())"
+                            @submit="paletteOpen = false">
+                        {% csrf_token %}
+                        <input type="hidden" name="core_key" value="{{ definition.core_key }}">
+                        <input type="hidden" name="section" value="{{ default_section_id }}">
+                        <button class="designer-pill" type="submit">
+                          {% include "formbuilder/partials/icon.html" with name="plus" size=13 %}
+                          {{ definition.label }}
+                          <span class="designer-system-tag">Hệ thống</span>
+                        </button>
+                      </form>
+                    {% endfor %}
+                  </div>
+                </section>
+              {% endif %}
+            </div>
+            <p class="designer-palette-empty">Không có thành phần khớp.</p>
+            <form class="designer-add-section" method="post" action="{% url 'formbuilder:section_create' form_template.pk %}"
                   hx-post="{% url 'formbuilder:section_create' form_template.pk %}"
-                  hx-target="#designer-stage" hx-swap="outerHTML">
+                  hx-target="#designer-stage" hx-swap="outerHTML"
+                  @submit="paletteOpen = false">
               {% csrf_token %}
               <input type="hidden" name="title" value="Phần mới">
-              <button class="btn btn-outline-primary btn-sm" type="submit">Thêm phần</button>
+              <button class="designer-pill" type="submit">
+                {% include "formbuilder/partials/icon.html" with name="plus" size=13 %}
+                Thêm phần
+              </button>
             </form>
-            {% if unused_core %}
-              <div class="mt-3">
-                <div class="text-slate-500 small mb-1">Trường hệ thống</div>
-                {% for definition in unused_core %}
-                  <form method="post" class="mb-1" action="{% url 'formbuilder:field_create' form_template.pk %}"
-                        hx-post="{% url 'formbuilder:field_create' form_template.pk %}"
-                        hx-target="#designer-stage" hx-swap="outerHTML">
-                    {% csrf_token %}
-                    <input type="hidden" name="core_key" value="{{ definition.core_key }}">
-                    <input type="hidden" name="section" value="{{ default_section_id }}">
-                    <button class="btn btn-outline-secondary btn-sm" type="submit">{{ definition.label }}</button>
-                  </form>
-                {% endfor %}
-              </div>
-            {% endif %}
           {% endif %}
         </div>
       </aside>
@@ -131,6 +252,17 @@
       {% include "formbuilder/partials/stage.html" %}
     </div>
   </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    document.body.addEventListener("htmx:beforeSwap", function (event) {
+      if (event.detail.xhr && event.detail.xhr.status === 422) {
+        event.detail.shouldSwap = true;
+        event.detail.isError = false;
+      }
+    });
+  </script>
   {% if can_edit %}
     <script>
       document.addEventListener("dragstart", function (event) {

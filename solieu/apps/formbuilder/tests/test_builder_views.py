@@ -110,7 +110,7 @@ class BuilderTests(FormFixture):
             },
             HTTP_HX_REQUEST="true",
         )
-        self.assertContains(response, "Đã lưu lúc")
+        self.assertContains(response, "Tự động lưu lúc")
         template.refresh_from_db()
         self.assertEqual(template.name, "Tên đã lưu")
 

@@ -1,14 +1,14 @@
 {% if request.htmx %}
-  <span id="designer-version" hx-swap-oob="outerHTML" class="text-slate-500 small">
-    Bản nháp v{{ draft.version }}{% if published %} • Đang dùng v{{ published.version }}{% endif %}
+  <span id="designer-version" hx-swap-oob="outerHTML" class="designer-version">
+    Phiên bản {{ draft.version }}{% if published %} · Đang dùng v{{ published.version }}{% endif %}
   </span>
-  <span id="designer-status" hx-swap-oob="outerHTML" class="badge bg-blue-lt">
+  <span id="designer-status" hx-swap-oob="outerHTML" class="designer-status {% if not form_template.is_active %}is-archived{% elif published %}is-published{% else %}is-draft{% endif %}">
     {% if not form_template.is_active %}Đã lưu trữ
     {% elif published %}Đã xuất bản
     {% else %}Bản nháp{% endif %}
   </span>
   {% if messages %}
-    <div id="designer-messages" hx-swap-oob="beforeend" class="mb-3">
+    <div id="designer-messages" hx-swap-oob="beforeend">
       {% for message in messages %}
         <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
       {% endfor %}
@@ -16,8 +16,8 @@
   {% endif %}
 {% endif %}
 
-<div id="designer-stage" class="designer-canvas-wrap contents">
-  <div class="designer-pane">
+<div id="designer-stage">
+  <div class="designer-pane designer-canvas">
     {% if publish_errors %}
       {% include "formbuilder/partials/publish_checklist.html" with errors=publish_errors %}
     {% endif %}
@@ -32,304 +32,93 @@
     {% endif %}
 
     {% for section in draft.sections.all %}
-      <section class="card mb-3" data-section-id="{{ section.pk }}">
-        <div class="card-header">
+      <section class="designer-section" data-section-id="{{ section.pk }}">
+        <div class="designer-section-head">
           <div>
-            <h3 class="card-title mb-0">{{ section.title }}</h3>
-            {% if section.description %}<div class="text-slate-500 small">{{ section.description }}</div>{% endif %}
-            <div class="text-slate-500 small">{{ section.columns }} cột</div>
+            <p class="eyebrow">Phần {{ forloop.counter|stringformat:"02d" }}</p>
+            <h2>{{ section.title }}</h2>
+            <p class="designer-section-meta">{{ section.fields.all|length }} trường · {{ section.columns }} cột</p>
           </div>
           {% if can_edit %}
-            <div class="card-actions flex flex-wrap gap-1">
-              <form method="post" action="{% url 'formbuilder:reorder' form_template.pk %}"
+            <div class="designer-section-tools">
+              <form class="designer-icon-form" method="post" action="{% url 'formbuilder:reorder' form_template.pk %}"
                     hx-post="{% url 'formbuilder:reorder' form_template.pk %}"
                     hx-target="#designer-stage" hx-swap="outerHTML">
                 {% csrf_token %}
                 <input type="hidden" name="section_id" value="{{ section.pk }}">
-                <button class="btn btn-sm btn-outline-secondary" type="submit" name="direction" value="up" aria-label="Đưa phần lên">Lên</button>
-                <button class="btn btn-sm btn-outline-secondary" type="submit" name="direction" value="down" aria-label="Đưa phần xuống">Xuống</button>
+                <button class="designer-icon-btn" type="submit" name="direction" value="up" aria-label="Đưa phần lên" {% if forloop.first %}disabled{% endif %}>
+                  {% include "formbuilder/partials/icon.html" with name="arrowUp" size=16 %}
+                </button>
+                <button class="designer-icon-btn" type="submit" name="direction" value="down" aria-label="Đưa phần xuống" {% if forloop.last %}disabled{% endif %}>
+                  {% include "formbuilder/partials/icon.html" with name="arrowDown" size=16 %}
+                </button>
               </form>
-              <form method="post" action="{% url 'formbuilder:section_duplicate' section.pk %}"
+              <form class="designer-icon-form" method="post" action="{% url 'formbuilder:section_duplicate' section.pk %}"
                     hx-post="{% url 'formbuilder:section_duplicate' section.pk %}"
                     hx-target="#designer-stage" hx-swap="outerHTML">
                 {% csrf_token %}
-                <button class="btn btn-sm btn-outline-secondary" type="submit">Nhân bản</button>
+                <button class="designer-icon-btn" type="submit" aria-label="Nhân bản phần">
+                  {% include "formbuilder/partials/icon.html" with name="copy" size=16 %}
+                </button>
               </form>
-              <form method="post" action="{% url 'formbuilder:section_delete' section.pk %}"
+              <form class="designer-icon-form" method="post" action="{% url 'formbuilder:section_delete' section.pk %}"
                     hx-post="{% url 'formbuilder:section_delete' section.pk %}"
                     hx-target="#designer-stage" hx-swap="outerHTML"
                     onsubmit="return confirm('Xóa phần này? Trường hệ thống bắt buộc sẽ được giữ lại.');">
                 {% csrf_token %}
-                <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
+                <button class="designer-icon-btn is-danger" type="submit" aria-label="Xóa phần">
+                  {% include "formbuilder/partials/icon.html" with name="trash" size=16 %}
+                </button>
               </form>
             </div>
           {% endif %}
         </div>
-        <div class="card-body">
-          {% if can_edit %}
-            <form method="post" class="mb-3" action="{% url 'formbuilder:section_update' section.pk %}"
-                  hx-post="{% url 'formbuilder:section_update' section.pk %}"
-                  hx-target="#designer-stage" hx-swap="outerHTML">
-              {% csrf_token %}
-              <div class="grid grid-cols-12 gap-2">
-                <div class="col-span-12 md:col-span-4">
-                  <label class="form-label" for="section-title-{{ section.pk }}">Tiêu đề</label>
-                  <input class="form-control" id="section-title-{{ section.pk }}" name="title" value="{{ section.title }}" required>
-                </div>
-                <div class="col-span-12 md:col-span-4">
-                  <label class="form-label" for="section-description-{{ section.pk }}">Mô tả</label>
-                  <input class="form-control" id="section-description-{{ section.pk }}" name="description" value="{{ section.description }}">
-                </div>
-                <div class="col-span-6 md:col-span-2">
-                  <label class="form-label" for="section-columns-{{ section.pk }}">Số cột</label>
-                  <input class="form-control" id="section-columns-{{ section.pk }}" name="columns" type="number" min="1" max="4" value="{{ section.columns }}">
-                </div>
-                <div class="col-span-6 md:col-span-2 flex items-end">
-                  <button class="btn btn-outline-primary btn-sm" type="submit">Lưu phần</button>
-                </div>
-              </div>
-              <label class="form-label mt-2">
-                <input type="checkbox" name="is_collapsible" {% if section.is_collapsible %}checked{% endif %}> Cho phép thu gọn
+        {% if can_edit %}
+          <form class="designer-section-settings" method="post" action="{% url 'formbuilder:section_update' section.pk %}"
+                hx-post="{% url 'formbuilder:section_update' section.pk %}"
+                hx-target="#designer-stage" hx-swap="outerHTML">
+            {% csrf_token %}
+            <label class="designer-setting" for="section-title-{{ section.pk }}">
+              <span>Tiêu đề</span>
+              <input class="form-control" id="section-title-{{ section.pk }}" name="title" value="{{ section.title }}" required>
+            </label>
+            <label class="designer-setting" for="section-description-{{ section.pk }}">
+              <span>Mô tả</span>
+              <input class="form-control" id="section-description-{{ section.pk }}" name="description" value="{{ section.description }}" placeholder="Mô tả không bắt buộc">
+            </label>
+            <label class="designer-setting" for="section-columns-{{ section.pk }}">
+              <span>Số cột</span>
+              <select class="form-select" id="section-columns-{{ section.pk }}" name="columns">
+                {% for count in "1234" %}
+                  <option value="{{ count }}" {% if section.columns|stringformat:"s" == count %}selected{% endif %}>{{ count }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <button class="designer-text-action" type="submit">Cập nhật</button>
+            <div class="designer-section-flags">
+              <label class="designer-check">
+                <input type="checkbox" name="is_collapsible" {% if section.is_collapsible %}checked{% endif %}>
+                Cho phép thu gọn
               </label>
-              <label class="form-label">
-                <input type="checkbox" name="is_collapsed" {% if section.is_collapsed %}checked{% endif %}> Thu gọn ban đầu
+              <label class="designer-check">
+                <input type="checkbox" name="is_collapsed" {% if section.is_collapsed %}checked{% endif %}>
+                Thu gọn ban đầu
               </label>
-            </form>
-          {% endif %}
-          <div data-field-list>
-            {% for field in section.fields.all %}
-              <article class="field-card card mb-2 {% if selected_field and selected_field.pk == field.pk %}is-selected{% endif %}"
-                       data-field-id="{{ field.pk }}"
-                       {% if can_edit %}draggable="true"{% endif %}>
-                <div class="card-body flex flex-wrap items-center gap-2">
-                  {% if can_edit %}
-                    <button type="button" class="btn btn-sm btn-outline-secondary" draggable="true" aria-label="Kéo để sắp xếp {{ field.label }}">⠿</button>
-                  {% endif %}
-                  <button type="button" class="btn btn-link"
-                          hx-get="{% url 'formbuilder:field_inspector' field.pk %}"
-                          hx-target="#designer-stage" hx-swap="outerHTML"
-                          @click="window.__designerFocus = 'label'">
-                    {{ field.label }}{% if field.required %} <span class="text-red-700">*</span>{% endif %}
-                  </button>
-                  <span class="badge bg-blue-lt">{{ field.get_field_type_display }}</span>
-                  <span class="text-slate-500 small">{{ field.key }}</span>
-                  <span class="text-slate-500 small">rộng {{ field.col_span }}</span>
-                  {% if can_edit %}
-                    <form method="post" action="{% url 'formbuilder:reorder' form_template.pk %}"
-                          hx-post="{% url 'formbuilder:reorder' form_template.pk %}"
-                          hx-target="#designer-stage" hx-swap="outerHTML">
-                      {% csrf_token %}
-                      <input type="hidden" name="field_id" value="{{ field.pk }}">
-                      <button class="btn btn-sm btn-outline-secondary" type="submit" name="direction" value="up" aria-label="Đưa {{ field.label }} lên">Lên</button>
-                      <button class="btn btn-sm btn-outline-secondary" type="submit" name="direction" value="down" aria-label="Đưa {{ field.label }} xuống">Xuống</button>
-                    </form>
-                    <form method="post" class="flex items-center gap-1" action="{% url 'formbuilder:reorder' form_template.pk %}"
-                          hx-post="{% url 'formbuilder:reorder' form_template.pk %}"
-                          hx-target="#designer-stage" hx-swap="outerHTML">
-                      {% csrf_token %}
-                      <input type="hidden" name="field_id" value="{{ field.pk }}">
-                      <label class="form-label mb-0" for="move-section-{{ field.pk }}">Chuyển phần</label>
-                      <select class="form-control" id="move-section-{{ field.pk }}" name="section_id">
-                        {% for target in draft.sections.all %}
-                          <option value="{{ target.pk }}" {% if target.pk == field.section_id %}selected{% endif %}>{{ target.title }}</option>
-                        {% endfor %}
-                      </select>
-                      <button class="btn btn-sm btn-outline-secondary" type="submit">Chuyển</button>
-                    </form>
-                    {% if not field.required or field.source != "core" %}
-                      <form method="post" action="{% url 'formbuilder:field_delete' field.pk %}"
-                            hx-post="{% url 'formbuilder:field_delete' field.pk %}"
-                            hx-target="#designer-stage" hx-swap="outerHTML"
-                            onsubmit="return confirm('Xóa trường {{ field.label }}?');">
-                        {% csrf_token %}
-                        <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
-                      </form>
-                    {% endif %}
-                  {% endif %}
-                </div>
-              </article>
-            {% empty %}
-              <p class="text-slate-500">Kéo trường vào đây hoặc bấm + Thêm trường.</p>
-            {% endfor %}
-          </div>
+            </div>
+          </form>
+        {% elif section.description %}
+          <p class="designer-section-note">{{ section.description }}</p>
+        {% endif %}
+        <div class="designer-fields" data-field-list>
+          {% for field in section.fields.all %}
+            {% include "formbuilder/partials/field_card.html" %}
+          {% empty %}
+            <p class="designer-hint">Kéo trường vào đây hoặc bấm + Thêm trường.</p>
+          {% endfor %}
         </div>
       </section>
     {% endfor %}
   </div>
 
-  <aside id="designer-inspector" class="designer-pane designer-drawer card" :class="inspectorOpen ? 'is-open' : ''">
-    <div class="card-header"><h3 class="card-title">Thuộc tính</h3></div>
-    <div class="card-body">
-      {% if not selected_field %}
-        <p class="text-slate-500">Chọn một trường trên khung thiết kế.</p>
-      {% elif inspector_form %}
-        <div x-data="{ tab: 'chung' }">
-          <div class="flex flex-wrap gap-1 mb-3" role="tablist">
-            <button type="button" class="btn btn-sm btn-outline-secondary" @click="tab = 'chung'" :aria-selected="tab === 'chung'">Chung</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" @click="tab = 'dulieu'">Dữ liệu</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" @click="tab = 'kiemtra'">Kiểm tra</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" @click="tab = 'hienthi'">Hiển thị</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" @click="tab = 'dieukien'">Điều kiện</button>
-          </div>
-          {% if inspector_form.non_field_errors %}
-            <div class="alert alert-danger">{{ inspector_form.non_field_errors }}</div>
-          {% endif %}
-          <form method="post" action="{% url 'formbuilder:field_update' selected_field.pk %}"
-                hx-post="{% url 'formbuilder:field_update' selected_field.pk %}"
-                hx-target="#designer-stage" hx-swap="outerHTML"
-                hx-trigger="submit, change delay:1s, blur delay:1s"
-                @input="dirty = true">
-            {% csrf_token %}
-            <fieldset {% if read_only %}disabled{% endif %}>
-              <div x-show="tab === 'chung'" x-cloak>
-                <label class="form-label" for="{{ inspector_form.label.id_for_label }}">Nhãn</label>
-                {{ inspector_form.label }}
-                {% if inspector_form.label.errors %}<div class="text-red-700">{{ inspector_form.label.errors }}</div>{% endif %}
-                <div class="form-hint mb-2">Mã: {{ selected_field.key }} — không đổi sau khi tạo.</div>
-                <div class="form-hint mb-2">Kiểu: {{ selected_field.get_field_type_display }}{% if selected_field.source == "core" %} (hệ thống){% endif %}</div>
-                {% if selected_field.source == "core" and selected_field.required %}
-                  <input type="hidden" name="required" value="on">
-                  <label class="form-label"><input type="checkbox" checked disabled> Bắt buộc</label>
-                {% else %}
-                  <label class="form-label">{{ inspector_form.required }} Bắt buộc</label>
-                {% endif %}
-                {% if selected_field.source == "core" %}
-                  <input type="hidden" name="read_only" value="on">
-                  <label class="form-label"><input type="checkbox" checked disabled> Chỉ đọc</label>
-                {% else %}
-                  <label class="form-label">{{ inspector_form.read_only }} Chỉ đọc</label>
-                {% endif %}
-                <label class="form-label" for="{{ inspector_form.placeholder.id_for_label }}">Gợi ý nhập</label>
-                {{ inspector_form.placeholder }}
-                <label class="form-label" for="{{ inspector_form.help_text.id_for_label }}">Trợ giúp</label>
-                {{ inspector_form.help_text }}
-                <label class="form-label" for="{{ inspector_form.default_value.id_for_label }}">Giá trị mặc định</label>
-                {{ inspector_form.default_value }}
-              </div>
-              <div x-show="tab === 'dulieu'" x-cloak>
-                {% if form_template.function_type == "chi_tieu" and selected_field.source == "custom" %}
-                  <input type="hidden" name="is_per_row" value="on">
-                  <label class="form-label"><input type="checkbox" checked disabled> Theo từng dòng chỉ tiêu</label>
-                {% endif %}
-                {% if selected_field.field_type == "lookup" %}
-                  <label class="form-label" for="{{ inspector_form.catalog_source.id_for_label }}">Danh mục</label>
-                  {{ inspector_form.catalog_source }}
-                  {% if inspector_form.catalog_source.errors %}<div class="text-red-700">{{ inspector_form.catalog_source.errors }}</div>{% endif %}
-                {% else %}
-                  <p class="text-slate-500">Lựa chọn được thêm bên dưới khi trường là danh sách, chọn một hoặc chọn nhiều.</p>
-                {% endif %}
-              </div>
-              <div x-show="tab === 'kiemtra'" x-cloak>
-                <label class="form-label" for="{{ inspector_form.min_value.id_for_label }}">Giá trị nhỏ nhất</label>
-                {{ inspector_form.min_value }}
-                <label class="form-label" for="{{ inspector_form.max_value.id_for_label }}">Giá trị lớn nhất</label>
-                {{ inspector_form.max_value }}
-                <label class="form-label" for="{{ inspector_form.min_length.id_for_label }}">Độ dài nhỏ nhất</label>
-                {{ inspector_form.min_length }}
-                <label class="form-label" for="{{ inspector_form.max_length.id_for_label }}">Độ dài lớn nhất</label>
-                {{ inspector_form.max_length }}
-                <label class="form-label" for="{{ inspector_form.regex.id_for_label }}">Biểu thức</label>
-                {{ inspector_form.regex }}
-                {% if inspector_form.regex.errors %}<div class="text-red-700">{{ inspector_form.regex.errors }}</div>{% endif %}
-                <label class="form-label" for="{{ inspector_form.max_file_size_mb.id_for_label }}">Dung lượng tối đa (MB)</label>
-                {{ inspector_form.max_file_size_mb }}
-                <label class="form-label" for="{{ inspector_form.allowed_extensions.id_for_label }}">Phần mở rộng</label>
-                {{ inspector_form.allowed_extensions }}
-                <div class="form-hint">Cách nhau bằng dấu phẩy, ví dụ pdf, docx.</div>
-                <label class="form-label">{{ inspector_form.unique_within_form }} Không trùng trong biểu mẫu</label>
-              </div>
-              <div x-show="tab === 'hienthi'" x-cloak>
-                <label class="form-label" for="{{ inspector_form.col_span.id_for_label }}">Độ rộng (1–12)</label>
-                {{ inspector_form.col_span }}
-                {% if inspector_form.col_span.errors %}<div class="text-red-700">{{ inspector_form.col_span.errors }}</div>{% endif %}
-                <label class="form-label" for="{{ inspector_form.section.id_for_label }}">Phần</label>
-                {{ inspector_form.section }}
-                {% if selected_field.source == "core" and selected_field.required %}
-                  <p class="form-hint">Trường hệ thống bắt buộc không thể ẩn.</p>
-                {% else %}
-                  <label class="form-label">{{ inspector_form.is_hidden_by_default }} Ẩn mặc định</label>
-                {% endif %}
-              </div>
-              {% if can_edit %}
-                <button class="btn btn-primary mt-2" type="submit" x-show="tab !== 'dieukien'">Áp dụng</button>
-              {% endif %}
-            </fieldset>
-          </form>
-          <div x-show="tab === 'dulieu'" x-cloak>
-            {% if selected_field.is_choice %}
-              <ul class="mt-3">
-                {% for option in selected_field.options.all %}
-                  <li class="flex items-center gap-2 mb-1">
-                    <span>{{ option.label }} <span class="text-slate-500">({{ option.value }})</span></span>
-                    {% if can_edit %}
-                      <form method="post" action="{% url 'formbuilder:option_delete' option.pk %}"
-                            hx-post="{% url 'formbuilder:option_delete' option.pk %}"
-                            hx-target="#designer-stage" hx-swap="outerHTML">
-                        {% csrf_token %}
-                        <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
-                      </form>
-                    {% endif %}
-                  </li>
-                {% empty %}
-                  <li class="text-slate-500">Chưa có lựa chọn.</li>
-                {% endfor %}
-              </ul>
-              {% if can_edit and option_form %}
-                <form method="post" class="mt-2" action="{% url 'formbuilder:option_create' selected_field.pk %}"
-                      hx-post="{% url 'formbuilder:option_create' selected_field.pk %}"
-                      hx-target="#designer-stage" hx-swap="outerHTML">
-                  {% csrf_token %}
-                  <label class="form-label" for="{{ option_form.label.id_for_label }}">Nhãn lựa chọn</label>
-                  {{ option_form.label }}
-                  <label class="form-label" for="{{ option_form.value.id_for_label }}">Giá trị</label>
-                  {{ option_form.value }}
-                  <button class="btn btn-outline-primary btn-sm mt-2" type="submit">Thêm lựa chọn</button>
-                </form>
-              {% endif %}
-            {% endif %}
-          </div>
-          <div x-show="tab === 'dieukien'" x-cloak>
-            <p class="form-hint">Mỗi điều kiện có một phép so sánh. Điều kiện khớp sau ghi đè điều kiện khớp trước. Trường ẩn không bị kiểm tra bắt buộc.</p>
-            <ul>
-              {% for rule in field_rules %}
-                <li class="mb-2">
-                  Khi {{ rule.source_field_key }} {{ rule.get_operator_display }} {{ rule.compare_value }}
-                  thì {{ rule.get_action_display }} {{ rule.target_field_key }}
-                  {% if can_edit %}
-                    <form method="post" action="{% url 'formbuilder:rule_delete' rule.pk %}"
-                          hx-post="{% url 'formbuilder:rule_delete' rule.pk %}"
-                          hx-target="#designer-stage" hx-swap="outerHTML">
-                      {% csrf_token %}
-                      <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
-                    </form>
-                  {% endif %}
-                </li>
-              {% empty %}
-                <li class="text-slate-500">Chưa có điều kiện cho trường này.</li>
-              {% endfor %}
-            </ul>
-            {% if can_edit and rule_form %}
-              <form method="post" action="{% url 'formbuilder:rule_create' form_template.pk %}"
-                    hx-post="{% url 'formbuilder:rule_create' form_template.pk %}"
-                    hx-target="#designer-stage" hx-swap="outerHTML">
-                {% csrf_token %}
-                <input type="hidden" name="field_id" value="{{ selected_field.pk }}">
-                <label class="form-label" for="{{ rule_form.source_field_key.id_for_label }}">Khi trường</label>
-                {{ rule_form.source_field_key }}
-                <label class="form-label" for="{{ rule_form.operator.id_for_label }}">Phép so sánh</label>
-                {{ rule_form.operator }}
-                <label class="form-label" for="{{ rule_form.compare_value.id_for_label }}">Giá trị</label>
-                {{ rule_form.compare_value }}
-                <label class="form-label" for="{{ rule_form.action.id_for_label }}">Thì</label>
-                {{ rule_form.action }}
-                <label class="form-label" for="{{ rule_form.target_field_key.id_for_label }}">Trường</label>
-                {{ rule_form.target_field_key }}
-                <button class="btn btn-outline-primary btn-sm mt-2" type="submit">Thêm điều kiện</button>
-              </form>
-            {% endif %}
-          </div>
-        </div>
-      {% endif %}
-    </div>
-  </aside>
+  {% include "formbuilder/partials/inspector.html" %}
 </div>

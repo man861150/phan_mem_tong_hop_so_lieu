@@ -1,0 +1,111 @@
+<article class="field-card designer-field{% if selected_field and selected_field.pk == field.pk %} is-selected{% endif %}"
+         data-field-id="{{ field.pk }}"
+         {% if can_edit %}draggable="true"{% endif %}>
+  {% if can_edit %}
+    <button type="button" class="designer-grip" draggable="true" aria-label="Kéo để sắp xếp {{ field.label }}">
+      {% include "formbuilder/partials/icon.html" with name="grip" size=18 %}
+    </button>
+  {% endif %}
+  <div class="designer-field-body">
+    <div class="designer-field-row">
+      <button type="button" class="designer-field-select"
+              hx-get="{% url 'formbuilder:field_inspector' field.pk %}"
+              hx-target="#designer-stage" hx-swap="outerHTML"
+              @click="inspectorOpen = true; window.__designerFocus = 'label'">
+        <span class="designer-field-index">{{ forloop.counter|stringformat:"02d" }}</span>
+        <strong class="designer-field-label">{{ field.label }}{% if field.required %} <span class="designer-required">*</span>{% endif %}</strong>
+        <span class="badge bg-green-lt">{{ field.get_field_type_display }}</span>
+        <code class="designer-key">{{ field.key }}</code>
+      </button>
+      {% if can_edit %}
+        <div class="designer-field-actions">
+          <form class="designer-icon-form" method="post" action="{% url 'formbuilder:reorder' form_template.pk %}"
+                hx-post="{% url 'formbuilder:reorder' form_template.pk %}"
+                hx-target="#designer-stage" hx-swap="outerHTML">
+            {% csrf_token %}
+            <input type="hidden" name="field_id" value="{{ field.pk }}">
+            <button class="designer-icon-btn" type="submit" name="direction" value="up" aria-label="Đưa {{ field.label }} lên" {% if forloop.first %}disabled{% endif %}>
+              {% include "formbuilder/partials/icon.html" with name="arrowUp" size=16 %}
+            </button>
+            <button class="designer-icon-btn" type="submit" name="direction" value="down" aria-label="Đưa {{ field.label }} xuống" {% if forloop.last %}disabled{% endif %}>
+              {% include "formbuilder/partials/icon.html" with name="arrowDown" size=16 %}
+            </button>
+          </form>
+          <details class="designer-menu">
+            <summary class="designer-icon-btn" aria-label="Thao tác khác cho {{ field.label }}">
+              {% include "formbuilder/partials/icon.html" with name="more" size=16 %}
+            </summary>
+            <div class="designer-menu-panel">
+              <button type="button" class="designer-menu-item"
+                      hx-get="{% url 'formbuilder:field_inspector' field.pk %}"
+                      hx-target="#designer-stage" hx-swap="outerHTML"
+                      @click="inspectorOpen = true; window.__designerFocus = 'label'">
+                Chọn
+              </button>
+              <form method="post" action="{% url 'formbuilder:reorder' form_template.pk %}"
+                    hx-post="{% url 'formbuilder:reorder' form_template.pk %}"
+                    hx-target="#designer-stage" hx-swap="outerHTML">
+                {% csrf_token %}
+                <input type="hidden" name="field_id" value="{{ field.pk }}">
+                <label class="designer-label" for="move-section-{{ field.pk }}">Chuyển phần</label>
+                <div class="designer-menu-row">
+                  <select class="form-select" id="move-section-{{ field.pk }}" name="section_id">
+                    {% for target in draft.sections.all %}
+                      <option value="{{ target.pk }}" {% if target.pk == field.section_id %}selected{% endif %}>{{ target.title }}</option>
+                    {% endfor %}
+                  </select>
+                  <button class="btn btn-sm btn-outline-secondary" type="submit">Chuyển</button>
+                </div>
+              </form>
+              {% if not field.required or field.source != "core" %}
+                <form method="post" action="{% url 'formbuilder:field_delete' field.pk %}"
+                      hx-post="{% url 'formbuilder:field_delete' field.pk %}"
+                      hx-target="#designer-stage" hx-swap="outerHTML"
+                      onsubmit="return confirm('Xóa trường {{ field.label|escapejs }}?');">
+                  {% csrf_token %}
+                  <button class="designer-menu-item is-danger" type="submit">Xóa</button>
+                </form>
+              {% else %}
+                <p class="designer-hint">Trường hệ thống bắt buộc không thể xóa.</p>
+              {% endif %}
+            </div>
+          </details>
+        </div>
+      {% endif %}
+    </div>
+    <div class="designer-preview">
+      <span>Xem trước</span>
+      <div class="designer-preview-control">
+        {% if field.field_type == "date" %}
+          dd / mm / yyyy
+        {% elif field.field_type == "time" %}
+          hh:mm
+        {% elif field.field_type == "datetime" %}
+          dd / mm / yyyy hh:mm
+        {% elif field.field_type == "select" or field.field_type == "lookup" or field.field_type == "multi_select" %}
+          {% for option in field.options.all %}
+            {% if forloop.first %}{{ option.label }}{% endif %}
+          {% empty %}
+            Chọn...
+          {% endfor %}
+        {% elif field.field_type == "radio" %}
+          {% for option in field.options.all %}
+            {{ option.label }}{% if not forloop.last %}, {% endif %}
+          {% empty %}
+            Chưa có lựa chọn
+          {% endfor %}
+        {% elif field.field_type == "checkbox" or field.field_type == "switch" %}
+          <span class="designer-preview-check"></span>
+        {% elif field.field_type == "file" or field.field_type == "image" %}
+          Chọn tệp
+        {% elif field.field_type == "instruction" %}
+          {{ field.help_text|default:field.label }}
+        {% elif field.placeholder %}
+          {{ field.placeholder }}
+        {% else %}
+          Nhập nội dung...
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</article>

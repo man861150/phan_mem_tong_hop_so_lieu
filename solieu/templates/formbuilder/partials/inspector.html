@@ -1,0 +1,271 @@
+<aside id="designer-inspector" class="designer-pane designer-drawer designer-inspector" :class="inspectorOpen ? 'is-open' : ''" aria-label="Thuộc tính trường">
+  <div class="designer-panel-head">
+    <div>
+      <p class="eyebrow">Thiết lập</p>
+      <h2>Thuộc tính trường</h2>
+    </div>
+    <button type="button" class="designer-icon-btn designer-drawer-close" @click="inspectorOpen = false" aria-label="Đóng thuộc tính">
+      {% include "formbuilder/partials/icon.html" with name="x" size=16 %}
+    </button>
+  </div>
+  {% if not selected_field %}
+    <div class="designer-inspector-body">
+      <p class="designer-hint">Chọn một trường trên khung thiết kế.</p>
+    </div>
+  {% elif inspector_form %}
+    <div class="designer-tabs" role="tablist" aria-label="Nhóm thuộc tính">
+      <button type="button" role="tab" id="inspector-tab-chung" aria-controls="inspector-panel-chung" @click="inspectorTab = 'chung'" :aria-selected="inspectorTab === 'chung' ? 'true' : 'false'">Chung</button>
+      <button type="button" role="tab" id="inspector-tab-dulieu" aria-controls="inspector-panel-dulieu" @click="inspectorTab = 'dulieu'" :aria-selected="inspectorTab === 'dulieu' ? 'true' : 'false'">Dữ liệu</button>
+      <button type="button" role="tab" id="inspector-tab-kiemtra" aria-controls="inspector-panel-kiemtra" @click="inspectorTab = 'kiemtra'" :aria-selected="inspectorTab === 'kiemtra' ? 'true' : 'false'">Kiểm tra</button>
+      <button type="button" role="tab" id="inspector-tab-hienthi" aria-controls="inspector-panel-hienthi" @click="inspectorTab = 'hienthi'" :aria-selected="inspectorTab === 'hienthi' ? 'true' : 'false'">Hiển thị</button>
+    </div>
+    {% if inspector_form.non_field_errors %}
+      <div class="alert alert-danger designer-inspector-alert">{{ inspector_form.non_field_errors }}</div>
+    {% endif %}
+    <div class="designer-inspector-body">
+      <form id="designer-field-form" method="post" novalidate
+            action="{% url 'formbuilder:field_update' selected_field.pk %}"
+            hx-post="{% url 'formbuilder:field_update' selected_field.pk %}"
+            hx-target="#designer-stage" hx-swap="outerHTML"
+            hx-trigger="submit, change delay:1s, blur delay:1s"
+            @input="dirty = true">
+        {% csrf_token %}
+        <fieldset {% if read_only %}disabled{% endif %}>
+          <div id="inspector-panel-chung" class="designer-tab-panel" role="tabpanel" aria-labelledby="inspector-tab-chung" data-inspector-tab="chung" :hidden="inspectorTab !== 'chung'" :aria-hidden="inspectorTab === 'chung' ? 'false' : 'true'">
+            {% include "formbuilder/partials/control.html" with bound=inspector_form.label label="Nhãn" hint="Tên hiển thị trên biểu mẫu." visible=1 %}
+            {% include "formbuilder/partials/control.html" with bound=inspector_form.section label="Phần" hint="" visible=1 %}
+            <div class="designer-field-control">
+              <span class="designer-label" id="field-key-label">Mã trường</span>
+              <div class="designer-readonly" aria-labelledby="field-key-label">{{ selected_field.key }}</div>
+              <p class="designer-hint">Mã định danh duy nhất, không đổi sau khi tạo.</p>
+            </div>
+            <div class="designer-field-control">
+              <span class="designer-label" id="field-type-label">Loại dữ liệu</span>
+              <div class="designer-readonly" aria-labelledby="field-type-label">
+                <span>{{ selected_field.get_field_type_display }}</span>
+                {% if selected_field.source == "core" %}<span class="designer-system-tag">Hệ thống</span>{% endif %}
+              </div>
+            </div>
+            {% include "formbuilder/partials/control.html" with bound=inspector_form.placeholder label="Gợi ý nhập" hint="" visible=inspector_visibility.placeholder %}
+            {% include "formbuilder/partials/control.html" with bound=inspector_form.help_text label="Trợ giúp" hint="" visible=1 %}
+            {% if selected_field.source == "core" and selected_field.required %}
+              <input type="hidden" name="required" value="on">
+            {% endif %}
+            {% if inspector_visibility.required %}
+              <div class="designer-switch-row">
+                <div>
+                  <strong>Bắt buộc</strong>
+                  <p class="designer-hint">Người dùng phải nhập trường này.</p>
+                </div>
+                {% if selected_field.source == "core" and selected_field.required %}
+                  <label class="designer-switch">
+                    <input type="checkbox" checked disabled>
+                    <span class="sr-only">Bắt buộc</span>
+                  </label>
+                {% else %}
+                  <label class="designer-switch">
+                    {{ inspector_form.required }}
+                    <span class="sr-only">Bắt buộc</span>
+                  </label>
+                {% endif %}
+              </div>
+            {% elif not selected_field.required or selected_field.source != "core" %}
+              <div hidden>{{ inspector_form.required }}</div>
+            {% endif %}
+            {% if selected_field.source == "core" %}
+              <input type="hidden" name="read_only" value="on">
+            {% endif %}
+            {% if inspector_visibility.read_only %}
+              <div class="designer-switch-row">
+                <div>
+                  <strong>Chỉ đọc</strong>
+                  <p class="designer-hint">Không cho phép chỉnh sửa giá trị.</p>
+                </div>
+                {% if selected_field.source == "core" %}
+                  <label class="designer-switch">
+                    <input type="checkbox" checked disabled>
+                    <span class="sr-only">Chỉ đọc</span>
+                  </label>
+                {% else %}
+                  <label class="designer-switch">
+                    {{ inspector_form.read_only }}
+                    <span class="sr-only">Chỉ đọc</span>
+                  </label>
+                {% endif %}
+              </div>
+            {% elif selected_field.source != "core" %}
+              <div hidden>{{ inspector_form.read_only }}</div>
+            {% endif %}
+          </div>
+          <div id="inspector-panel-dulieu" class="designer-tab-panel" role="tabpanel" aria-labelledby="inspector-tab-dulieu" data-inspector-tab="dulieu" hidden :hidden="inspectorTab !== 'dulieu'" :aria-hidden="inspectorTab === 'dulieu' ? 'false' : 'true'">
+            {% include "formbuilder/partials/control.html" with bound=inspector_form.default_value label="Giá trị mặc định" hint="" visible=inspector_visibility.default_value %}
+            {% include "formbuilder/partials/control.html" with bound=inspector_form.catalog_source label="Danh mục" hint="" visible=inspector_visibility.catalog_source %}
+            {% if not inspector_visibility.default_value and not inspector_visibility.catalog_source and not selected_field.is_choice %}
+              <p class="designer-hint">Kiểu này không có thiết lập dữ liệu thêm.</p>
+            {% endif %}
+          </div>
+          <div id="inspector-panel-kiemtra" class="designer-tab-panel" role="tabpanel" aria-labelledby="inspector-tab-kiemtra" data-inspector-tab="kiemtra" hidden :hidden="inspectorTab !== 'kiemtra'" :aria-hidden="inspectorTab === 'kiemtra' ? 'false' : 'true'">
+            {% if not inspector_visibility.checks %}
+              <p class="designer-hint">Kiểu này không có thiết lập kiểm tra.</p>
+            {% endif %}
+            {% include "formbuilder/partials/control.html" with bound=inspector_form.min_value label="Giá trị nhỏ nhất" hint="" visible=inspector_visibility.min_value %}
+            {% include "formbuilder/partials/control.html" with bound=inspector_form.max_value label="Giá trị lớn nhất" hint="" visible=inspector_visibility.max_value %}
+            {% include "formbuilder/partials/control.html" with bound=inspector_form.min_length label="Độ dài nhỏ nhất" hint="" visible=inspector_visibility.min_length %}
+            {% include "formbuilder/partials/control.html" with bound=inspector_form.max_length label="Độ dài lớn nhất" hint="" visible=inspector_visibility.max_length %}
+            {% include "formbuilder/partials/control.html" with bound=inspector_form.regex label="Biểu thức" hint="" visible=inspector_visibility.regex %}
+            {% include "formbuilder/partials/control.html" with bound=inspector_form.max_file_size_mb label="Dung lượng tối đa (MB)" hint="" visible=inspector_visibility.max_file_size_mb %}
+            {% include "formbuilder/partials/control.html" with bound=inspector_form.allowed_extensions label="Phần mở rộng" hint="Cách nhau bằng dấu phẩy, ví dụ pdf, docx." visible=inspector_visibility.allowed_extensions %}
+            {% if inspector_visibility.unique_within_form %}
+              <div class="designer-switch-row">
+                <div>
+                  <strong>Không trùng trong biểu mẫu</strong>
+                  <p class="designer-hint">Giá trị không được lặp lại trên cùng biểu mẫu.</p>
+                </div>
+                <label class="designer-switch">
+                  {{ inspector_form.unique_within_form }}
+                  <span class="sr-only">Không trùng trong biểu mẫu</span>
+                </label>
+              </div>
+            {% else %}
+              <div hidden>{{ inspector_form.unique_within_form }}</div>
+            {% endif %}
+          </div>
+          <div id="inspector-panel-hienthi" class="designer-tab-panel" role="tabpanel" aria-labelledby="inspector-tab-hienthi" data-inspector-tab="hienthi" hidden :hidden="inspectorTab !== 'hienthi'" :aria-hidden="inspectorTab === 'hienthi' ? 'false' : 'true'">
+            {% include "formbuilder/partials/control.html" with bound=inspector_form.col_span label="Độ rộng (1–12)" hint="" visible=1 %}
+            {% if selected_field.source == "core" and selected_field.required %}
+              <p class="designer-hint">Trường hệ thống bắt buộc không thể ẩn.</p>
+            {% else %}
+              <div class="designer-switch-row">
+                <div>
+                  <strong>Ẩn mặc định</strong>
+                  <p class="designer-hint">Trường ẩn không bị kiểm tra bắt buộc.</p>
+                </div>
+                <label class="designer-switch">
+                  {{ inspector_form.is_hidden_by_default }}
+                  <span class="sr-only">Ẩn mặc định</span>
+                </label>
+              </div>
+            {% endif %}
+            {% if form_template.function_type == "chi_tieu" and selected_field.source == "custom" %}
+              <input type="hidden" name="is_per_row" value="on">
+              <div class="designer-switch-row">
+                <div>
+                  <strong>Theo từng dòng chỉ tiêu</strong>
+                  <p class="designer-hint">Trường tùy chỉnh của biểu mẫu chỉ tiêu nhập theo từng dòng.</p>
+                </div>
+                <label class="designer-switch">
+                  <input type="checkbox" checked disabled>
+                  <span class="sr-only">Theo từng dòng chỉ tiêu</span>
+                </label>
+              </div>
+            {% elif form_template.function_type == "chi_tieu" %}
+              <div class="designer-switch-row">
+                <div>
+                  <strong>Theo từng dòng chỉ tiêu</strong>
+                  <p class="designer-hint">Nhập giá trị riêng trên từng dòng chỉ tiêu.</p>
+                </div>
+                <label class="designer-switch">
+                  {{ inspector_form.is_per_row }}
+                  <span class="sr-only">Theo từng dòng chỉ tiêu</span>
+                </label>
+              </div>
+            {% endif %}
+          </div>
+        </fieldset>
+      </form>
+      {% if selected_field.is_choice %}
+        <div class="designer-choice-block" hidden :hidden="inspectorTab !== 'dulieu'">
+          <h3 class="designer-subhead">Lựa chọn</h3>
+          <ul class="designer-choice-list">
+            {% for option in selected_field.options.all %}
+              <li>
+                <span>{{ option.label }} <span class="text-slate-500">({{ option.value }})</span></span>
+                {% if can_edit %}
+                  <form method="post" action="{% url 'formbuilder:option_delete' option.pk %}"
+                        hx-post="{% url 'formbuilder:option_delete' option.pk %}"
+                        hx-target="#designer-stage" hx-swap="outerHTML">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
+                  </form>
+                {% endif %}
+              </li>
+            {% empty %}
+              <li class="text-slate-500">Chưa có lựa chọn.</li>
+            {% endfor %}
+          </ul>
+          {% if can_edit and option_form %}
+            <form method="post" class="designer-stack" action="{% url 'formbuilder:option_create' selected_field.pk %}"
+                  hx-post="{% url 'formbuilder:option_create' selected_field.pk %}"
+                  hx-target="#designer-stage" hx-swap="outerHTML">
+              {% csrf_token %}
+              <label class="designer-label" for="{{ option_form.label.id_for_label }}">Nhãn lựa chọn</label>
+              <div class="designer-control">{{ option_form.label }}</div>
+              <label class="designer-label" for="{{ option_form.value.id_for_label }}">Giá trị</label>
+              <div class="designer-control">{{ option_form.value }}</div>
+              <button class="btn btn-outline-primary btn-sm" type="submit">Thêm lựa chọn</button>
+            </form>
+          {% endif %}
+        </div>
+      {% endif %}
+      <details class="designer-rules" {% if field_rules %}open{% endif %}>
+        <summary>Điều kiện</summary>
+        <p class="designer-hint">Mỗi điều kiện có một phép so sánh. Điều kiện khớp sau ghi đè điều kiện khớp trước.</p>
+        <ul class="designer-rule-list">
+          {% for rule in field_rules %}
+            <li>
+              <span>Khi {{ rule.source_field_key }} {{ rule.get_operator_display }} {{ rule.compare_value }} thì {{ rule.get_action_display }} {{ rule.target_field_key }}</span>
+              {% if can_edit %}
+                <form method="post" action="{% url 'formbuilder:rule_delete' rule.pk %}"
+                      hx-post="{% url 'formbuilder:rule_delete' rule.pk %}"
+                      hx-target="#designer-stage" hx-swap="outerHTML">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
+                </form>
+              {% endif %}
+            </li>
+          {% empty %}
+            <li class="text-slate-500">Chưa có điều kiện cho trường này.</li>
+          {% endfor %}
+        </ul>
+        {% if can_edit and rule_form %}
+          <form method="post" class="designer-stack" action="{% url 'formbuilder:rule_create' form_template.pk %}"
+                hx-post="{% url 'formbuilder:rule_create' form_template.pk %}"
+                hx-target="#designer-stage" hx-swap="outerHTML">
+            {% csrf_token %}
+            <input type="hidden" name="field_id" value="{{ selected_field.pk }}">
+            <label class="designer-label" for="{{ rule_form.source_field_key.id_for_label }}">Khi trường</label>
+            <div class="designer-control">{{ rule_form.source_field_key }}</div>
+            <label class="designer-label" for="{{ rule_form.operator.id_for_label }}">Phép so sánh</label>
+            <div class="designer-control">{{ rule_form.operator }}</div>
+            <label class="designer-label" for="{{ rule_form.compare_value.id_for_label }}">Giá trị</label>
+            <div class="designer-control">{{ rule_form.compare_value }}</div>
+            <label class="designer-label" for="{{ rule_form.action.id_for_label }}">Thì</label>
+            <div class="designer-control">{{ rule_form.action }}</div>
+            <label class="designer-label" for="{{ rule_form.target_field_key.id_for_label }}">Trường</label>
+            <div class="designer-control">{{ rule_form.target_field_key }}</div>
+            <button class="btn btn-outline-primary btn-sm" type="submit">Thêm điều kiện</button>
+          </form>
+        {% endif %}
+      </details>
+    </div>
+    {% if can_edit %}
+      <div class="designer-inspector-footer">
+        {% if not selected_field.required or selected_field.source != "core" %}
+          <form method="post" action="{% url 'formbuilder:field_delete' selected_field.pk %}"
+                hx-post="{% url 'formbuilder:field_delete' selected_field.pk %}"
+                hx-target="#designer-stage" hx-swap="outerHTML"
+                onsubmit="return confirm('Xóa trường {{ selected_field.label|escapejs }}?');">
+            {% csrf_token %}
+            <button class="btn btn-outline-danger" type="submit">
+              {% include "formbuilder/partials/icon.html" with name="trash" size=16 %}
+              Xóa
+            </button>
+          </form>
+        {% else %}
+          <span></span>
+        {% endif %}
+        <button class="btn btn-primary" type="submit" form="designer-field-form">Áp dụng</button>
+      </div>
+    {% endif %}
+  {% endif %}
+</aside>

@@ -28,6 +28,23 @@ class PublishTests(FormFixture):
         self.assertEqual(template.current_draft.version, 2)
         self.assertEqual(template.current_draft.status, "draft")
 
+    def test_htmx_publish_swaps_the_new_draft(self):
+        template = self.make_template()
+        response = self.login(self.head).post(
+            f"/bieu-mau/{template.pk}/xuat-ban/",
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        template.refresh_from_db()
+        draft_field = template.current_draft.fields.get(core_key="ten")
+        self.assertContains(response, "Đang dùng v1")
+        self.assertContains(response, "Phiên bản 2")
+        self.assertContains(response, f'data-field-id="{draft_field.pk}"')
+        self.assertNotContains(
+            response,
+            f'data-field-id="{template.current_published.fields.get(core_key="ten").pk}"',
+        )
+
     def test_choice_without_options_and_cycles_block_publish(self):
         template = self.make_template()
         draft = template.current_draft

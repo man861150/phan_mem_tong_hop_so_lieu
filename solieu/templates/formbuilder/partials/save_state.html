@@ -1,7 +1,8 @@
-<div id="save-state" aria-live="polite">
+<div id="save-state" class="designer-save" aria-live="polite">
   {% if error %}
-    <span class="text-red-700">Không lưu được. Thử lại.</span>
+    <span class="designer-save-error">Không lưu được. Thử lại.</span>
   {% else %}
-    <span class="text-slate-500">Đã lưu lúc {{ save_label }}</span>
+    {% include "formbuilder/partials/icon.html" with name="clock" size=14 %}
+    <span>Tự động lưu lúc {{ save_label }}</span>
   {% endif %}
 </div>
