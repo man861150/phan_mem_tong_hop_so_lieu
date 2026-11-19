@@ -17,6 +17,11 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 
+# Only needed when the browser's Origin stops matching the request Host, for
+# example behind a proxy or when HTTPS terminates in front of runserver. Plain
+# http://<lan-ip>:8000 already matches, so the default stays empty.
+CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",

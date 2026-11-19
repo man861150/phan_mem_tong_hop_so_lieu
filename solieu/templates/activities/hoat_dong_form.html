@@ -25,11 +25,19 @@
             Chi tiết hoạt động
           {% endif %}
         </h1>
-        <p class="page-hero-copy">Ghi nhận thông tin sự kiện, chương trình hoặc khóa huấn luyện của đơn vị.</p>
+        <p class="page-hero-copy">
+          {% if activity %}
+            Cập nhật thông tin hoạt động của đơn vị.
+          {% else %}
+            Ghi nhận thông tin hoạt động mới của đơn vị.
+          {% endif %}
+        </p>
       </div>
-      <span class="status-pill {% if activity and activity.trang_thai == 'da_to_chuc' %}status-pill--success{% else %}status-pill--draft{% endif %}">
-        {% if activity and activity.trang_thai == 'da_to_chuc' %}Đã tổ chức{% else %}Bản nháp{% endif %}
-      </span>
+      {% if activity %}
+        <span class="status-pill {% if activity.trang_thai == 'da_to_chuc' %}status-pill--success{% else %}status-pill--draft{% endif %}">
+          {% if activity.trang_thai == 'da_to_chuc' %}Đã tổ chức{% else %}Bản nháp{% endif %}
+        </span>
+      {% endif %}
     </div>
   </header>
 
@@ -59,13 +67,13 @@
       {% endif %}
 
       <section class="form-section">
-        {% include "activities/_form_section_head.html" with number="01" title="Thông tin cơ bản" copy="Các thông tin chính để phân loại hoạt động." %}
+        {% include "activities/_form_section_head.html" with number="01" title="Thông tin cơ bản" copy="Phân loại và đặt tên hoạt động." %}
         <div class="form-section-body">
-          <div class="form-grid">
+          <div class="activity-form-grid activity-form-grid--basic">
             {% include "activities/_form_field.html" with field=form.loai_hoat_dong %}
             {% include "activities/_form_field.html" with field=form.ten %}
             {% include "activities/_linh_vuc_field.html" with field=form.linh_vuc show_required=1 %}
-            {% include "activities/_form_field.html" with field=form.hinh_thuc hide_required=1 %}
+            {% include "activities/_form_field.html" with field=form.hinh_thuc hide_required=1 wide=1 %}
           </div>
 
           <div class="ad-hoc-block" x-show="adHoc" x-cloak>
@@ -73,7 +81,7 @@
               <svg class="size-4" aria-hidden="true"><use href="#icon-report"></use></svg>
               Nhiệm vụ phát sinh
             </p>
-            <div class="form-grid">
+            <div class="activity-form-grid">
               {% include "activities/_form_field.html" with field=form.noi_dung %}
               {% include "activities/_form_field.html" with field=form.ket_qua %}
             </div>
@@ -82,18 +90,19 @@
       </section>
 
       <section class="form-section">
-        {% include "activities/_form_section_head.html" with number="02" title="Thời gian & địa điểm" copy="Thiết lập thời gian và nơi diễn ra hoạt động." %}
+        {% include "activities/_form_section_head.html" with number="02" title="Thời gian & địa điểm" copy="Thời gian và nơi diễn ra." %}
         <div class="form-section-body">
-          <div class="form-grid">
+          <div class="activity-form-grid">
             {% include "activities/_date_field.html" with field=form.tu_ngay %}
-            {% include "activities/_date_field.html" with field=form.den_ngay hint="Bỏ trống nếu hoạt động diễn ra trong một ngày." %}
+            {% include "activities/_date_field.html" with field=form.den_ngay %}
+            <p class="form-hint form-hint--row">Bỏ trống nếu hoạt động diễn ra trong một ngày.</p>
             {% include "activities/_form_field_icon.html" with field=form.dia_diem icon="pin" wide=1 %}
           </div>
         </div>
       </section>
 
       <section class="form-section">
-        {% include "activities/_form_section_head.html" with number="03" title="Đối tượng hướng tới" copy="Chọn một hoặc nhiều nhóm thuộc của hoạt động." %}
+        {% include "activities/_form_section_head.html" with number="03" title="Đối tượng hướng tới" copy="Chọn một hoặc nhiều nhóm." %}
         <div class="form-section-body">
           <fieldset class="choice-fieldset">
             <legend class="sr-only">{{ form.doi_tuong_huong_toi.label }}</legend>
@@ -113,7 +122,7 @@
       </section>
 
       <section class="form-section">
-        {% include "activities/_form_section_head.html" with number="04" title="Đơn vị phối hợp" copy="Chọn đơn vị có sẵn hoặc bổ sung một đơn vị mới." %}
+        {% include "activities/_form_section_head.html" with number="04" title="Đơn vị phối hợp" copy="Chọn đơn vị có sẵn hoặc thêm mới." %}
         <div class="form-section-body">
           <div id="don-vi-add">
             <fieldset class="choice-fieldset">
@@ -146,7 +155,7 @@
                 <span class="spinner-border" aria-hidden="true"></span>
                 Đang lưu đơn vị…
               </span>
-              <p class="form-hint">Đơn vị mới được thêm vào danh sách và tự động chọn cho hoạt động này.</p>
+              <p class="form-hint">Đơn vị mới được thêm vào danh sách và tự động chọn.</p>
             </div>
 
             {% for error in form.don_vi_phoi_hop.errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
@@ -157,11 +166,11 @@
       <div class="form-callout-area">
         <div class="form-callout">
           <span class="form-callout-icon" aria-hidden="true">
-            <svg class="size-5"><use href="#icon-report"></use></svg>
+            <svg class="size-4"><use href="#icon-info"></use></svg>
           </span>
           <div>
             <p class="form-callout-title">Chỉ tiêu kết quả được cập nhật sau</p>
-            <p class="form-callout-copy">Các chỉ tiêu định lượng sẽ được nhập trong phiếu kết quả khi hoạt động chuyển sang trạng thái “Đã tổ chức”.</p>
+            <p class="form-callout-copy">Chỉ tiêu định lượng được nhập trong phiếu kết quả sau khi hoạt động chuyển sang “Đã tổ chức”.</p>
           </div>
         </div>
       </div>
@@ -177,13 +186,13 @@
   {% else %}
     <div class="card activity-form-card activity-form">
       <section class="form-section">
-        {% include "activities/_form_section_head.html" with number="01" title="Thông tin cơ bản" copy="Các thông tin chính để phân loại hoạt động." %}
+        {% include "activities/_form_section_head.html" with number="01" title="Thông tin cơ bản" copy="Phân loại và đặt tên hoạt động." %}
         <div class="form-section-body">
-          <div class="form-grid">
+          <div class="activity-form-grid activity-form-grid--basic">
             {% include "activities/_static_field.html" with label="Loại hoạt động" value=activity.loai_hoat_dong.ten_loai %}
             {% include "activities/_static_field.html" with label="Tên hoạt động" value=activity.ten %}
             {% include "activities/_static_field.html" with label="Lĩnh vực" value=activity.linh_vuc.ten %}
-            {% include "activities/_static_field.html" with label="Hình thức tổ chức" value=activity.get_hinh_thuc_display %}
+            {% include "activities/_static_field.html" with label="Hình thức tổ chức" value=activity.get_hinh_thuc_display wide=1 %}
           </div>
           {% if activity.la_nhiem_vu_phat_sinh %}
             <div class="ad-hoc-block">
@@ -191,9 +200,9 @@
                 <svg class="size-4" aria-hidden="true"><use href="#icon-report"></use></svg>
                 Nhiệm vụ phát sinh
               </p>
-              <div class="form-grid">
-                {% include "activities/_static_field.html" with label="Nội dung" value=activity.noi_dung|linebreaksbr multiline=1 wide=1 %}
-                {% include "activities/_static_field.html" with label="Kết quả" value=activity.ket_qua|linebreaksbr multiline=1 wide=1 %}
+              <div class="activity-form-grid">
+                {% include "activities/_static_field.html" with label="Nội dung" value=activity.noi_dung|linebreaksbr multiline=1 %}
+                {% include "activities/_static_field.html" with label="Kết quả" value=activity.ket_qua|linebreaksbr multiline=1 %}
               </div>
             </div>
           {% endif %}
@@ -201,9 +210,9 @@
       </section>
 
       <section class="form-section">
-        {% include "activities/_form_section_head.html" with number="02" title="Thời gian & địa điểm" copy="Thiết lập thời gian và nơi diễn ra hoạt động." %}
+        {% include "activities/_form_section_head.html" with number="02" title="Thời gian & địa điểm" copy="Thời gian và nơi diễn ra." %}
         <div class="form-section-body">
-          <div class="form-grid">
+          <div class="activity-form-grid">
             {% include "activities/_static_field.html" with label="Từ ngày" value=activity.tu_ngay|date:"d/m/Y" %}
             {% include "activities/_static_field.html" with label="Đến ngày" value=activity.den_ngay|date:"d/m/Y" %}
             {% include "activities/_static_field.html" with label="Địa điểm tổ chức" value=activity.dia_diem wide=1 %}
@@ -212,7 +221,7 @@
       </section>
 
       <section class="form-section">
-        {% include "activities/_form_section_head.html" with number="03" title="Đối tượng hướng tới" copy="Chọn một hoặc nhiều nhóm thuộc của hoạt động." %}
+        {% include "activities/_form_section_head.html" with number="03" title="Đối tượng hướng tới" copy="Chọn một hoặc nhiều nhóm." %}
         <div class="form-section-body">
           <div class="choice-grid">
             {% for doi_tuong in activity.doi_tuong_huong_toi.all %}
@@ -228,7 +237,7 @@
       </section>
 
       <section class="form-section">
-        {% include "activities/_form_section_head.html" with number="04" title="Đơn vị phối hợp" copy="Chọn đơn vị có sẵn hoặc bổ sung một đơn vị mới." %}
+        {% include "activities/_form_section_head.html" with number="04" title="Đơn vị phối hợp" copy="Chọn đơn vị có sẵn hoặc thêm mới." %}
         <div class="form-section-body">
           <div class="choice-grid choice-grid--two">
             {% for tham_gia in activity.don_vi_tham_gia.all %}
@@ -246,11 +255,11 @@
       <div class="form-callout-area">
         <div class="form-callout">
           <span class="form-callout-icon" aria-hidden="true">
-            <svg class="size-5"><use href="#icon-report"></use></svg>
+            <svg class="size-4"><use href="#icon-info"></use></svg>
           </span>
           <div>
             <p class="form-callout-title">Chỉ tiêu kết quả được cập nhật sau</p>
-            <p class="form-callout-copy">Các chỉ tiêu định lượng sẽ được nhập trong phiếu kết quả khi hoạt động chuyển sang trạng thái “Đã tổ chức”.</p>
+            <p class="form-callout-copy">Chỉ tiêu định lượng được nhập trong phiếu kết quả sau khi hoạt động chuyển sang “Đã tổ chức”.</p>
           </div>
         </div>
       </div>
@@ -269,7 +278,7 @@
           {% if activity.trang_thai == 'da_to_chuc' %}
             Hoạt động đã được tổ chức. Bạn có thể nhập hoặc xem phiếu kết quả.
           {% elif can_edit %}
-            Hoạt động đang ở trạng thái kế hoạch. Chuyển sang Đã tổ chức khi hoạt động đã diễn ra.
+            Chuyển sang Đã tổ chức khi hoạt động đã diễn ra.
           {% else %}
             Hoạt động đang ở trạng thái kế hoạch.
           {% endif %}
@@ -281,7 +290,7 @@
         {% elif can_edit %}
           <form method="post" action="{% url 'activities:hoat_dong_da_to_chuc' activity.pk %}">
             {% csrf_token %}
-            <button class="btn btn-outline-primary" type="submit">Chuyển sang Đã tổ chức</button>
+            <button class="btn btn-primary" type="submit">Chuyển sang Đã tổ chức</button>
           </form>
         {% endif %}
       </div>

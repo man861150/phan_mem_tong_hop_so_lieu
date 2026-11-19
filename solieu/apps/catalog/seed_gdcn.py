@@ -20,6 +20,7 @@ from django.db import transaction
 from apps.accounts.models import User
 from apps.accounts.roles import Role
 from apps.catalog.models import (
+    BieuMauChiTieu,
     CachTongHop,
     ChiTieu,
     ChiTieuKeHoach,
@@ -66,6 +67,57 @@ GROUPS = {
     ),
 }
 MONTH_GROUPS = frozenset({"TECHPORT", "VANHANH"})
+
+# Indicators that appear on each activity result form, in display order.
+# Count indicators stay off the form: ``reporting.rollup`` derives them from
+# the activity list, so a manual row would double count.
+ACTIVITY_FORMS = {
+    "Tổ chức Techmart": (
+        "GDCN-XUCTIEN-TOCHUC-TECHMART-GIANHANG",
+        "GDCN-XUCTIEN-TOCHUC-TECHMART-HOITHAO",
+        "GDCN-XUCTIEN-TOCHUC-TECHMART-CGIA-TV",
+        "GDCN-XUCTIEN-TOCHUC-TECHMART-BIENBAN-TV",
+        "GDCN-XUCTIEN-TECHMART-KHACH-THAMDU",
+        "GDCN-KETNOI-BIENBAN-GHINHO-MOU",
+        "GDCN-KETNOI-KN-BIENBAN",
+        "GDCN-KETNOI-HD-SAU-KN",
+        "GDCN-KETNOI-GT-HD",
+    ),
+    "Tổ chức sự kiện Trình diễn công nghệ": (
+        "GDCN-XUCTIEN-TRINHDIEN-CN-DV-CN",
+        "GDCN-XUCTIEN-TRINHDIEN-CN-DV-TRUNGBAY",
+        "GDCN-XUCTIEN-TRINHDIEN-CN-CNTB-GT",
+        "GDCN-XUCTIEN-TRINHDIEN-CN-CGIA-THAMLUAN",
+        "GDCN-XUCTIEN-TRINHDIEN-CN-KHACH-TRUCTIEP",
+        "GDCN-XUCTIEN-TRINHDIEN-CN-XEM-LIVESTREAM",
+        "GDCN-KETNOI-YC-CN",
+        "GDCN-KETNOI-BIENBAN-GHINHO-MOU",
+        "GDCN-KETNOI-KN-BIENBAN",
+        "GDCN-KETNOI-HD-SAU-KN",
+        "GDCN-KETNOI-GT-HD",
+    ),
+    "Sự kiện khoa học công nghệ tại các tỉnh thành": (
+        "GDCN-XUCTIEN-CN-TINH-DV-THAM-GIA",
+        "GDCN-XUCTIEN-CN-TINH-CNTB-GT",
+        "GDCN-XUCTIEN-CN-KHACH-TRUCTUYEN",
+        "GDCN-KETNOI-BIENBAN-GHINHO-MOU",
+        "GDCN-KETNOI-KN-BIENBAN",
+        "GDCN-KETNOI-HD-SAU-KN",
+        "GDCN-KETNOI-GT-HD",
+    ),
+    "Số sự kiện Cafe công nghệ": (
+        "GDCN-KETNOI-CAFE-CN-DV-THAM-GIA",
+        "GDCN-KETNOI-CAFE-CN-KHACH-TRUCTIEP",
+        "GDCN-KETNOI-CAFE-CN-KHACH-TRUCTUYEN",
+        "GDCN-KETNOI-CAFE-CN-XEM-LIVESTREAM",
+        "GDCN-KETNOI-YC-CN",
+        "GDCN-KETNOI-CAFE-CN-BIENBAN-GHINHO-KYKET",
+        "GDCN-KETNOI-BIENBAN-GHINHO-MOU",
+        "GDCN-KETNOI-KN-BIENBAN",
+        "GDCN-KETNOI-HD-SAU-KN",
+        "GDCN-KETNOI-GT-HD",
+    ),
+}
 
 # Longer pairs first. Applied to folded tokens before stop-words are dropped.
 _BIGRAMS = {
@@ -327,6 +379,7 @@ def _apply(plan: SeedPlan, year: int) -> list[str]:
         skipped.extend(
             _ensure_plans(saved[indicator.code], indicator, subjects, year, tally)
         )
+    _ensure_forms(saved, tally)
     lines.extend(
         [
             (
@@ -347,6 +400,11 @@ def _apply(plan: SeedPlan, year: int) -> list[str]:
             (
                 f"loai_hoat_dong: tạo {tally['loai_created']}, "
                 f"giữ {tally['loai_kept']}"
+            ),
+            (
+                f"bieu_mau: tạo {tally['bieu_mau_created']}, "
+                f"cập nhật {tally['bieu_mau_updated']}, "
+                f"giữ {tally['bieu_mau_kept']}"
             ),
             (
                 f"ke_hoach: tạo {tally['ke_hoach_created']}, "
@@ -561,6 +619,52 @@ def _ensure_plans(row, indicator, subjects, year, tally: Counter) -> list[str]:
         existing.save()
         tally["ke_hoach_updated"] += 1
     return skipped
+
+
+def _ensure_forms(saved: dict[str, ChiTieu], tally: Counter) -> None:
+    """Create or update the indicator rows behind each activity result form."""
+    department = PhongBan.objects.get(ma_phong=DEPARTMENT[0])
+    for type_name, codes in ACTIVITY_FORMS.items():
+        loai = LoaiHoatDong.objects.filter(
+            phong=department,
+            ten_loai=type_name,
+        ).first()
+        if loai is None:
+            raise CommandError(
+                f"Không có loại hoạt động {type_name!r} để gắn biểu mẫu chỉ tiêu."
+            )
+        missing = [code for code in codes if code not in saved]
+        if missing:
+            raise CommandError(
+                f"Biểu mẫu {type_name!r} tham chiếu chỉ tiêu không tồn tại: "
+                + ", ".join(missing)
+            )
+        for thu_tu, code in enumerate(codes, start=1):
+            row = BieuMauChiTieu.objects.filter(
+                loai_hoat_dong=loai,
+                chi_tieu=saved[code],
+            ).first()
+            if row is None:
+                BieuMauChiTieu(
+                    loai_hoat_dong=loai,
+                    chi_tieu=saved[code],
+                    bat_buoc=True,
+                    thu_tu=thu_tu,
+                ).save()
+                tally["bieu_mau_created"] += 1
+                continue
+            changed = False
+            if not row.bat_buoc:
+                row.bat_buoc = True
+                changed = True
+            if row.thu_tu != thu_tu:
+                row.thu_tu = thu_tu
+                changed = True
+            if changed:
+                row.save()
+                tally["bieu_mau_updated"] += 1
+            else:
+                tally["bieu_mau_kept"] += 1
 
 
 def _header_row(sheet) -> int:
